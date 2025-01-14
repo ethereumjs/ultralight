@@ -25,11 +25,13 @@ import {
   SHANGHAI_BLOCK,
   sszReceiptsListType,
 } from './types.js'
-import { getContentKey, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from './util.js'
+import { getContentKey, verifyPostCapellaHeaderProof, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from './util.js'
 
 import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
+import { RunStatusCode } from '@lodestar/light-client'
+import { computeSyncPeriodAtEpoch, computeSyncPeriodAtSlot } from '@lodestar/light-client/lib/utils.js'
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'
@@ -169,18 +171,37 @@ export class HistoryNetwork extends BaseNetwork {
           throw new Error('Received pre-merge block header with invalid proof')
         }
       }
-    } else {
-      if (header.number < SHANGHAI_BLOCK) {
-        if (proof.value === null) {
-          this.logger('Received post-merge block without proof')
-        }
+    } else if (header.number < SHANGHAI_BLOCK) {
+      if (proof.value === null) {
+        this.logger('Received post-merge block without proof')
+      }
+      try {
+        verifyPreCapellaHeaderProof(proof.value as any, header.hash())
+      } catch {
+        this.logger('Received post-merge block header with invalid proof')
+        throw new Error('Received post-merge block header with invalid proof')
+      }
+    }
+    else {
+      if (proof.value === null) {
+        this.logger('Received post-merge block without proof')
+      }
+      const beacon = this.portal.network()['0x500c']
+      if (beacon !== undefined && beacon.lightClient?.status === RunStatusCode.started) {
+        // TODO: Determine how to only require proofs for blocsk from previous sync periods
+        // We don't currently have a mapping of EL block numbers to slots so cannot determine precisely
+        // if a given EL block is from a previous period or not
+        // TODO: Add handlng for ephemeral blocks in the current sync period
         try {
-          verifyPreCapellaHeaderProof(proof.value as any, header.hash())
+          verifyPostCapellaHeaderProof(proof.value as any, header.hash(), beacon.historicalSummaries, beacon.beaconConfig)
         } catch {
-          this.logger('Received post-merge block header with invalid proof')
+          this.logger('Received post-capella block header with invalid proof')
           // TODO: throw new Error('Received post-merge block header with invalid proof')
         }
+      } else {
+        this.logger('Received post-capella block but Beacon light client is not running so cannot verify proof')
       }
+
     }
     await this.indexBlockHash(header.number, bytesToHex(header.hash()))
     return header.hash()
@@ -315,8 +336,7 @@ export class HistoryNetwork extends BaseNetwork {
       this.gossipManager.add(contentKey)
     }
     this.logger(
-      `${HistoryNetworkContentType[contentType]} added for ${
-        keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
+      `${HistoryNetworkContentType[contentType]} added for ${keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
       }`,
     )
   }
