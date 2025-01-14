@@ -62,7 +62,10 @@ import type * as PromClient from 'prom-client'
 import { GossipManager } from './gossip.js'
 
 export abstract class BaseNetwork extends EventEmitter {
-  public capabilities: number[] = [0, 1, 65535]
+  public capabilities: number[] = [
+    PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
+    PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD,
+  ]
   static MAX_CONCURRENT_UTP_STREAMS = 50
   public routingTable: PortalNetworkRoutingTable
   public nodeRadius: bigint
@@ -321,7 +324,9 @@ export abstract class BaseNetwork extends EventEmitter {
         switch (type) {
           case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
             const { ClientInfo, Capabilities } = ClientInfoAndCapabilities.deserialize(payload)
-            this.logger.extend('PONG')(`Client ${shortId(enr.nodeId)} is ${decodeClientInfo(ClientInfo).clientName} node with capabilities: ${Capabilities}`)
+            this.logger.extend('PONG')(
+              `Client ${shortId(enr.nodeId)} is ${decodeClientInfo(ClientInfo).clientName} node with capabilities: ${Capabilities}`,
+            )
             break
           }
           case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
@@ -380,17 +385,19 @@ export abstract class BaseNetwork extends EventEmitter {
         pongPayload = this.pingPongPayload(type)
         break
       }
-    case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
+      case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
         if (this.networkId !== NetworkId.HistoryNetwork) {
           pongPayload = ErrorPayload.serialize({
             errorCode: 0,
-          message: hexToBytes(fromAscii('HISTORY_RADIUS extension not supported on this network')),
+            message: hexToBytes(
+              fromAscii('HISTORY_RADIUS extension not supported on this network'),
+            ),
           })
         } else {
-        const { dataRadius } = HistoryRadius.deserialize(payload)
-        this.routingTable.updateRadius(src.nodeId, dataRadius)
-        pongPayload = this.pingPongPayload(type)
-      }
+          const { dataRadius } = HistoryRadius.deserialize(payload)
+          this.routingTable.updateRadius(src.nodeId, dataRadius)
+          pongPayload = this.pingPongPayload(type)
+        }
         break
       }
       default: {
