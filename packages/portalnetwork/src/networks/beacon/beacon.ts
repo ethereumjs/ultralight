@@ -391,10 +391,10 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           )
           if (value !== undefined) {
             const decoded = hexToBytes(value)
-            // const forkhash = decoded.slice(0, 4) as Uint8Array
-            // const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+            const forkHash = decoded.slice(0, 4) as Uint8Array
+            const forkName = this.beaconConfig.forkDigest2ForkName(forkHash) as LightClientForkName
             if (
-              ssz[ForkName.capella].LightClientFinalityUpdate.deserialize(decoded.slice(4))
+              ssz[ForkName[forkName]].LightClientFinalityUpdate.deserialize(decoded.slice(4))
                 .finalizedHeader.beacon.slot < Number(key.finalitySlot)
             ) {
               // If what we have stored locally is older than the finality update requested, don't send it
@@ -732,9 +732,9 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     if (typeof input === 'number') {
       period = input
     } else {
-      // const forkhash = input.slice(0, 4) as Uint8Array
-      // const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
-      const deserializedUpdate = ssz[ForkName.capella].LightClientUpdate.deserialize(
+      const forkhash = input.slice(0, 4) as Uint8Array
+      const forkName = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
+      const deserializedUpdate = ssz[ForkName[forkName]].LightClientUpdate.deserialize(
         input.slice(4),
       ) as LightClientUpdate
       period = computeSyncPeriodAtSlot(deserializedUpdate.attestedHeader.beacon.slot)
