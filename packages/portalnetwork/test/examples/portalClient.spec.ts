@@ -9,62 +9,59 @@ describe('main function', () => {
 
   beforeEach(() => {
     mockNode = {
-      start: vi.fn(),
-      stop: vi.fn(),
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockResolvedValue(undefined),
       enableLog: vi.fn(),
       on: vi.fn(),
       sendPortalNetworkMessage: vi.fn(),
       discv5: {
         enr: {
-          toENR: vi.fn().mockReturnValue('mock-enr-string'),
+          toENR: vi.fn().mockReturnValue('mock-enr-string')
         }
       },
       networks: {
         [NetworkId.HistoryNetwork]: {
-          ping: vi.fn(),
-          findNodes: vi.fn(),
+          ping: vi.fn().mockResolvedValue(undefined),
+          findNodes: vi.fn().mockResolvedValue(undefined),
         },
         [NetworkId.StateNetwork]: {
-          ping: vi.fn(),
-          findNodes: vi.fn(),
+          ping: vi.fn().mockResolvedValue(undefined),
+          findNodes: vi.fn().mockResolvedValue(undefined),
         }
       }
     }
     vi.spyOn(PortalNetwork, 'create').mockResolvedValue(mockNode)
+    
+    vi.useFakeTimers()
   })
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.useRealTimers()
   })
 
   it('should create and start a node, execute a method, and stop the node on SIGINT', async () => {
     const mockArgs = {
       method: 'portal_statePing',
       params: '[]',
-      port: 9090,
+      port: 9090
     }
     vi.spyOn(config, 'parseArgs').mockResolvedValue(mockArgs)
 
-    const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
-      throw new Error('process.exit called')
-    })
-
-    let sigintHandler: Function = () => {}
-    const processOnSpy = vi.spyOn(process, 'on').mockImplementation((event, handler) => {
+    let sigintCallback: Function | null = null
+    const processOnSpy = vi.spyOn(process, 'on').mockImplementation((event: string, cb: any) => {
       if (event === 'SIGINT') {
-        sigintHandler = handler
+        sigintCallback = cb
       }
       return process
     })
 
-    const mainPromise = main()
+    const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
     
-    await new Promise(resolve => setTimeout(resolve, 0))
+    const mainPromise = main()
 
-    sigintHandler()
-
-    await expect(mainPromise).rejects.toThrow('process.exit called')
-
+    await vi.runAllTimersAsync()
+    
     expect(PortalNetwork.create).toHaveBeenCalledWith({
       transport: TransportLayer.NODE,
       supportedNetworks: [
@@ -77,52 +74,91 @@ describe('main function', () => {
         privateKey: expect.any(Object),
       },
     })
-
     expect(mockNode.start).toHaveBeenCalled()
     expect(mockNode.enableLog).toHaveBeenCalledWith('*Portal*,*uTP*,*discv5*')
     expect(mockNode.on).toHaveBeenCalledWith('SendTalkReq', expect.any(Function))
     expect(mockNode.on).toHaveBeenCalledWith('SendTalkResp', expect.any(Function))
+    
+    expect(sigintCallback).toBeTruthy()
+    await sigintCallback!()
+    await Promise.resolve()
+    
     expect(mockNode.stop).toHaveBeenCalled()
     expect(processExitSpy).toHaveBeenCalledWith(0)
 
-    processExitSpy.mockRestore()
     processOnSpy.mockRestore()
+    processExitSpy.mockRestore()
   })
 
   it('should handle errors during node creation and stop the node', async () => {
     const error = new Error('Failed to create node')
     vi.spyOn(PortalNetwork, 'create').mockRejectedValue(error)
-    vi.spyOn(config, 'parseArgs').mockResolvedValue({
+    
+    const mockArgs = {
       method: 'portal_statePing',
       params: '[]',
-      port: 9090
+      port: 9090,
+    }
+    vi.spyOn(config, 'parseArgs').mockResolvedValue(mockArgs)
+
+    let sigintCallback: Function | null = null
+    const processOnSpy = vi.spyOn(process, 'on').mockImplementation((event: string, cb: any) => {
+      if (event === 'SIGINT') {
+        sigintCallback = cb
+      }
+      return process
     })
 
-    const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
-      throw new Error('process.exit called')
-    })
+    const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
-    await expect(main()).rejects.toThrow('process.exit called')
+    const mainPromise = main()
+    
+    await vi.runAllTimersAsync()
+    
+    await Promise.resolve()
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error:', error)
     expect(processExitSpy).toHaveBeenCalledWith(1)
 
+    processOnSpy.mockRestore()
     processExitSpy.mockRestore()
+    consoleErrorSpy.mockRestore()
   })
 
   it('should handle errors during method execution and stop the node', async () => {
-    vi.spyOn(config, 'parseArgs').mockResolvedValue({
+    const mockArgs = {
       method: 'portal_unknownMethod',
       params: '[]',
-      port: 9090
+      port: 9090,
+    }
+    vi.spyOn(config, 'parseArgs').mockResolvedValue(mockArgs)
+
+    let sigintCallback: Function | null = null
+    const processOnSpy = vi.spyOn(process, 'on').mockImplementation((event: string, cb: any) => {
+      if (event === 'SIGINT') {
+        sigintCallback = cb
+      }
+      return process
     })
 
-    const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
-      throw new Error('process.exit called')
-    })
+    const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
-    await expect(main()).rejects.toThrow('process.exit called')
+    const mainPromise = main()
+    
+    await vi.runAllTimersAsync()
+    
+    expect(mockNode.start).toHaveBeenCalled()
+    expect(mockNode.enableLog).toHaveBeenCalled()
+
+    await Promise.resolve()
+
     expect(mockNode.stop).toHaveBeenCalled()
     expect(processExitSpy).toHaveBeenCalledWith(1)
-
+    
+    processOnSpy.mockRestore()
     processExitSpy.mockRestore()
+    consoleErrorSpy.mockRestore()
   })
 })
