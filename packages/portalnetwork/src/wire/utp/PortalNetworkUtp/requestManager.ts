@@ -6,9 +6,9 @@ import { Heap } from "heap-js";
 import { MAX_IN_FLIGHT_PACKETS, type RequestId } from "./types.js";
 
 const packetComparator: Comparator<Packet<PacketType>> = (a: Packet<PacketType>, b: Packet<PacketType>) => {
-    // If packets belong to the same connection, sort by sequence number
+    // If packets belong to the same connection, sort by sequence number (or ackNr for ST_STATE packets)
     if (a.header.connectionId === b.header.connectionId) {
-        return a.header.seqNr - b.header.seqNr;
+        return a.header.pType === PacketType.ST_STATE ? a.header.ackNr - b.header.ackNr : a.header.seqNr - b.header.seqNr;
     }
     // Otherwise, sort by timestamp
     return a.header.timestampMicroseconds - b.header.timestampMicroseconds;
