@@ -974,7 +974,6 @@ export class portal {
     this.logger.extend('stateGetContent')(`request received for ${contentKey}`)
     const lookup = new ContentLookup(this._state, hexToBytes(contentKey))
     const res = await lookup.startLookup()
-    this.logger.extend('stateGetContent')(`request returned ${JSON.stringify(res)}`)
     if (!res) {
       this.logger.extend('stateGetContent')(`request returned { enrs: [] }`)
       throw new Error('No content found')
