@@ -247,3 +247,22 @@ export const decompressBeaconBlock = async (
   })
   return block as SignedBeaconBlock
 }
+
+export async function* readBlocksFromEra(eraFile: Uint8Array) {
+  const indices = getEraIndexes(eraFile)
+  const maxBlocks = indices.blockSlotIndex!.slotOffsets.length;
+
+  for (let x = 0; x < maxBlocks; x++) {
+    try {
+      const blockEntry = readEntry(
+        eraFile.slice(
+          indices.blockSlotIndex!.recordStart + indices.blockSlotIndex!.slotOffsets[x]
+        )
+      );
+      const block = await decompressBeaconBlock(blockEntry.data, indices.blockSlotIndex!.startSlot);
+      yield block;
+    } catch {
+      // noop - we skip empty slots
+    }
+  }
+}

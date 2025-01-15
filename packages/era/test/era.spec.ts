@@ -7,6 +7,7 @@ import {
   decompressBeaconState,
   deserializeE2Store,
   getEraIndexes,
+  readBlocksFromEra,
   readEntry,
   readSlotIndex,
 } from '../src/index.js'
@@ -101,5 +102,13 @@ describe('it should be able to extract beacon objects from an era file', () => {
     const compressedBlock = readEntry(data.slice(indices.blockSlotIndex!.recordStart + indices.blockSlotIndex!.slotOffsets[0]))
     const block = (await decompressBeaconBlock(compressedBlock.data, indices.blockSlotIndex!.startSlot))
     assert.equal(block.message.slot, 9682944)
+  })
+  it('read blocks from an era file', async () => {
+    let count = 0
+    for await (const block of readBlocksFromEra(data)) {
+      assert.exists(block.message.slot)
+      count++
+      if (count > 10) break
+    }
   })
 })
