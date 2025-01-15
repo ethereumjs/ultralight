@@ -44,7 +44,6 @@
     "level": "^8.0.0",
     "portalnetwork": "^0.0.2-rc2",
     "prom-client": "^14.0.1",
-    "simple-git": "^3.27.0",
     "yargs": "^17.3.0"
   },
   "peerDependencies": {

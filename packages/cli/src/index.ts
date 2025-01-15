@@ -4,7 +4,6 @@ import debug from 'debug'
 import jayson from 'jayson/promise/index.js'
 import { PortalNetwork, cliConfig } from 'portalnetwork'
 import * as PromClient from 'prom-client'
-import { simpleGit } from 'simple-git'
 import { args } from './cliArgs.js'
 import { RPCManager } from './rpc/rpc.js'
 
@@ -27,7 +26,7 @@ const main = async () => {
   const portalConfig = await cliConfig(args)
 
   portalConfig.operatingSystemAndCpuArchitecture = args.arch
-  portalConfig.shortCommit = args.commit ?? (await simpleGit().revparse(['HEAD'])).substring(0, 7)
+  portalConfig.shortCommit = args.commit ?? execSync('git rev-parse HEAD').toString().slice(0, 7)
 
   const portal = await PortalNetwork.create(portalConfig)
 
