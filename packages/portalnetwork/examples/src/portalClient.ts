@@ -107,7 +107,6 @@ export async function executeMethod(node: PortalNetwork, method: string, params:
   }
 }
 
-
 export async function runPortalClient(config: PortalConfig): Promise<void> {
   let node: PortalNetwork | undefined
   try {
@@ -124,6 +123,13 @@ export async function runPortalClient(config: PortalConfig): Promise<void> {
 
     node.enableLog('*Portal*,*uTP*,*discv5*')
 
+    // Register SIGINT handler early
+    process.on('SIGINT', async () => {
+      console.log('Shutting down node...')
+      await node?.stop()
+      process.exit(0)
+    })
+
     node.on('SendTalkReq', (nodeId, requestId, payload) => 
       console.log('Sent talk request:', { nodeId, requestId, payload }))
     node.on('SendTalkResp', (nodeId, requestId, payload) => 
@@ -132,15 +138,47 @@ export async function runPortalClient(config: PortalConfig): Promise<void> {
     const params = JSON.parse(config.params)
     await executeMethod(node, config.method, params)
 
-    process.on('SIGINT', async () => {
-      console.log('Shutting down node...')
-      await node?.stop()
-      process.exit(0)
-    })
-
   } catch (error) {
     console.error('Error:', error)
     await node?.stop?.()
     throw error
   }
 }
+
+
+// export async function runPortalClient(config: PortalConfig): Promise<void> {
+//   let node: PortalNetwork | undefined
+//   try {
+//     console.log('Creating Portal Network node...')
+//     node = await createNode(config.port)
+    
+//     console.log('Starting Portal Network node...')
+//     await node.start()
+    
+//     console.log('Waiting for node to be ready...')
+//     await new Promise(resolve => setTimeout(resolve, 5000))
+    
+//     console.log(`Node started on port ${config.port}`)
+
+//     node.enableLog('*Portal*,*uTP*,*discv5*')
+
+//     node.on('SendTalkReq', (nodeId, requestId, payload) => 
+//       console.log('Sent talk request:', { nodeId, requestId, payload }))
+//     node.on('SendTalkResp', (nodeId, requestId, payload) => 
+//       console.log('Received talk response:', { nodeId, requestId, payload }))
+
+//     const params = JSON.parse(config.params)
+//     await executeMethod(node, config.method, params)
+
+//     process.on('SIGINT', async () => {
+//       console.log('Shutting down node...')
+//       await node?.stop()
+//       process.exit(0)
+//     })
+
+//   } catch (error) {
+//     console.error('Error:', error)
+//     await node?.stop?.()
+//     throw error
+//   }
+// }

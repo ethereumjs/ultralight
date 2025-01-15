@@ -7,7 +7,7 @@ This describes the usage and functionality of the Portal Network client script, 
 The script is invoked using the following format:
 
 ```bash
-npx tsx scripts/portalClient.ts --method <method_name> --params <json_params> [--port <port_number>]
+npx tsx examples/src/index.ts --method <method_name> --params <json_params> [--port <port_number>]
 ```
 
 ### Options
@@ -41,10 +41,10 @@ The following message types are supported:
 
 1. Store data in history network:
 ```bash
-npx tsx scripts/portalClient.ts --method portal_historyStore --params '["hello world"]'
+npx tsx examples/src/index.ts --method portal_historyStore --params '["hello world"]'
 ```
 
 2. Custom port configuration:
 ```bash
-npx tsx scripts/portalClient.ts --method portal_statePing --params '["enr:-..."]' --port 9091
+npx tsx examples/src/index.ts --method portal_statePing --params '["enr:-..."]' --port 9091
 ```
