@@ -804,15 +804,15 @@ export class portal {
   }
   async statePutContent(params: [string, string]) {
     const [contentKey, content] = params.map((param) => hexToBytes(param))
-    const contentId = this._history.contentKeyToId(contentKey)
+    const contentId = this._state.contentKeyToId(contentKey)
     const d = distance(contentId, this._client.discv5.enr.nodeId)
     let storedLocally = false
     try {
-      if (d <= this._history.nodeRadius) {
-        await this._history.store(contentKey, content)
+      if (d <= this._state.nodeRadius) {
+        await this._state.store(contentKey, content)
         storedLocally = true
       }
-      const peerCount = await this._history.gossipContent(contentKey, content)
+      const peerCount = await this._state.gossipContent(contentKey, content)
       return {
         peerCount,
         storedLocally,
@@ -826,13 +826,18 @@ export class portal {
   }
   async beaconPutContent(params: [string, string]) {
     const [contentKey, content] = params.map((param) => hexToBytes(param))
-    const contentId = this._history.contentKeyToId(contentKey)
+    const contentId = this._beacon.contentKeyToId(contentKey)
     const d = distance(contentId, this._client.discv5.enr.nodeId)
     let storedLocally = false
     try {
-      if (d <= this._history.nodeRadius) {
-        await this._history.store(contentKey, content)
+      if (d <= this._beacon.nodeRadius) {
+        await this._beacon.store(contentKey, content)
         storedLocally = true
+      }
+      const peerCount = await this._beacon.gossipContent(contentKey, content)
+      return {
+        peerCount,
+        storedLocally,
       }
     } catch {
       return {
