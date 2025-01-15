@@ -64,6 +64,7 @@ describe('era utilities', () => {
     const thirdRecord = readEntry(data.slice(pointer))
     assert.deepEqual(secondRecord.type, EraTypes.CompressedSignedBeaconBlockType)
     assert.deepEqual(thirdRecord.type, EraTypes.CompressedSignedBeaconBlockType)
+
   })
   it('should read the state slotIndex', () => {
     const stateSlotIndex = readSlotIndex(data)
@@ -81,9 +82,7 @@ describe('era utilities', () => {
   })
 })
 
-// Download mainnet-01183-595cb34b.era from https://mainnet.era.nimbus.team/ and place
-// it in the era/test directory to run this test
-describe.skip('it should be able to extract beacon state from an era file', () => {
+describe('it should be able to extract beacon objects from an era file', () => {
   let data
   beforeAll(() => {
     data = new Uint8Array(readFileSync(__dirname + '/mainnet-01183-595cb34b.era'))
