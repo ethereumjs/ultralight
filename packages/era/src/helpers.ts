@@ -16,6 +16,7 @@ import type { SlotIndex, e2StoreEntry } from './types.js'
  * @throws if the length of the entry read is greater than the possible number of bytes in the data element
  */
 export const readEntry = (bytes: Uint8Array): e2StoreEntry => {
+  if (bytes.length < 8) throw new Error(`invalid data length, got ${bytes.length}, expected at least 8`)
   const type = bytes.slice(0, 2)
   const lengthBytes = concatBytes(bytes.subarray(2, 8), new Uint8Array([0, 0]))
   const length = Number(
