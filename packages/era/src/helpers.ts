@@ -6,7 +6,7 @@ import { UnsnappyStream } from 'snappystream'
 
 import { EraTypes } from './types.js'
 
-import type { BeaconState } from '@lodestar/types'
+import type { BeaconState, SignedBeaconBlock } from '@lodestar/types'
 import type { SlotIndex, e2StoreEntry } from './types.js'
 
 /**
@@ -55,6 +55,26 @@ export const deserializeE2Store = (bytes: Uint8Array): e2StoreEntry[] => {
   return entries
 }
 
+
+function littleEndianToBigInt(bytes: Uint8Array) {
+  if (bytes.length !== 8) {
+    throw new Error('Input must be exactly 8 bytes long');
+  }
+
+  let value = BigInt(0);
+  for (let i = 0; i < bytes.length; i++) {
+    value += BigInt(bytes[i]) << BigInt(i * 8);
+  }
+
+  const isNegative = (value & (BigInt(1) << BigInt(63))) !== BigInt(0);
+
+  if (isNegative) {
+    value -= BigInt(1) << BigInt(64);
+  }
+
+  return value;
+}
+
 /**
  * Reads a Slot Index from the end of a bytestring representing an era file
  * @param bytes a Uint8Array bytestring representing a {@link SlotIndex} plus any arbitrary prefixed data
@@ -77,9 +97,7 @@ export const readSlotIndex = (bytes: Uint8Array): SlotIndex => {
 
   for (let i = 0; i < count; i++) {
     const slotEntry = slotIndexEntry.data.subarray((i + 1) * 8, (i + 2) * 8)
-    const slotOffset = Number(
-      new DataView(slotEntry.buffer, slotEntry.byteOffset).getBigInt64(0, true),
-    )
+    const slotOffset = Number(littleEndianToBigInt(slotEntry))
     slotOffsets.push(slotOffset)
   }
   return {
@@ -140,7 +158,7 @@ export const decompressBeaconState = async (
         destroy()
         resolve(state)
         // eslint-disable-next-line
-      } catch {}
+      } catch { }
     })
     unsnappy.on('end', (data: any) => {
       try {
@@ -165,4 +183,66 @@ export const decompressBeaconState = async (
     stream.pipe(unsnappy)
   })
   return state as BeaconState
+}
+
+/**
+ *
+ * @param compressedBlock a bytestring representing a snappy frame format compressed ssz serialized SignedBeaconBlock
+ * @returns a decompressed SignedBeaconBlock object of the same time as returned by {@link ssz.deneb.SignedBeaconBlock.deserialize()}
+ * @throws if SignedBeaconBlock cannot be found
+ */
+export const decompressBeaconBlock = async (
+  compressedBlock: Uint8Array,
+  startSlot: number,
+): Promise<SignedBeaconBlock> => {
+  const forkConfig = createChainForkConfig({})
+  const fork = forkConfig.getForkName(startSlot)
+  const unsnappy = new UnsnappyStream()
+  const stream = new Duplex()
+  const destroy = () => {
+    unsnappy.destroy()
+    stream.destroy()
+  }
+  stream.on('error', (err) => {
+    if (err.message.includes('_read() method is not implemented')) {
+      // ignore errors about unimplemented methods
+      return
+    } else {
+      throw err
+    }
+  })
+
+  stream.push(compressedBlock)
+  const block = await new Promise((resolve, reject) => {
+    unsnappy.on('data', (data: Uint8Array) => {
+      try {
+        const block = ssz[fork].SignedBeaconBlock.deserialize(data)
+        destroy()
+        resolve(block)
+        // eslint-disable-next-line
+      } catch { }
+    })
+    unsnappy.on('end', (data: any) => {
+      try {
+        const block = ssz[fork].SignedBeaconBlock.deserialize(data)
+        destroy()
+        resolve(block)
+      } catch (err: any) {
+        destroy()
+        reject(`unable to deserialize data with reason - ${err.message}`)
+      }
+    })
+    unsnappy.on('close', (data: any) => {
+      try {
+        const block = ssz[fork].SignedBeaconBlock.deserialize(data)
+        destroy()
+        resolve(block)
+      } catch (err: any) {
+        destroy()
+        reject(`unable to deserialize data with reason - ${err.message}`)
+      }
+    })
+    stream.pipe(unsnappy)
+  })
+  return block as SignedBeaconBlock
 }

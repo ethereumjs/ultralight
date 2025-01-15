@@ -3,6 +3,7 @@ import { assert, beforeAll, describe, it } from 'vitest'
 
 import {
   EraTypes,
+  decompressBeaconBlock,
   decompressBeaconState,
   deserializeE2Store,
   getEraIndexes,
@@ -93,8 +94,13 @@ describe.skip('it should be able to extract beacon state from an era file', () =
       data.slice(indices.stateSlotIndex.recordStart + indices.stateSlotIndex.slotOffsets[0]),
     )
     assert.deepEqual(stateEntry.type, EraTypes.CompressedBeaconState)
-
     const state = await decompressBeaconState(stateEntry.data, indices.stateSlotIndex.startSlot)
     assert.equal(state.slot as any as Number, 9691136)
   }, 150000)
+  it('should read a block from the era file and decompress it', async () => {
+    const indices = getEraIndexes(data)
+    const compressedBlock = readEntry(data.slice(indices.blockSlotIndex!.recordStart + indices.blockSlotIndex!.slotOffsets[0]))
+    const block = (await decompressBeaconBlock(compressedBlock.data, indices.blockSlotIndex!.startSlot))
+    assert.equal(block.message.slot, 9682944)
+  })
 })
