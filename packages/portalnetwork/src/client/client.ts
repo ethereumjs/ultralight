@@ -32,6 +32,7 @@ import type {
   PortalNetworkOpts,
 } from './types.js'
 import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
+import { RateLimiter } from '../transports/rateLimiter.js'
 
 export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   eventLog: boolean
@@ -132,6 +133,11 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         config.transport = new CapacitorUDPTransportService(ma, config.enr.nodeId)
         break
       case TransportLayer.NODE:
+        config.transport = new UDPTransportService({
+          bindAddrs: config.bindAddrs,
+          nodeId: config.enr.nodeId,
+          rateLimiter: new RateLimiter(),
+        })
         break
     }
 
