@@ -18,7 +18,7 @@ import type { ENR } from '@chainsafe/enr'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { Debugger } from 'debug'
 import type StrictEventEmitter from 'strict-event-emitter-types/types/src'
-
+import type { IRateLimiter } from './rateLimiter.js'
 const log = debug('discv5:transport')
 
 interface WebSocketTransportEvents extends ITransportEvents {
@@ -40,12 +40,13 @@ export class WebSocketTransportService
   private socket: WebSocketAsPromised
   private srcId: string
   private log: Debugger
+  private rateLimiter?: IRateLimiter
   ipMode: IPMode = {
     ip4: true,
     ip6: false,
   }
   bindAddrs: Multiaddr[] = []
-  public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string) {
+  public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string, rateLimiter?: IRateLimiter) {
     //eslint-disable-next-line constructor-super
     super()
     this.log = debug('Portal').extend('WebSocketTransportService')
@@ -58,6 +59,7 @@ export class WebSocketTransportService
       createWebSocket: (url) => new WebSocket(url),
       extractMessageData: (event) => event,
     })
+    this.rateLimiter = rateLimiter
   }
 
   public async start(): Promise<void> {
@@ -108,6 +110,9 @@ export class WebSocketTransportService
     const rinfo = JSON.parse(
       new TextDecoder().decode(data.slice(2, rinfoLength + 2)),
     ) as IRemoteInfo
+    if (this.rateLimiter && !this.rateLimiter.allowEncodedPacket(rinfo.address)) {
+      return;
+    }
     const multiaddr = ma(
       `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`,
     )
