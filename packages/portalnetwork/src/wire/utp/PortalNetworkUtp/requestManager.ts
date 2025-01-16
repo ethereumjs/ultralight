@@ -6,9 +6,9 @@ import { Heap } from "heap-js";
 import { MAX_IN_FLIGHT_PACKETS, type RequestId } from "./types.js";
 
 const packetComparator: Comparator<Packet<PacketType>> = (a: Packet<PacketType>, b: Packet<PacketType>) => {
-    // If packets belong to the same connection, sort by sequence number
+    // If packets belong to the same connection, sort by sequence number (or ackNr for ST_STATE packets)
     if (a.header.connectionId === b.header.connectionId) {
-        return a.header.seqNr - b.header.seqNr;
+        return a.header.pType === PacketType.ST_STATE ? a.header.ackNr - b.header.ackNr : a.header.seqNr - b.header.seqNr;
     }
     // Otherwise, sort by timestamp
     return a.header.timestampMicroseconds - b.header.timestampMicroseconds;
@@ -90,7 +90,7 @@ export class RequestManager {
         } else {
             this.packetHeap.push(packet)
         }
-        this.logger.extend('HANDLE_PACKET')(`Adding ${PacketType[packet.header.pType]} [${packet.header.seqNr}] for Req:${packet.header.connectionId} to queue (size: ${this.packetHeap.size()} packets)`)
+        this.logger.extend('HANDLE_PACKET')(`Adding ${PacketType[packet.header.pType]} [${packet.header.pType === PacketType.ST_STATE ? packet.header.ackNr : packet.header.seqNr}] for Req:${packet.header.connectionId} to queue (size: ${this.packetHeap.size()} packets)`)
         if (this.currentPacket === undefined) {
             this.currentPacket = this.packetHeap.pop()
             await this.processCurrentPacket()
@@ -108,7 +108,7 @@ export class RequestManager {
             await this.processCurrentPacket()
             return
         }
-        this.logger.extend('PROCESS_CURRENT_PACKET')(`Processing ${PacketType[this.currentPacket.header.pType]} [${this.currentPacket.header.seqNr}] for Req:${this.currentPacket.header.connectionId}`)
+        this.logger.extend('PROCESS_CURRENT_PACKET')(`Processing ${PacketType[this.currentPacket.header.pType]} [${this.currentPacket.header.pType === PacketType.ST_STATE ? this.currentPacket.header.ackNr : this.currentPacket.header.seqNr}] for Req:${this.currentPacket.header.connectionId}`)
         const request = this.lookupRequest(this.currentPacket.header.connectionId)
         if (request === undefined) {
             this.logger.extend('PROCESS_CURRENT_PACKET')(`Request not found for current packet - connectionId: ${this.currentPacket.header.connectionId}`)
