@@ -1,8 +1,9 @@
 import { EventEmitter } from 'eventemitter3'
-import { Discv5 } from '@chainsafe/discv5'
+import { Discv5, UDPTransportService } from '@chainsafe/discv5'
 import { ENR, SignableENR } from '@chainsafe/enr'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
+import type { Multiaddr } from '@multiformats/multiaddr'
 import { fromNodeAddress, multiaddr } from '@multiformats/multiaddr'
 import debug from 'debug'
 
@@ -473,5 +474,23 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     } catch (err: any) {
       this.logger.extend('error')(`Error sending TALKRESP message: ${err}.  SrcId: ${src.nodeId} MultiAddr: ${src.socketAddr.toString()}`)
     }
+  }
+
+  public addToBlackList = (ma: Multiaddr) => {
+    (<RateLimiter>(
+      (<UDPTransportService>this.discv5.sessionService.transport)['rateLimiter']
+    )).addToBlackList(ma.nodeAddress().address)
+  }
+
+  public isBlackListed = (ma: Multiaddr) => {
+    return (<RateLimiter>(
+      (<UDPTransportService>this.discv5.sessionService.transport)['rateLimiter']
+    )).isBlackListed(ma.nodeAddress().address)
+  }
+
+  public removeFromBlackList = (ma: Multiaddr) => {
+    (<RateLimiter>(
+      (<UDPTransportService>this.discv5.sessionService.transport)['rateLimiter']
+    )).removeFromBlackList(ma.nodeAddress().address)
   }
 }
