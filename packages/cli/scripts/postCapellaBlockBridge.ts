@@ -2,9 +2,9 @@ import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { bytesToHex, equalsBytes } from '@ethereumjs/util'
 import { ssz, sszTypesFor } from '@lodestar/types'
 import jayson from 'jayson/promise/index.js'
-import { HistoricalRootsBlockProof, slotToHistoricalBatchIndex } from 'portalnetwork'
+import { HistoricalRootsBlockProof, HistoricalSummariesBlockProof, slotToHistoricalBatchIndex } from 'portalnetwork'
 import type { SingleProof } from '@chainsafe/persistent-merkle-tree'
-import { computeEpochAtSlot, computeSyncPeriodAtSlot, getChainForkConfigFromNetwork, getCurrentSlot } from '@lodestar/light-client/utils'
+import { computeEpochAtSlot, getChainForkConfigFromNetwork, getCurrentSlot } from '@lodestar/light-client/utils'
 import { mainnetChainConfig } from '@lodestar/config/configs'
 import { readFileSync } from 'fs'
 import { decompressBeaconBlock, getEraIndexes } from '../../era/src/helpers'
@@ -47,7 +47,7 @@ const main = async () => {
             const blockFork = forkConfig.getForkName(block.message.slot)
             const fullBlockJson = await (await fetch(beaconNode + `/eth/v2/beacon/blocks/${block.message.slot}`)).json()
 
-            const fullBlock = sszTypesFor(forkConfig.getForkName(block.message.slot)).BeaconBlock.fromJson(fullBlockJson.data.message)
+            const fullBlock = sszTypesFor(blockFork).BeaconBlock.fromJson(fullBlockJson.data.message)
 
             const elBlockHashPath = ssz[blockFork].BeaconBlock.getPathInfo([
                 'body',
@@ -61,24 +61,20 @@ const main = async () => {
             }) as SingleProof
 
             const batchIndex = Number(slotToHistoricalBatchIndex(BigInt(block.message.slot)))
-            const historicalRootsPath = ssz.phase0.HistoricalBatch.getPathInfo([
-                'blockRoots',
-                batchIndex,
-            ])
+            const historicalSummariesPath = ssz[stateFork].BeaconState.fields.blockRoots.getPathInfo([batchIndex])
 
-            console.log(bytesToHex(state.blockRoots[batchIndex]),)
-            const historicalRootsProof = createProof(blockRootsRoot, {
-                gindex: historicalRootsPath.gindex,
+            const historicalSummariesProof = createProof(ssz[stateFork].BeaconState.fields.blockRoots.toView(state.blockRoots).node, {
+                gindex: historicalSummariesPath.gindex,
                 type: ProofType.single,
             }) as SingleProof
 
-            const headerProof = HistoricalRootsBlockProof.fromJson({
+            const blockProof = HistoricalSummariesBlockProof.fromJson({
                 slot: block.message.slot,
-                historicalRootsProof: historicalRootsProof.witnesses.map((witness) => bytesToHex(witness)),
-                beaconBlockHeaderProof: beaconBlockProof.witnesses.map((witness) => bytesToHex(witness)),
-                beaconBlockHeaderRoot: bytesToHex(ssz[blockFork].BeaconBlock.value_toTree(fullBlock).root),
+                historicalSummariesProof: historicalSummariesProof.witnesses.map((witness) => bytesToHex(witness)),
+                beaconBlockProof: beaconBlockProof.witnesses.map((witness) => bytesToHex(witness)),
+                beaconBlockRoot: bytesToHex(ssz[blockFork].BeaconBlock.value_toTree(fullBlock).root),
             })
-            console.log(HistoricalRootsBlockProof.toJson(headerProof))
+            console.log(HistoricalSummariesBlockProof.toJson(blockProof))
         } catch (err) {
             console.log(err)
         }
