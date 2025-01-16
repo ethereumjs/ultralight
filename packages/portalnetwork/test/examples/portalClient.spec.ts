@@ -49,7 +49,7 @@ describe('main function', () => {
     vi.spyOn(config, 'parseArgs').mockResolvedValue(mockArgs)
 
     let sigintCallback: Function | null = null
-    const processOnSpy = vi.spyOn(process, 'on').mockImplementation((event: string, cb: any) => {
+    const processOnSpy = vi.spyOn(process, 'on').mockImplementation((event: string | symbol, cb: any) => {
       if (event === 'SIGINT') {
         sigintCallback = cb
       }
@@ -102,7 +102,7 @@ describe('main function', () => {
     vi.spyOn(config, 'parseArgs').mockResolvedValue(mockArgs)
 
     let sigintCallback: Function | null = null
-    const processOnSpy = vi.spyOn(process, 'on').mockImplementation((event: string, cb: any) => {
+    const processOnSpy = vi.spyOn(process, 'on').mockImplementation((event: string | symbol, cb: any) => {
       if (event === 'SIGINT') {
         sigintCallback = cb
       }
@@ -135,7 +135,7 @@ describe('main function', () => {
     vi.spyOn(config, 'parseArgs').mockResolvedValue(mockArgs)
 
     let sigintCallback: Function | null = null
-    const processOnSpy = vi.spyOn(process, 'on').mockImplementation((event: string, cb: any) => {
+    const processOnSpy = vi.spyOn(process, 'on').mockImplementation((event: string | symbol, cb: any) => {
       if (event === 'SIGINT') {
         sigintCallback = cb
       }
