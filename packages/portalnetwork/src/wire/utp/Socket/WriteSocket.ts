@@ -71,7 +71,7 @@ export class WriteSocket extends UtpSocket {
     this._clearTimeout()
   }
   logProgress() {
-    const needed = this.writer!.dataChunks.filter((n) => !this.ackNrs.includes(n[0]))
+    const needed = this.writer!.dataChunks.filter((n) => !this.ackNrs.includes(n[0])).map((n) => n[0])
     this.logger(
       `AckNr's received (${this.ackNrs.length}/${
         this.writer!.sentChunks.length
