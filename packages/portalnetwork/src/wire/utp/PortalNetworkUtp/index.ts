@@ -1,4 +1,13 @@
+import type {
+  ContentRequestType,
+  INewRequest,
+  INodeAddress,
+  PortalNetwork,
+} from '../../../index.js'
 import {
+  NetworkId,
+  Packet,
+  PacketType,
   RequestCode,
   UtpSocketType,
   createContentRequest,
@@ -8,13 +17,6 @@ import { createUtpSocket } from '../Socket/index.js'
 
 import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
-import type {
-  ContentRequestType,
-  INewRequest,
-  INodeAddress,
-  NetworkId,
-  PortalNetwork,
-  } from '../../../index.js'
 import type { SocketType } from '../Socket/index.js'
 import { RequestManager } from './requestManager.js'
 
@@ -118,11 +120,43 @@ export class PortalNetworkUTP {
     return newRequest
   }
 
-  async handleUtpPacket(packetBuffer: Buffer, srcId: string): Promise<void> {
-    if (this.requestManagers[srcId] === undefined) {
-      throw new Error(`No request manager for ${srcId}`)
+  async handleUtpPacket(packetBuffer: Buffer, srcId: INodeAddress): Promise<void> {
+    if (this.requestManagers[srcId.nodeId] === undefined) {
+      throw new Error(`No request manager for ${srcId.nodeId}`)
     }
-    await this.requestManagers[srcId].handlePacket(packetBuffer)
+    try {
+      await this.requestManagers[srcId.nodeId].handlePacket(packetBuffer)
+    } catch (err: any) {
+      switch (err.message) {
+        case `REQUEST_CLOSED`: {
+          // Packet arrived after request was closed.  Send RESET packet to peer.
+          const packet = Packet.fromBuffer(packetBuffer)
+          const resetPacket = new Packet({
+            header: {
+              connectionId: packet.header.connectionId,
+              pType: PacketType.ST_RESET,
+              ackNr: 0,
+              extension: 0,
+              version: 0,
+              timestampMicroseconds: 0,
+              timestampDifferenceMicroseconds: 0,
+              seqNr: 0,
+              wndSize: 0,
+            },
+          })
+          await this.send(srcId, resetPacket.encode(), NetworkId.UTPNetwork)
+          break
+        }
+        case `REQUEST_NOT_FOUND`: {
+          // Packet arrived for non-existent request.  Treat as spam and blacklist peer.
+          this.client.addToBlackList(srcId.socketAddr)
+          break
+        }
+        default: {
+          throw err
+        }
+      }
+    }
   }
 
   async send(enr: ENR | INodeAddress, msg: Buffer, networkId: NetworkId) {
