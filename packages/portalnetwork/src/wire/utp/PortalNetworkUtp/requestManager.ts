@@ -15,7 +15,7 @@ const packetComparator: Comparator<Packet<PacketType>> = (a: Packet<PacketType>,
 }
 export class RequestManager {
     peerId: string
-    requestMap: Record<RequestId, ContentRequest>
+    requestMap: Record<RequestId, ContentRequest | 'closed'>
     logger: Debugger
     packetHeap: Heap<Packet<PacketType>>
     currentPacket: Packet<PacketType> | undefined
@@ -34,8 +34,9 @@ export class RequestManager {
      * @param connectionId connectionId field from incoming packet header
      * @returns corresponding requestId
      */
-    lookupRequest(connectionId: number): ContentRequest | undefined {
-        return this.requestMap[connectionId] ?? this.requestMap[connectionId - 1] ?? this.requestMap[connectionId + 1]
+    lookupRequest(connectionId: number): ContentRequest | 'closed' | undefined {
+        const request = this.requestMap[connectionId] ?? this.requestMap[connectionId - 1] ?? this.requestMap[connectionId + 1]
+        return request
     }
 
     /**
@@ -80,9 +81,13 @@ export class RequestManager {
     async handlePacket(packetBuffer: Buffer) {
         const packet = Packet.fromBuffer(packetBuffer)
         const request = this.lookupRequest(packet.header.connectionId)
+        if (request === 'closed') {
+            this.logger.extend('HANDLE_PACKET')(`Request closed - connectionId: ${packet.header.connectionId}.  Sending RESET to peer.`)
+            throw new Error(`REQUEST_CLOSED`)
+        }
         if (request === undefined) {
-            this.logger.extend('HANDLE_PACKET')(`Request not found for packet - connectionId: ${packet.header.connectionId}`)
-            return
+            this.logger.extend('HANDLE_PACKET')(`Request not found for packet - connectionId: ${packet.header.connectionId}.  Blacklisting peer.`)
+            throw new Error(`REQUEST_NOT_FOUND`)
         }
         if (packet.header.pType === PacketType.ST_SYN || packet.header.pType === PacketType.ST_RESET) {
             await request.handleUtpPacket(packet)
@@ -110,7 +115,7 @@ export class RequestManager {
         }
         this.logger.extend('PROCESS_CURRENT_PACKET')(`Processing ${PacketType[this.currentPacket.header.pType]} [${this.currentPacket.header.pType === PacketType.ST_STATE ? this.currentPacket.header.ackNr : this.currentPacket.header.seqNr}] for Req:${this.currentPacket.header.connectionId}`)
         const request = this.lookupRequest(this.currentPacket.header.connectionId)
-        if (request === undefined) {
+        if (request === undefined || request === 'closed') {
             this.logger.extend('PROCESS_CURRENT_PACKET')(`Request not found for current packet - connectionId: ${this.currentPacket.header.connectionId}`)
             this.currentPacket = this.packetHeap.pop()
             await this.processCurrentPacket()
