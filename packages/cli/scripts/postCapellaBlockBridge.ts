@@ -148,6 +148,7 @@ const main = async () => {
                 beaconBlockRoot: bytesToHex(ssz[blockFork].BeaconBlock.value_toTree(fullBlock).root),
             })
             const execPayload = executionPayloadFromBeaconPayload(fullBlockJson.data.message.body.execution_payload)
+            execPayload['number'] = execPayload.blockNumber
             const header = BlockHeader.fromHeaderData(execPayload, { common: new Common({ chain: 'mainnet', hardfork: 'cancun' }) })
             const headerWithProof = BlockHeaderWithProof.serialize({
                 header: header.serialize(),

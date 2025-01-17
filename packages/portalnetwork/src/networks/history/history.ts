@@ -31,6 +31,7 @@ import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
 import { RunStatusCode } from '@lodestar/light-client'
+
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'
@@ -182,17 +183,15 @@ export class HistoryNetwork extends BaseNetwork {
       }
     }
     else {
+      // TODO: Check proof slot to ensure header is from previous sync period and handle ephemeral headers separately
       if (proof.value === null) {
         this.logger('Received post-merge block without proof')
       }
       const beacon = this.portal.network()['0x500c']
       if (beacon !== undefined && beacon.lightClient?.status === RunStatusCode.started) {
-        // TODO: Determine how to only require proofs for blocsk from previous sync periods
-        // We don't currently have a mapping of EL block numbers to slots so cannot determine precisely
-        // if a given EL block is from a previous period or not
-        // TODO: Add handlng for ephemeral blocks in the current sync period
         try {
           verifyPostCapellaHeaderProof(proof.value as any, header.hash(), beacon.historicalSummaries, beacon.beaconConfig)
+          this.logger(`Successfully verified proof for block header ${header.number}`)
         } catch {
           this.logger('Received post-capella block header with invalid proof')
           // TODO: throw new Error('Received post-merge block header with invalid proof')
