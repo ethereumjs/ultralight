@@ -127,7 +127,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     switch (opts.transport) {
       case TransportLayer.WEB: {
         opts.proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
-        config.transport = new WebSocketTransportService(ma, config.enr.nodeId, opts.proxyAddress)
+        config.transport = new WebSocketTransportService(ma, config.enr.nodeId, opts.proxyAddress, new RateLimiter())
         break
       }
       case TransportLayer.MOBILE:
@@ -478,19 +478,19 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
   public addToBlackList = (ma: Multiaddr) => {
     (<RateLimiter>(
-      (<UDPTransportService>this.discv5.sessionService.transport)['rateLimiter']
+      (<any>this.discv5.sessionService.transport)['rateLimiter']
     )).addToBlackList(ma.nodeAddress().address)
   }
 
   public isBlackListed = (ma: Multiaddr) => {
     return (<RateLimiter>(
-      (<UDPTransportService>this.discv5.sessionService.transport)['rateLimiter']
+      (<any>this.discv5.sessionService.transport)['rateLimiter']
     )).isBlackListed(ma.nodeAddress().address)
   }
 
   public removeFromBlackList = (ma: Multiaddr) => {
     (<RateLimiter>(
-      (<UDPTransportService>this.discv5.sessionService.transport)['rateLimiter']
+      (<any>this.discv5.sessionService.transport)['rateLimiter']
     )).removeFromBlackList(ma.nodeAddress().address)
   }
 }

@@ -4,6 +4,7 @@ import { decodePacket, encodePacket } from '@chainsafe/discv5/packet'
 import { UDP } from '@frontall/capacitor-udp'
 import { multiaddr as ma } from '@multiformats/multiaddr'
 
+import type { IRateLimiter } from './rateLimiter.js'
 import type { SocketAddress } from '@chainsafe/discv5'
 import type { IPacket } from '@chainsafe/discv5/packet'
 import type {
@@ -33,11 +34,13 @@ export class CapacitorUDPTransportService
     ip4: true,
     ip6: false,
   }
-  public constructor(multiaddr: Multiaddr, srcId: string) {
+  private rateLimiter?: IRateLimiter
+  public constructor(multiaddr: Multiaddr, srcId: string, rateLimiter?: IRateLimiter) {
     //eslint-disable-next-line constructor-super
     super()
     this.bindAddrs = [multiaddr]
     this.srcId = srcId
+    this.rateLimiter = rateLimiter
   }
 
   public async start(): Promise<void> {
@@ -74,6 +77,9 @@ export class CapacitorUDPTransportService
   }
 
   public handleIncoming = (data: Uint8Array, rinfo: IRemoteInfo): void => {
+    if (this.rateLimiter && !this.rateLimiter.allowEncodedPacket(rinfo.address)) {
+      return
+    }
     const multiaddr = ma(
       `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`,
     )
