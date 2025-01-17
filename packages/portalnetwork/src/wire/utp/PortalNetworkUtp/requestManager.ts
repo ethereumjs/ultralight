@@ -105,8 +105,9 @@ export class RequestManager {
           packet.header.pType === PacketType.ST_SYN ||
           packet.header.pType === PacketType.ST_RESET
         ) {
+            const packetType = packet.header.pType === PacketType.ST_SYN ? 'SYN' : 'RESET'
           this.logger.extend('HANDLE_PACKET')(
-            `Processing SYN packet for Req:${packet.header.connectionId}`,
+            `Processing ${packetType} packet for Req:${packet.header.connectionId}`,
           )
           await request.handleUtpPacket(packet)
           return
