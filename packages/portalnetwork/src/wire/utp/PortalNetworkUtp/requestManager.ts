@@ -74,33 +74,55 @@ export class RequestManager {
         await request.init()
     }
 
-    /**
-     * Handles an incoming uTP packet.
-     * @param packetBuffer buffer containing the incoming packet
-     */
-    async handlePacket(packetBuffer: Buffer) {
-        const packet = Packet.fromBuffer(packetBuffer)
-        const request = this.lookupRequest(packet.header.connectionId)
-        if (request === 'closed') {
-            this.logger.extend('HANDLE_PACKET')(`Request closed - connectionId: ${packet.header.connectionId}.  Sending RESET to peer.`)
-            throw new Error(`REQUEST_CLOSED`)
+  /**
+   * Handles an incoming uTP packet.
+   * @param packetBuffer buffer containing the incoming packet
+   */
+  async handlePacket(packetBuffer: Buffer) {
+    const packet = Packet.fromBuffer(packetBuffer)
+    const request = this.lookupRequest(packet.header.connectionId)
+    switch (request) {
+      case 'closed': {
+        if (packet.header.pType === PacketType.ST_RESET) {
+            this.logger.extend('HANDLE_PACKET')(
+              `Received RESET for closed request - connectionId: ${packet.header.connectionId}.`,
+            )
+          return
         }
-        if (request === undefined) {
-            this.logger.extend('HANDLE_PACKET')(`Request not found for packet - connectionId: ${packet.header.connectionId}.  Blacklisting peer.`)
-            throw new Error(`REQUEST_NOT_FOUND`)
-        }
-        if (packet.header.pType === PacketType.ST_SYN || packet.header.pType === PacketType.ST_RESET) {
-            await request.handleUtpPacket(packet)
-            return
+        this.logger.extend('HANDLE_PACKET')(
+          `Request closed - connectionId: ${packet.header.connectionId}.  Sending RESET to peer.`,
+        )
+        throw new Error(`REQUEST_CLOSED`)
+      }
+      case undefined: {
+        this.logger.extend('HANDLE_PACKET')(
+          `Request not found for packet - connectionId: ${packet.header.connectionId}.  Blacklisting peer.`,
+        )
+        throw new Error(`REQUEST_NOT_FOUND`)
+      }
+      default: {
+        if (
+          packet.header.pType === PacketType.ST_SYN ||
+          packet.header.pType === PacketType.ST_RESET
+        ) {
+          this.logger.extend('HANDLE_PACKET')(
+            `Processing SYN packet for Req:${packet.header.connectionId}`,
+          )
+          await request.handleUtpPacket(packet)
+          return
         } else {
-            this.packetHeap.push(packet)
+          this.packetHeap.push(packet)
+          this.logger.extend('HANDLE_PACKET')(
+            `Adding ${PacketType[packet.header.pType]} [${packet.header.pType === PacketType.ST_STATE ? packet.header.ackNr : packet.header.seqNr}] for Req:${packet.header.connectionId} to queue (size: ${this.packetHeap.size()} packets)`,
+          )
         }
-        this.logger.extend('HANDLE_PACKET')(`Adding ${PacketType[packet.header.pType]} [${packet.header.pType === PacketType.ST_STATE ? packet.header.ackNr : packet.header.seqNr}] for Req:${packet.header.connectionId} to queue (size: ${this.packetHeap.size()} packets)`)
-        if (this.currentPacket === undefined) {
-            this.currentPacket = this.packetHeap.pop()
-            await this.processCurrentPacket()
-        }
+      }
+    } 
+    if (this.currentPacket === undefined) {
+      this.currentPacket = this.packetHeap.pop()
+      await this.processCurrentPacket()
     }
+  }
 
     async processCurrentPacket(): Promise<void> {
         this.logger.extend('PROCESS_CURRENT_PACKET')(`Packet Queue Size: ${this.packetHeap.size()}`)
@@ -116,7 +138,7 @@ export class RequestManager {
         this.logger.extend('PROCESS_CURRENT_PACKET')(`Processing ${PacketType[this.currentPacket.header.pType]} [${this.currentPacket.header.pType === PacketType.ST_STATE ? this.currentPacket.header.ackNr : this.currentPacket.header.seqNr}] for Req:${this.currentPacket.header.connectionId}`)
         const request = this.lookupRequest(this.currentPacket.header.connectionId)
         if (request === undefined || request === 'closed') {
-            this.logger.extend('PROCESS_CURRENT_PACKET')(`Request not found for current packet - connectionId: ${this.currentPacket.header.connectionId}`)
+            this.logger.extend('PROCESS_CURRENT_PACKET')(`Request: ${request} for current packet - connectionId: ${this.currentPacket.header.connectionId}.  Skipping packet.`)
             this.currentPacket = this.packetHeap.pop()
             await this.processCurrentPacket()
             return
