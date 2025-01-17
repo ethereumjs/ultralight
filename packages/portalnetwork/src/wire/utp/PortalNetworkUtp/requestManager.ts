@@ -155,7 +155,7 @@ export class RequestManager {
         }
         this.logger.extend('CLOSE_REQUEST')(`Closing request ${connectionId}`)
         this.removeRequestPackets(connectionId)
-        delete this.requestMap[connectionId]
+        this.requestMap[connectionId] = 'closed'
     }
 
     closeAllRequests() {
