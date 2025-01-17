@@ -391,11 +391,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   ) => {
     this.metrics?.totalBytesReceived.inc(message.request.length)
     if (bytesToHex(message.protocol) === NetworkId.UTPNetwork) {
-      if (!this.discv5.findEnr(nodeAddress.nodeId)) {
-        this.logger.extend('TalkReq').extend('error')(`Received uTP packet from unknown node: ${nodeAddress.nodeId}. Adding to blacklist.`)
-        this.addToBlackList(nodeAddress.socketAddr)
-        return
-      }
       await this.handleUTP(nodeAddress, message, message.request)
       return
     }
