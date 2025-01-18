@@ -1,5 +1,5 @@
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
-import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes, initKZG } from '@ethereumjs/util'
 import { Common } from '@ethereumjs/common'
 import { ssz, sszTypesFor } from '@lodestar/types'
 import jayson from 'jayson/promise/index.js'
@@ -14,11 +14,13 @@ import { decompressBeaconState } from '../../era/src/helpers'
 import { ForkName } from '@lodestar/params'
 import { genesisData } from '@lodestar/config/networks'
 import { createBeaconConfig } from '@lodestar/config'
-import { executionPayloadFromBeaconPayload, BlockHeader } from '@ethereumjs/block'
+import { executionPayloadFromBeaconPayload, BlockHeader, Block } from '@ethereumjs/block'
+import { loadKZG } from 'kzg-wasm'
 
 const { Client } = jayson
 
 const main = async () => {
+    const kzg = await loadKZG()
     const forkConfig = getChainForkConfigFromNetwork('mainnet')
     const beaconConfig = mainnetChainConfig
 
@@ -173,9 +175,32 @@ const main = async () => {
             })
 
             // Hackery to allow us to construct an EL block header from the Beacon Block data
+            // TODO: Get rid of this once we update ethjs to latest releases
+            const common = new Common({
+                chain: 'mainnet', hardfork: 'cancun', customCrypto: {
+                    kzg: {
+                        loadTrustedSetup: async () => {
+                            return await loadKZG()
+                        },
+                        blobToKzgCommitment: (blob) => {
+                            return hexToBytes(kzg.blobToKZGCommitment(bytesToHex(blob)))
+                        },
+                        computeBlobKzgProof: (blob, commitment) => {
+                            return hexToBytes(kzg.computeBlobKZGProof(bytesToHex(blob), bytesToHex(commitment)))
+                        },
+                        verifyBlobKzgProofBatch: (blobs, commitments, proof) => {
+                            return kzg.verifyBlobKZGProofBatch(blobs.map((blob) => bytesToHex(blob)), commitments.map((commitment) => bytesToHex(commitment)), proof.map((proof) => bytesToHex(proof)))
+                        },
+                        verifyKzgProof: (blob, z, y, proof) => {
+                            return kzg.verifyKZGProof(bytesToHex(blob), bytesToHex(z), bytesToHex(y), bytesToHex(proof))
+                        }
+                    }
+                }
+            })
             const execPayload = executionPayloadFromBeaconPayload(fullBlockJson.data.message.body.execution_payload)
-            execPayload['number'] = execPayload.blockNumber
-            const header = BlockHeader.fromHeaderData(execPayload, { common: new Common({ chain: 'mainnet', hardfork: 'cancun' }) })
+            execPayload.parentBeaconBlockRoot = bytesToHex(fullBlock.parentRoot)
+            const elBlock = await Block.fromExecutionPayload(execPayload, { common, setHardfork: true })
+            const header = elBlock.header
             const headerWithProof = BlockHeaderWithProof.serialize({
                 header: header.serialize(),
                 proof: {

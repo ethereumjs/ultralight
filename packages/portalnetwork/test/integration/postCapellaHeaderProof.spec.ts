@@ -16,7 +16,7 @@ import { createBeaconConfig } from '@lodestar/config'
 import { mainnetChainConfig } from '@lodestar/config/configs'
 import { genesisData } from '@lodestar/config/networks'
 import { computeEpochAtSlot, getChainForkConfigFromNetwork } from '@lodestar/light-client/utils'
-import { assert, describe, it } from 'vitest'
+import { assert, describe, it, vi } from 'vitest'
 import { multiaddr } from '@multiformats/multiaddr'
 import { SignableENR } from '@chainsafe/enr'
 import { keys } from '@libp2p/crypto'
@@ -24,6 +24,8 @@ import { keys } from '@libp2p/crypto'
 
 describe('Block Bridge Data Test', () => {
     it('should store and retrieve block header data', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
+        vi.setSystemTime(1737151319000)
         const privateKeys = [
             '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
             '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
@@ -65,6 +67,7 @@ describe('Block Bridge Data Test', () => {
             ssz.deneb.LightClientBootstrap.serialize(bootstrap)
         )
 
+
         const beacon = client.network()['0x500c']
         const history = client.network()['0x500b']
 
@@ -98,12 +101,12 @@ describe('Block Bridge Data Test', () => {
             HistoryNetworkContentType.BlockHeader,
             hexToBytes(blockHash)
         )
-        await history?.store(headerKey, hexToBytes(headerWithProof.proof))
+        await history?.store(headerKey, hexToBytes(headerWithProof))
 
         // Verify block header can be retrieved
         const retrievedHeader = await client.ETH.getBlockByHash(hexToBytes(blockHash), false)
         assert.equal(retrievedHeader!.header.number, fullBlock.data.message.body.execution_payload.block_number)
-        // Cleanup
+
         await client.stop()
-    }, 30000) // Increased timeout to 30 seconds
+    }, 10000)
 }) 
