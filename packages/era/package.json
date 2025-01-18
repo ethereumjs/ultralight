@@ -28,12 +28,12 @@
     "snappystream": "^2.1.1"
   },
   "devDependencies": {
-    "@vitest/ui": "^2.1.8",
+    "@vitest/ui": "^3.0.2",
     "eslint": "^8.6.0",
     "tslib": "^2.3.1",
     "typedoc": "^0.24.0",
     "typedoc-plugin-markdown": "^3.11.3",
     "typescript": "^4.4.2",
-    "vitest": "^2.1.8"
+    "vitest": "^3.0.2"
   }
 }
