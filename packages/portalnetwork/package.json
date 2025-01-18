@@ -15,6 +15,7 @@
     "test:integration": "npx vitest run ./test/integration/ -c=./vitest.config.integration.ts",
     "test:ui": "vitest --ui",
     "typecheck": "tsc -p ./tsconfig.types.json",
+    "coverage": "vitest run test/* -c=./vitest.config.coverage.ts",
     "lint": "../../config/cli/lint.sh",
     "lint:fix": "../../config/cli/lint-fix.sh"
   },
