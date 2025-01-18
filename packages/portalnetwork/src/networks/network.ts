@@ -32,7 +32,6 @@ import {
   BasicRadius,
   ClientInfoAndCapabilities,
   ContentMessageType,
-  CustomPayloadExtensionsFormat,
   ErrorPayload,
   HistoryRadius,
   MAX_PACKET_SIZE,
@@ -304,15 +303,12 @@ export abstract class BaseNetwork extends EventEmitter {
       return undefined
     }, 3000)
     try {
-      const customPayload = CustomPayloadExtensionsFormat.serialize({
-        type: extensionType,
-        payload: this.pingPongPayload(extensionType),
-      })
       const pingMsg = PortalWireMessageType.serialize({
         selector: MessageCodes.PING,
         value: {
           enrSeq: this.enr.seq,
-          customPayload,
+          payloadType: extensionType,
+          customPayload: this.pingPongPayload(extensionType),
         },
       })
       this.logger.extend(`PING`)(`Sent to ${shortId(enr)}`)
@@ -323,13 +319,11 @@ export abstract class BaseNetwork extends EventEmitter {
         const pongMessage = decoded.value as PongMessage
         // Received a PONG message so node is reachable, add to routing table
         this.updateRoutingTable(enr)
-        const { type, payload } = CustomPayloadExtensionsFormat.deserialize(
-          pongMessage.customPayload,
-        )
-        switch (type) {
+        switch (pongMessage.payloadType) {
           case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
-            const { ClientInfo, Capabilities, DataRadius } =
-              ClientInfoAndCapabilities.deserialize(payload)
+            const { ClientInfo, Capabilities, DataRadius } = ClientInfoAndCapabilities.deserialize(
+              pongMessage.customPayload,
+            )
             this.logger.extend('PONG')(
               `Client ${shortId(enr.nodeId)} is ${decodeClientInfo(ClientInfo).clientName} node with capabilities: ${Capabilities}`,
             )
@@ -337,17 +331,17 @@ export abstract class BaseNetwork extends EventEmitter {
             break
           }
           case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
-            const { dataRadius } = BasicRadius.deserialize(payload)
+            const { dataRadius } = BasicRadius.deserialize(pongMessage.customPayload)
             this.routingTable.updateRadius(enr.nodeId, dataRadius)
             break
           }
           case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
-            const { dataRadius } = HistoryRadius.deserialize(payload)
+            const { dataRadius } = HistoryRadius.deserialize(pongMessage.customPayload)
             this.routingTable.updateRadius(enr.nodeId, dataRadius)
             break
           }
           case PingPongPayloadExtensions.ERROR_RESPONSE: {
-            const { errorCode, message } = ErrorPayload.deserialize(payload)
+            const { errorCode, message } = ErrorPayload.deserialize(pongMessage.customPayload)
             this.logger.extend('PONG')(
               `Received error response from ${shortId(enr.nodeId)}: ${errorCode} - ${message}`,
             )
@@ -372,21 +366,19 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   handlePing = async (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
-    const { type, payload } = CustomPayloadExtensionsFormat.deserialize(pingMessage.customPayload)
     if (!this.routingTable.getWithPending(src.nodeId)?.value) {
-      if (type !== PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES) {
-        const customPayload = CustomPayloadExtensionsFormat.serialize({
-          type: PingPongPayloadExtensions.ERROR_RESPONSE,
-          payload: ErrorPayload.serialize({
-            errorCode: PingPongErrorCodes.EXTENSION_NOT_SUPPORTED,
-            message: hexToBytes(
-              fromAscii(
-                `First PING message must be type 0: CLIENT_INFO_RADIUS_AND_CAPABILITIES.  Received type ${type}`,
-              ),
+      if (
+        pingMessage.payloadType !== PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES
+      ) {
+        const customPayload = ErrorPayload.serialize({
+          errorCode: PingPongErrorCodes.EXTENSION_NOT_SUPPORTED,
+          message: hexToBytes(
+            fromAscii(
+              `First PING message must be type 0: CLIENT_INFO_RADIUS_AND_CAPABILITIES.  Received type ${pingMessage.payloadType}`,
             ),
-          }),
+          ),
         })
-        return this.sendPong(src, id, customPayload)
+        return this.sendPong(src, id, customPayload, PingPongPayloadExtensions.ERROR_RESPONSE)
       }
       // Check to see if node is already in corresponding network routing table and add if not
       const enr = this.findEnr(src.nodeId)
@@ -395,31 +387,33 @@ export abstract class BaseNetwork extends EventEmitter {
       }
     }
     let pongPayload: Uint8Array
-    if (this.capabilities.includes(type)) {
-      switch (type) {
+    if (this.capabilities.includes(pingMessage.payloadType)) {
+      switch (pingMessage.payloadType) {
         case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
-          const { DataRadius } = ClientInfoAndCapabilities.deserialize(payload)
+          const { DataRadius } = ClientInfoAndCapabilities.deserialize(pingMessage.customPayload)
           this.routingTable.updateRadius(src.nodeId, DataRadius)
-          pongPayload = this.pingPongPayload(type)
+          pongPayload = this.pingPongPayload(pingMessage.payloadType)
           break
         }
         case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
-          const { dataRadius } = BasicRadius.deserialize(payload)
+          const { dataRadius } = BasicRadius.deserialize(pingMessage.customPayload)
           this.routingTable.updateRadius(src.nodeId, dataRadius)
-          pongPayload = this.pingPongPayload(type)
+          pongPayload = this.pingPongPayload(pingMessage.payloadType)
           break
         }
         case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
-          const { dataRadius } = HistoryRadius.deserialize(payload)
+          const { dataRadius } = HistoryRadius.deserialize(pingMessage.customPayload)
           this.routingTable.updateRadius(src.nodeId, dataRadius)
-          pongPayload = this.pingPongPayload(type)
+          pongPayload = this.pingPongPayload(pingMessage.payloadType)
           break
         }
         default: {
           pongPayload = ErrorPayload.serialize({
             errorCode: 0,
             message: hexToBytes(
-              fromAscii(`${this.constructor.name} does not support PING extension type: ${type}`),
+              fromAscii(
+                `${this.constructor.name} does not support PING extension type: ${pingMessage.payloadType}`,
+              ),
             ),
           })
         }
@@ -428,28 +422,25 @@ export abstract class BaseNetwork extends EventEmitter {
       pongPayload = ErrorPayload.serialize({
         errorCode: PingPongErrorCodes.EXTENSION_NOT_SUPPORTED,
         message: hexToBytes(
-          fromAscii(`${this.constructor.name} does not support PING extension type: ${type}`),
+          fromAscii(
+            `${this.constructor.name} does not support PING extension type: ${pingMessage.payloadType}`,
+          ),
         ),
       })
-      return this.sendPong(
-        src,
-        id,
-        CustomPayloadExtensionsFormat.serialize({
-          type: PingPongPayloadExtensions.ERROR_RESPONSE,
-          payload: pongPayload,
-        }),
-      )
+      return this.sendPong(src, id, pongPayload, PingPongPayloadExtensions.ERROR_RESPONSE)
     }
-    const customPayload = CustomPayloadExtensionsFormat.serialize({
-      type,
-      payload: pongPayload,
-    })
-    return this.sendPong(src, id, customPayload)
+    return this.sendPong(src, id, pongPayload, pingMessage.payloadType)
   }
 
-  sendPong = async (src: INodeAddress, requestId: bigint, customPayload: Uint8Array) => {
+  sendPong = async (
+    src: INodeAddress,
+    requestId: bigint,
+    customPayload: Uint8Array,
+    payloadType: number,
+  ) => {
     const payload = {
       enrSeq: this.enr.seq,
+      payloadType,
       customPayload,
     }
     const pongMsg = PortalWireMessageType.serialize({

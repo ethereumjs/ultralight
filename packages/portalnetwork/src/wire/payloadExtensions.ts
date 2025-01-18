@@ -1,24 +1,9 @@
 import { ByteListType, ContainerType, ListBasicType, UintBigintType, UintNumberType } from "@chainsafe/ssz";
 import { bytesToHex, fromAscii, hexToBytes, toAscii } from "@ethereumjs/util";
+import { PingPongPayloadType } from "./types.js";
 
 
-/**
- * Numeric identifier which tells clients how the payload field should be decoded.
- */
-export const PingPongPayloadType = new UintNumberType(2)
 
-/**
- * SSZ encoded extension payload
- */
-export const PingPongPayload = new ByteListType(1100)
-                    
-/**
- * All payloads used in the Ping custom_payload MUST follow the Ping Custom Payload Extensions format.
- */
-export const CustomPayloadExtensionsFormat = new ContainerType({
-    type: PingPongPayloadType,
-    payload: PingPongPayload
-})
 
 
 /**
@@ -53,13 +38,16 @@ export interface IClientInfo {
 
 export const MAX_CLIENT_INFO_BYTE_LENGTH = 200
 
+export function clientInfoStringToBytes(clientInfo: string): Uint8Array {
+    return hexToBytes(fromAscii(clientInfo))
+}
 /**
  * Encode Client info as ASCII hex encoded string.
  * @param clientInfo 
  * @returns 
  */
 export function encodeClientInfo(clientInfo: IClientInfo): Uint8Array {
-    const clientInfoBytes = hexToBytes(fromAscii(Object.values(clientInfo).join("/")))
+    const clientInfoBytes = clientInfoStringToBytes(Object.values(clientInfo).join("/"))
     if (clientInfoBytes.length > MAX_CLIENT_INFO_BYTE_LENGTH) {
         throw new Error(`Client info is too long: ${clientInfoBytes.length} > ${MAX_CLIENT_INFO_BYTE_LENGTH}`)
     }
@@ -75,6 +63,7 @@ export function decodeClientInfo(clientInfo: Uint8Array): IClientInfo {
         programmingLanguageAndVersion
     };
 }
+
 
 export const ClientInfo = new ByteListType(MAX_CLIENT_INFO_BYTE_LENGTH)
 

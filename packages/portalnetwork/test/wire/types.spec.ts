@@ -1,15 +1,201 @@
 import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
-import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
 import { ContentMessageType, MessageCodes, PortalWireMessageType } from '../../src/wire/types.js'
 
 import {
   BasicRadius,
-  CustomPayloadExtensionsFormat,
+  ClientInfoAndCapabilities,
+  ErrorPayload,
+  HistoryRadius,
   PingPongPayloadExtensions,
+  clientInfoStringToBytes,
 } from '../../src/wire/index.js'
+
+describe('ping pong message encoding', () => {
+  it('should encode type 0 ping with client info', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+      clientInfo: "trin/v0.1.1-b61fdc5c/linux-x86_64/rustc1.81.0",
+      capabilities: [0, 1, 65535]
+    }
+    const payload = ClientInfoAndCapabilities.serialize({
+      ClientInfo: clientInfoStringToBytes(params.clientInfo),
+      DataRadius: params.dataRadius,
+      Capabilities: params.capabilities,
+    })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PING,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = ''
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 0 ping without client info', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+      clientInfo: "",
+      capabilities: [0, 1, 65535]
+    }
+    const payload = ClientInfoAndCapabilities.serialize({
+      ClientInfo: clientInfoStringToBytes(params.clientInfo),
+      DataRadius: params.dataRadius,
+      Capabilities: params.capabilities,
+    })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PING,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = ''
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 0 pong with client info', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+      clientInfo: "trin/v0.1.1-b61fdc5c/linux-x86_64/rustc1.81.0",
+      capabilities: [0, 1, 65535]
+    }
+    const payload = ClientInfoAndCapabilities.serialize({
+      ClientInfo: clientInfoStringToBytes(params.clientInfo),
+      DataRadius: params.dataRadius,
+      Capabilities: params.capabilities,
+    })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PONG,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = ''
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 0 pong without client info', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+      clientInfo: "",
+      capabilities: [0, 1, 65535]
+    }
+    const payload = ClientInfoAndCapabilities.serialize({
+      ClientInfo: clientInfoStringToBytes(params.clientInfo),
+      DataRadius: params.dataRadius,
+      Capabilities: params.capabilities,
+    })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PONG,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = ''
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 1 ping', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+    }
+    const payload = BasicRadius.serialize({ dataRadius: params.dataRadius })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PING,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = ''
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 1 pong', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+    }
+    const payload = BasicRadius.serialize({ dataRadius: params.dataRadius })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PONG,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = ''
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 2 ping', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+      ephemeralHeaderCount: 4242
+    }
+    const payload = HistoryRadius.serialize({ dataRadius: params.dataRadius, ephemeralHeadersCount: params.ephemeralHeaderCount })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PING,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = ''
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 2 pong', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+      ephemeralHeaderCount: 4242
+    }
+    const payload = HistoryRadius.serialize({ dataRadius: params.dataRadius, ephemeralHeadersCount: params.ephemeralHeaderCount })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PONG,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = ''
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 65535 pong', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      errorCode: 2,
+      message: 'hello world'
+    }
+    const payload = ErrorPayload.serialize({ errorCode: params.errorCode, message: utf8ToBytes(params.message) })
+    const pongMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PONG,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.ERROR_RESPONSE,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = ''
+    assert.equal(bytesToHex(pongMessage), expectedOutput, 'pong message encoded correctly')
+  })
+})
 
 describe('message encoding should match test vectors', () => {
   // Validate PING/PONG message encoding
@@ -22,14 +208,12 @@ describe('message encoding should match test vectors', () => {
       selector: MessageCodes.PING,
       value: {
         enrSeq,
-        customPayload: CustomPayloadExtensionsFormat.serialize({
-          type: PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD,
-          payload: BasicRadius.serialize({ dataRadius }),
-        }),
+        payloadType: PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD,
+        customPayload: BasicRadius.serialize({ dataRadius }),
       },
     })
     testVector =
-      '0x0001000000000000000c000000010006000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+      '0x00010000000000000001000e000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
     assert.equal(bytesToHex(payload), testVector, 'ping message encoded correctly')
   })
 
