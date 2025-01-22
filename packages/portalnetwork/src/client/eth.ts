@@ -75,12 +75,6 @@ export class ETH {
       lookupResponse = await lookup.startLookup()
       this.logger.extend('getBlockByHash')(lookupResponse)
       if (!lookupResponse || !('content' in lookupResponse)) {
-        // Header not found by hash, try to find by number if known
-        const blockNumber = this.history!.blockHashToNumber(blockHash)
-        if (blockNumber !== undefined) {
-          const block = await this.getBlockByNumber(blockNumber, includeTransactions)
-          return block
-        }
         return undefined
       } else {
         header = lookupResponse.content
@@ -177,13 +171,9 @@ export class ETH {
         // Body not found by hash.  Reassemble block without body
         return reassembleBlock(header)
       }
-    } else {
-      // Header not found by number.  If block hash is known, search for header by hash
-      const blockHash = this.history!.blockNumberToHash(BigInt(blockNumber))
-      if (blockHash !== undefined) {
-        return this.getBlockByHash(blockHash, includeTransactions)
-      }
     }
+    // Block not found by number
+    return undefined
   }
 
   /**

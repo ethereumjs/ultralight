@@ -14,5 +14,13 @@ describe('getBlockByHash', async () => {
         await history.indexBlockHash(21591997n, blockHash)
         const block = await ultralight.ETH.getBlockByHash(hexToBytes(blockHash), false)
         assert.equal(block, undefined)
-    }, 3000)
+    })
+    it('should not find a block by number', async () => {
+        const blockNumber = 21591997n
+        const blockHash = '0x1e98ea9bdf6e44eaed730041682e7db748812d5baef84a38435c8ad5f6c5d1e2'
+        const history = ultralight.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+        await history.indexBlockHash(blockNumber, blockHash)
+        const block = await ultralight.ETH.getBlockByNumber(blockNumber, false)
+        assert.equal(block, undefined)
+    })
 })
