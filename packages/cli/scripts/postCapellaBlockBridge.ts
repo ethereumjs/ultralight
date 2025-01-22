@@ -131,99 +131,100 @@ const main = async () => {
     const stateFork = forkConfig.getForkName(indices.stateSlotIndex.startSlot)
 
     // Now we can construct block proofs for any block in the sync period
-    for (let x = 0; x < 1; x++) {
-        try {
+    const x = 0
+    try {
 
-            // Read a Beacon Block from the era file
-            const blockEntry = readEntry(eraFile.slice(indices.blockSlotIndex!.recordStart + indices.blockSlotIndex!.slotOffsets[x]))
-            const block = await decompressBeaconBlock(blockEntry.data, indices.blockSlotIndex!.startSlot)
-            const blockFork = ForkName.deneb
-            // Retrieve the full Beacon Block object from the Beacon node since the era files don't contain
-            // the Execution Payload
-            const fullBlockJson = await (await fetch(beaconNode + `/eth/v2/beacon/blocks/${block.message.slot}`)).json()
+        // Read a Beacon Block from the era file
+        const blockEntry = readEntry(eraFile.slice(indices.blockSlotIndex!.recordStart + indices.blockSlotIndex!.slotOffsets[x]))
+        const block = await decompressBeaconBlock(blockEntry.data, indices.blockSlotIndex!.startSlot)
+        const blockFork = ForkName.deneb
+        // Retrieve the full Beacon Block object from the Beacon node since the era files don't contain
+        // the Execution Payload
+        const fullBlockJson = await (await fetch(beaconNode + `/eth/v2/beacon/blocks/${block.message.slot}`)).json()
 
-            const fullBlock = sszTypesFor(blockFork).BeaconBlock.fromJson(fullBlockJson.data.message)
+        const fullBlock = sszTypesFor(blockFork).BeaconBlock.fromJson(fullBlockJson.data.message)
 
-            // Build the Beacon Block Proof that anchors the EL block hash in the Beacon Block
-            const elBlockHashPath = ssz[blockFork].BeaconBlock.getPathInfo([
-                'body',
-                'executionPayload',
-                'blockHash',
-            ])
+        // Build the Beacon Block Proof that anchors the EL block hash in the Beacon Block
+        const elBlockHashPath = ssz[blockFork].BeaconBlock.getPathInfo([
+            'body',
+            'executionPayload',
+            'blockHash',
+        ])
 
-            const beaconBlockProof = createProof(ssz[blockFork].BeaconBlock.toView(fullBlock).node, {
-                gindex: elBlockHashPath.gindex,
-                type: ProofType.single,
-            }) as SingleProof
+        const beaconBlockProof = createProof(ssz[blockFork].BeaconBlock.toView(fullBlock).node, {
+            gindex: elBlockHashPath.gindex,
+            type: ProofType.single,
+        }) as SingleProof
 
-            // Build a proof that anchors the Beacon Block root in the Historical Summary for the sync period
-            const batchIndex = Number(slotToHistoricalBatchIndex(BigInt(block.message.slot)))
-            const historicalSummariesPath = ssz[stateFork].BeaconState.fields.blockRoots.getPathInfo([batchIndex])
+        // Build a proof that anchors the Beacon Block root in the Historical Summary for the sync period
+        const batchIndex = Number(slotToHistoricalBatchIndex(BigInt(block.message.slot)))
+        const historicalSummariesPath = ssz[stateFork].BeaconState.fields.blockRoots.getPathInfo([batchIndex])
 
-            const blockRootsProof = createProof(ssz[stateFork].BeaconState.fields.blockRoots.toView(state.blockRoots).node, {
-                gindex: historicalSummariesPath.gindex,
-                type: ProofType.single,
-            }) as SingleProof
+        const blockRootsProof = createProof(ssz[stateFork].BeaconState.fields.blockRoots.toView(state.blockRoots).node, {
+            gindex: historicalSummariesPath.gindex,
+            type: ProofType.single,
+        }) as SingleProof
 
 
-            // Construct the aggregate proof 
-            const blockProof = HistoricalSummariesBlockProof.fromJson({
-                slot: block.message.slot,
-                historicalSummariesProof: blockRootsProof.witnesses.map((witness) => bytesToHex(witness)),
-                beaconBlockProof: beaconBlockProof.witnesses.map((witness) => bytesToHex(witness)),
-                beaconBlockRoot: bytesToHex(ssz[blockFork].BeaconBlock.value_toTree(fullBlock).root),
-            })
+        // Construct the aggregate proof 
+        const blockProof = HistoricalSummariesBlockProof.fromJson({
+            slot: block.message.slot,
+            historicalSummariesProof: blockRootsProof.witnesses.map((witness) => bytesToHex(witness)),
+            beaconBlockProof: beaconBlockProof.witnesses.map((witness) => bytesToHex(witness)),
+            beaconBlockRoot: bytesToHex(ssz[blockFork].BeaconBlock.value_toTree(fullBlock).root),
+        })
 
-            // Hackery to allow us to construct an EL block header from the Beacon Block data
-            // TODO: Get rid of this once we update ethjs to latest releases
-            const common = new Common({
-                chain: 'mainnet', hardfork: 'cancun', customCrypto: {
-                    kzg: {
-                        loadTrustedSetup: async () => {
-                            return await loadKZG()
-                        },
-                        blobToKzgCommitment: (blob) => {
-                            return hexToBytes(kzg.blobToKZGCommitment(bytesToHex(blob)))
-                        },
-                        computeBlobKzgProof: (blob, commitment) => {
-                            return hexToBytes(kzg.computeBlobKZGProof(bytesToHex(blob), bytesToHex(commitment)))
-                        },
-                        verifyBlobKzgProofBatch: (blobs, commitments, proof) => {
-                            return kzg.verifyBlobKZGProofBatch(blobs.map((blob) => bytesToHex(blob)), commitments.map((commitment) => bytesToHex(commitment)), proof.map((proof) => bytesToHex(proof)))
-                        },
-                        verifyKzgProof: (blob, z, y, proof) => {
-                            return kzg.verifyKZGProof(bytesToHex(blob), bytesToHex(z), bytesToHex(y), bytesToHex(proof))
-                        }
+        // Hackery to allow us to construct an EL block header from the Beacon Block data
+        // TODO: Get rid of this once we update ethjs to latest releases
+        const common = new Common({
+            chain: 'mainnet', hardfork: 'cancun', customCrypto: {
+                kzg: {
+                    loadTrustedSetup: async () => {
+                        return await loadKZG()
+                    },
+                    blobToKzgCommitment: (blob) => {
+                        return hexToBytes(kzg.blobToKZGCommitment(bytesToHex(blob)))
+                    },
+                    computeBlobKzgProof: (blob, commitment) => {
+                        return hexToBytes(kzg.computeBlobKZGProof(bytesToHex(blob), bytesToHex(commitment)))
+                    },
+                    verifyBlobKzgProofBatch: (blobs, commitments, proof) => {
+                        return kzg.verifyBlobKZGProofBatch(blobs.map((blob) => bytesToHex(blob)), commitments.map((commitment) => bytesToHex(commitment)), proof.map((proof) => bytesToHex(proof)))
+                    },
+                    verifyKzgProof: (blob, z, y, proof) => {
+                        return kzg.verifyKZGProof(bytesToHex(blob), bytesToHex(z), bytesToHex(y), bytesToHex(proof))
                     }
                 }
-            })
-            const execPayload = executionPayloadFromBeaconPayload(fullBlockJson.data.message.body.execution_payload)
-            execPayload.parentBeaconBlockRoot = bytesToHex(fullBlock.parentRoot)
-            const elBlock = await Block.fromExecutionPayload(execPayload, { common, setHardfork: true })
-            const header = elBlock.header
-            const headerWithProof = BlockHeaderWithProof.serialize({
-                header: header.serialize(),
-                proof: {
-                    value: blockProof,
-                    selector: 3
-                }
-            })
+            }
+        })
+        const execPayload = executionPayloadFromBeaconPayload(fullBlockJson.data.message.body.execution_payload)
+        execPayload.parentBeaconBlockRoot = bytesToHex(fullBlock.parentRoot)
+        const elBlock = await Block.fromExecutionPayload(execPayload, { common, setHardfork: true })
+        const header = elBlock.header
+        const headerWithProof = BlockHeaderWithProof.serialize({
+            header: header.serialize(),
+            proof: {
+                value: blockProof,
+                selector: 3
+            }
+        })
 
-            // Store the EL block header in the Portal Network
-            res = await ultralight.request('portal_historyStore', [
-                bytesToHex(getContentKey(HistoryNetworkContentType.BlockHeader, fullBlock.body.eth1Data.blockHash)),
-                bytesToHex(headerWithProof)
-            ])
-            console.log(res)
+        // Store the EL block header in the Portal Network
+        res = await ultralight.request('portal_historyStore', [
+            bytesToHex(getContentKey(HistoryNetworkContentType.BlockHeader, fullBlock.body.eth1Data.blockHash)),
+            bytesToHex(headerWithProof)
+        ])
+        console.log(res)
 
-            res = await ultralight.request('eth_getBlockByHash', [execPayload.blockHash, false])
-            console.log('Retrieved block', execPayload.blockHash, res)
+        res = await ultralight.request('eth_getBlockByHash', [execPayload.blockHash, false])
+        console.log('Retrieved block', execPayload.blockHash, res)
 
-        } catch (err) {
-            console.log(err)
-        }
-
+        process.exit(0)
+    } catch (err) {
+        console.log(err)
     }
+
+
 }
 
 main().catch((err) => {
