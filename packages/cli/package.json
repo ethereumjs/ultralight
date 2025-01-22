@@ -13,14 +13,14 @@
     "@types/node": "18.11.18",
     "@types/tape": "^4.13.2",
     "@types/yargs": "^17.0.7",
-    "@vitest/ui": "^1.2.2",
+    "@vitest/ui": "^3.0.2",
     "alchemy-sdk": "^3.0.0",
     "e2store": "^0.0.1",
     "eslint": "^8.6.0",
     "nodemon": "^2.0.19",
     "tslib": "^2.3.1",
     "typescript": "^5.7.2",
-    "vitest": "^1.2.2"
+    "vitest": "^3.0.2"
   },
   "dependencies": {
     "@chainsafe/discv5": "^10.0.1",
@@ -67,6 +67,9 @@
   "author": "acolytec3",
   "license": "MIT",
   "nodemonConfig": {
-    "watch": ["src", "../portalnetwork/dist"]
+    "watch": [
+      "src",
+      "../portalnetwork/dist"
+    ]
   }
 }
