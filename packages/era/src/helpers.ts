@@ -56,26 +56,6 @@ export const deserializeE2Store = (bytes: Uint8Array): e2StoreEntry[] => {
   return entries
 }
 
-
-function littleEndianToBigInt(bytes: Uint8Array) {
-  if (bytes.length !== 8) {
-    throw new Error('Input must be exactly 8 bytes long');
-  }
-
-  let value = BigInt(0);
-  for (let i = 0; i < bytes.length; i++) {
-    value += BigInt(bytes[i]) << BigInt(i * 8);
-  }
-
-  const isNegative = (value & (BigInt(1) << BigInt(63))) !== BigInt(0);
-
-  if (isNegative) {
-    value -= BigInt(1) << BigInt(64);
-  }
-
-  return value;
-}
-
 /**
  * Reads a Slot Index from the end of a bytestring representing an era file
  * @param bytes a Uint8Array bytestring representing a {@link SlotIndex} plus any arbitrary prefixed data
@@ -98,7 +78,7 @@ export const readSlotIndex = (bytes: Uint8Array): SlotIndex => {
 
   for (let i = 0; i < count; i++) {
     const slotEntry = slotIndexEntry.data.subarray((i + 1) * 8, (i + 2) * 8)
-    const slotOffset = Number(littleEndianToBigInt(slotEntry))
+    const slotOffset = Number(new DataView(slotEntry.slice(0, 8).buffer).getBigInt64(0, true),)
     slotOffsets.push(slotOffset)
   }
   return {
@@ -248,9 +228,18 @@ export const decompressBeaconBlock = async (
   return block as SignedBeaconBlock
 }
 
+/**
+ * Reads a an era file and yields a stream of decompressed SignedBeaconBlocks
+ * @param eraFile Uint8Array a serialized era file
+ * @returns a stream of decompressed SignedBeaconBlocks or undefined if no blocks are present
+ */
 export async function* readBlocksFromEra(eraFile: Uint8Array) {
   const indices = getEraIndexes(eraFile)
-  const maxBlocks = indices.blockSlotIndex!.slotOffsets.length;
+  const maxBlocks = indices.blockSlotIndex?.slotOffsets.length;
+  if (maxBlocks === undefined) {
+    // Return early if no blocks are present
+    return
+  }
 
   for (let x = 0; x < maxBlocks; x++) {
     try {

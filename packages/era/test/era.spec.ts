@@ -111,4 +111,11 @@ describe('it should be able to extract beacon objects from an era file', () => {
       if (count > 10) break
     }
   })
+  it('reads no blocks from the genesis era file', async () => {
+    const data = new Uint8Array(readFileSync(__dirname + '/mainnet-00000-4b363db9.era'))
+    for await (const block of readBlocksFromEra(data)) {
+      assert.equal(block, undefined)
+
+    }
+  })
 })
