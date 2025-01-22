@@ -149,6 +149,11 @@ export class HistoryNetwork extends BaseNetwork {
     const header = BlockHeader.fromRLPSerializedHeader(headerProof.header, {
       setHardfork: true,
     })
+    if ('blockHash' in validation) {
+      if (bytesToHex(header.hash()) !== validation.blockHash) {
+        throw new Error('Block hash from data does not match block hash provided for validation')
+      }
+    }
     const proof = headerProof.proof
 
     if (header.number < MERGE_BLOCK) {
@@ -174,6 +179,7 @@ export class HistoryNetwork extends BaseNetwork {
     } else if (header.number < SHANGHAI_BLOCK) {
       if (proof.value === null) {
         this.logger('Received post-merge block without proof')
+        throw new Error('Received post-merge block header without proof')
       }
       try {
         verifyPreCapellaHeaderProof(proof.value as any, header.hash())
@@ -295,6 +301,7 @@ export class HistoryNetwork extends BaseNetwork {
           await this.put(contentKey, bytesToHex(value))
         } catch (err) {
           this.logger(`Error validating header: ${(err as any).message}`)
+          throw err
         }
         break
       }
