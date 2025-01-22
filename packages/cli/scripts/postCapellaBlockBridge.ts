@@ -211,7 +211,7 @@ const main = async () => {
 
         // Store the EL block header in the Portal Network
         res = await ultralight.request('portal_historyStore', [
-            bytesToHex(getContentKey(HistoryNetworkContentType.BlockHeader, fullBlock.body.eth1Data.blockHash)),
+            bytesToHex(getContentKey(HistoryNetworkContentType.BlockHeader, header.hash())),
             bytesToHex(headerWithProof)
         ])
         console.log(res)
