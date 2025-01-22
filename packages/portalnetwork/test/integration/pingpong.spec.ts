@@ -6,7 +6,6 @@ import { assert, describe, it } from 'vitest'
 import type { HistoryNetwork, INodeAddress } from '../../src'
 import {
   ClientInfoAndCapabilities,
-  CustomPayloadExtensionsFormat,
   HistoryRadius,
   NetworkId,
   PingPongPayloadExtensions,
@@ -71,13 +70,10 @@ describe('PING/PONG', async () => {
   })
   it('should respond with ERROR_RESPONSE to type !== 0 PING from unknown node', async () => {
     const pingPayload = network1.pingPongPayload(PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD)
-    const customPayload = CustomPayloadExtensionsFormat.serialize({
-      type: PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD,
-      payload: pingPayload,
-    })
     const pingMsg = {
       enrSeq: 1n,
-      customPayload,
+      payloadType: PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD,
+      customPayload: pingPayload,
     }
     const network1NodeAddress: INodeAddress = {
       nodeId: node1.discv5.enr.nodeId,
@@ -85,31 +81,28 @@ describe('PING/PONG', async () => {
     }
     const pong = await network2.handlePing(network1NodeAddress, 1234n, pingMsg)
     const pongMsg = PortalWireMessageType.deserialize(pong)
-    const pongPayload = CustomPayloadExtensionsFormat.deserialize(
-      (<any>pongMsg.value).customPayload,
-    )
-    assert.equal(pongPayload.type, PingPongPayloadExtensions.ERROR_RESPONSE)
+    // const pongPayload = HistoryRadius.deserialize(
+    //   (<any>pongMsg.value).customPayload,
+    // )
+    assert.equal((<any>pongMsg.value).payloadType, PingPongPayloadExtensions.ERROR_RESPONSE)
   })
   it('should exchange type 0 PING/PONG', async () => {
     const pingpong = await network1.sendPing(network2?.enr!.toENR(), 0)
     assert.exists(pingpong, 'should have received a pong')
-    const pongPayload = CustomPayloadExtensionsFormat.deserialize(pingpong!.customPayload)
-    assert.equal(pongPayload.type, PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES)
-    const { DataRadius } = ClientInfoAndCapabilities.deserialize(pongPayload.payload)
+    assert.equal(pingpong!.payloadType, PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES)
+    const { DataRadius } = ClientInfoAndCapabilities.deserialize(pingpong!.customPayload)
     assert.equal(DataRadius, network2.nodeRadius)
   })
   it('should exchange type 2 PING/PONG', async () => {
     const pingpong = await network1.sendPing(network2?.enr!.toENR(), 2)
     assert.exists(pingpong, 'should have received a pong')
-    const pongPayload = CustomPayloadExtensionsFormat.deserialize(pingpong!.customPayload)
-    assert.equal(pongPayload.type, PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD)
-    const { dataRadius } = HistoryRadius.deserialize(pongPayload.payload)
+    assert.equal(pingpong!.payloadType, PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD)
+    const { dataRadius } = HistoryRadius.deserialize(pingpong!.customPayload)
     assert.equal(dataRadius, network2.nodeRadius)
   })
-  it('should receive error response from unsupported cabability', async () => {
+  it('should receive error response from unsupported capability', async () => {
     const pingpong = await network1.sendPing(network2?.enr!.toENR(), 1)
     assert.exists(pingpong, 'should have received a pong')
-    const pongPayload = CustomPayloadExtensionsFormat.deserialize(pingpong!.customPayload)
-    assert.equal(pongPayload.type, PingPongPayloadExtensions.ERROR_RESPONSE)
+    assert.equal(pingpong!.payloadType, PingPongPayloadExtensions.ERROR_RESPONSE)
   })
 })
