@@ -7,7 +7,7 @@ RUN ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
 
 WORKDIR /ultralight
 
-COPY .git /.git
+COPY .git .git
 COPY node_modules node_modules
 COPY packages/portalnetwork/dist packages/portalnetwork/dist
 COPY packages/cli/dist packages/cli/dist
