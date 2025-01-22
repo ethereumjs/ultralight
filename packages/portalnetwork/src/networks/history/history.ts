@@ -157,23 +157,22 @@ export class HistoryNetwork extends BaseNetwork {
     const proof = headerProof.proof
 
     if (header.number < MERGE_BLOCK) {
-      // Only check for proof if pre-merge block header
       if (proof.value === null) {
-        throw new Error('Received block header without proof')
+        throw new Error('Received pre-merge block header without proof')
       }
       if (Array.isArray(proof.value)) {
-        try {
-          if ('blockHash' in validation) {
-            verifyPreMergeHeaderProof(proof.value, validation.blockHash, header.number)
-          } else {
-            verifyPreMergeHeaderProof(
-              proof.value,
-              bytesToHex(header.hash()),
-              validation.blockNumber,
-            )
-          }
-        } catch {
-          throw new Error('Received pre-merge block header with invalid proof')
+        let validated = false
+        if ('blockHash' in validation) {
+          validated = verifyPreMergeHeaderProof(proof.value, validation.blockHash, header.number)
+        } else {
+          validated = verifyPreMergeHeaderProof(
+            proof.value,
+            bytesToHex(header.hash()),
+            validation.blockNumber,
+          )
+        }
+        if (!validated) {
+          throw new Error('Unable to validate proof for pre-merge header')
         }
       }
     } else if (header.number < SHANGHAI_BLOCK) {
@@ -181,11 +180,14 @@ export class HistoryNetwork extends BaseNetwork {
         this.logger('Received post-merge block without proof')
         throw new Error('Received post-merge block header without proof')
       }
+      let validated = false
       try {
-        verifyPreCapellaHeaderProof(proof.value as any, header.hash())
-      } catch {
-        this.logger('Received post-merge block header with invalid proof')
-        throw new Error('Received post-merge block header with invalid proof')
+        validated = verifyPreCapellaHeaderProof(proof.value as any, header.hash())
+      } catch (err: any) {
+        this.logger(`Unable to validate proof for post-merge header: ${err.message}`)
+      }
+      if (!validated) {
+        throw new Error('Unable to validate proof for post-merge header')
       }
     }
     else {
