@@ -102,7 +102,7 @@ export async function sendNetworkMessage(node: PortalNetwork, networkId: Network
 export async function executeMethod(node: PortalNetwork, method: string, params: any[]) {
   try {
     const [prefix, methodName] = method.split('_')
-    
+
     if (prefix === 'portal') {
       if (methodName === 'statePing') {
         return await sendNetworkMessage(node, NETWORK_IDS.STATE as NetworkId, MESSAGE_TYPES.PING)
@@ -112,7 +112,7 @@ export async function executeMethod(node: PortalNetwork, method: string, params:
 
       const historyNetwork = node.networks[NetworkId.HistoryNetwork]
       const stateNetwork = node.networks[NetworkId.StateNetwork]
-      
+
       if (historyNetwork && methodName.startsWith('history')) {
         const networkMethod = methodName.replace('history', '').toLowerCase()
         if (typeof historyNetwork[networkMethod] === 'function') {
@@ -130,7 +130,7 @@ export async function executeMethod(node: PortalNetwork, method: string, params:
       if (typeof node[methodName] === 'function') {
         return await node[methodName](...params)
       }
-      
+
       throw new Error(`Unknown method: ${methodName}`)
     }
 
@@ -146,13 +146,13 @@ export async function runPortalClient(config: PortalConfig): Promise<void> {
   try {
     console.log('Creating Portal Network node...')
     node = await createNode(config.port)
-    
+
     console.log('Starting Portal Network node...')
     await node.start()
-    
+
     console.log('Waiting for node to be ready...')
     await new Promise(resolve => setTimeout(resolve, 5000))
-    
+
     console.log(`Node started on port ${config.port}`)
 
     node.enableLog('*Portal*,*uTP*,*discv5*')
@@ -163,9 +163,9 @@ export async function runPortalClient(config: PortalConfig): Promise<void> {
       process.exit(0)
     })
 
-    node.on('SendTalkReq', (nodeId, requestId, payload) => 
+    node.on('SendTalkReq', (nodeId, requestId, payload) =>
       console.log('Sent talk request:', { nodeId, requestId, payload }))
-    node.on('SendTalkResp', (nodeId, requestId, payload) => 
+    node.on('SendTalkResp', (nodeId, requestId, payload) =>
       console.log('Received talk response:', { nodeId, requestId, payload }))
 
     const params = JSON.parse(config.params)
