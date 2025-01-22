@@ -4,7 +4,6 @@ import { bigIntToHex, bytesToHex, hexToBytes, short } from '@ethereumjs/util'
 import {
   ClientInfoAndCapabilities,
   ContentLookup,
-  CustomPayloadExtensionsFormat,
   FoundContent,
   NetworkId,
   NodeLookup,
@@ -560,8 +559,8 @@ export class portal {
     const pong = await this._history.sendPing(encodedENR, 0)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
-      const decoded = CustomPayloadExtensionsFormat.deserialize(pong.customPayload)
-      const { DataRadius } = ClientInfoAndCapabilities.deserialize(decoded.payload)
+      // const decoded = CustomPayloadExtensionsFormat.deserialize(pong.customPayload)
+      const { DataRadius } = ClientInfoAndCapabilities.deserialize(pong.customPayload)
       return {
         enrSeq: Number(pong.enrSeq),
         dataRadius: bigIntToHex(DataRadius),
@@ -578,8 +577,7 @@ export class portal {
     const pong = await this._state.sendPing(encodedENR)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
-      const decoded = CustomPayloadExtensionsFormat.deserialize(pong.customPayload)
-      const { DataRadius } = ClientInfoAndCapabilities.deserialize(decoded.payload)
+      const { DataRadius } = ClientInfoAndCapabilities.deserialize(pong.customPayload)
       return {
         enrSeq: Number(pong.enrSeq),
         dataRadius: bigIntToHex(DataRadius),
@@ -596,8 +594,7 @@ export class portal {
     const pong = await this._beacon.sendPing(encodedENR)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
-      const decoded = CustomPayloadExtensionsFormat.deserialize(pong.customPayload)
-      const { DataRadius } = ClientInfoAndCapabilities.deserialize(decoded.payload)
+      const { DataRadius } = ClientInfoAndCapabilities.deserialize(pong.customPayload)
       return {
         enrSeq: Number(pong.enrSeq),
         dataRadius: bigIntToHex(DataRadius),
