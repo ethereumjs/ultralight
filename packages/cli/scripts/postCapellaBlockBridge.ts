@@ -121,6 +121,7 @@ const main = async () => {
     // pulling the `BlockRoots` from the `BeaconState` object.  The root of this object will match the `block_summary_root` index of 
     // the Historical Summaries object we retrieved from the Beacon node
 
+    // NOTE: You can any era file from post capella to construct header proofs for (provided the beacon blocks are available from a beacon node)
     console.log(`Reading era file for period ${1320}`)
     const eraFile = new Uint8Array(readFileSync(`./scripts/eras/mainnet-01320-59f1c8c0.era`))
     const indices = getEraIndexes(eraFile)
