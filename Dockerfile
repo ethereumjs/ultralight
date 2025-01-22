@@ -21,4 +21,4 @@ ENV BINDADDRESS=
 ENV RPCPORT=
 ENV PK=
 
-ENTRYPOINT node ultralight/packages/cli/dist/index.js --bindAddress=BINDADDRESS --rpcPort=RPCPORT
+ENTRYPOINT node packages/cli/dist/index.js --bindAddress=BINDADDRESS --rpcPort=RPCPORT
