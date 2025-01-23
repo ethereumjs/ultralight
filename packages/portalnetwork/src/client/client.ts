@@ -161,6 +161,8 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       utpTimeout: opts.utpTimeout,
       gossipCount: opts.gossipCount,
       shouldRefresh: opts.shouldRefresh,
+      operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture,
+      shortCommit: opts.shortCommit,
     })
     for (const network of portal.networks.values()) {
       try {
@@ -437,8 +439,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       await this.uTP.handleUtpPacket(packetBuffer, src)
     } catch (err: any) {
       this.logger.extend('error')(
-        `handleUTP error: ${err.message}.  SrcId: ${
-          src.nodeId
+        `handleUTP error: ${err.message}.  SrcId: ${src.nodeId
         } MultiAddr: ${src.socketAddr.toString()}`,
       )
     }
