@@ -6,8 +6,6 @@ See [API](./docs/modules.html) for more details
 
 See [Architecture](./diagrams/ARCHITECTURE.md) for architectural concepts
 
-See [Examples](./EXAMPLES.md) for different ways to interact with Portal Network nodes.
-
 ## Routing Table Management
 
 The Portal Network module currently supports two overlay routing tables for use with the below two subnetworks:
