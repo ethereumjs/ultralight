@@ -197,6 +197,7 @@ export const HistoricalRootsBlockProof = new ContainerType({
   slot: SlotType,
 })
 
+/** Post-Capella block header proof types */
 export const HistoricalSummariesProof = new VectorCompositeType(Bytes32Type, 13)
 
 export const HistoricalSummariesBlockProof = new ContainerType({

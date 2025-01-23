@@ -50,9 +50,8 @@ export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
 
 /**
  * Generates the serialized contentKey for a given History Network content type and key (i.e. block hash or block number)
- * @param contentKey an object containing the and `blockHash` used to generate the content Key
  * @param contentType a number identifying the type of content (block header, block body, receipt, header_by_number)
- * @param key the hash of the content represented (i.e. block hash for header, body, or receipt, or block number for header_by_number)
+ * @param key the block hash for header, body, or receipt, or block number for header_by_number)
  * @returns the serialized contentKey
  */
 export const getContentKey = (
@@ -96,17 +95,17 @@ export const decodeHistoryNetworkContentKey = (
   contentKey: Uint8Array,
 ):
   | {
-      contentType:
-        | HistoryNetworkContentType.BlockHeader
-        | HistoryNetworkContentType.BlockBody
-        | HistoryNetworkContentType.Receipt
-        | HistoryNetworkContentType.HeaderProof
-      keyOpt: Uint8Array
-    }
+    contentType:
+    | HistoryNetworkContentType.BlockHeader
+    | HistoryNetworkContentType.BlockBody
+    | HistoryNetworkContentType.Receipt
+    | HistoryNetworkContentType.HeaderProof
+    keyOpt: Uint8Array
+  }
   | {
-      contentType: HistoryNetworkContentType.BlockHeaderByNumber
-      keyOpt: bigint
-    } => {
+    contentType: HistoryNetworkContentType.BlockHeaderByNumber
+    keyOpt: bigint
+  } => {
   const contentType: HistoryNetworkContentType = contentKey[0]
   if (contentType === HistoryNetworkContentType.BlockHeaderByNumber) {
     const blockNumber = BlockNumberKey.deserialize(contentKey.slice(1)).blockNumber

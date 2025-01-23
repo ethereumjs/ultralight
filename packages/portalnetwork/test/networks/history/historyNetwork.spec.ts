@@ -2,7 +2,7 @@ import { readFileSync } from 'fs'
 import { createRequire } from 'module'
 import { Block, type BlockBytes, BlockHeader } from '@ethereumjs/block'
 import * as RLP from '@ethereumjs/rlp'
-import { bytesToHex, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
 import {
@@ -179,5 +179,37 @@ describe('Header Tests', async () => {
     )
     await network.validateHeader(preMergeHeaderWithProof, { blockHash: block1000.hash })
     await network.store(headerKey, preMergeHeaderWithProof)
+  })
+  it('should not store pre-Capella headers with various errors', async () => {
+    const headerJson = require('./testData/mergeBlockHeader.json')
+    const header = blockHeaderFromRpc(headerJson, { setHardfork: true })
+    const fakeHeaderKey = getContentKey(HistoryNetworkContentType.BlockHeader, randomBytes(32))
+    const headerProofJson = require('./testData/mergeBlockHeaderProof.json')
+    const headerProof = HistoricalRootsBlockProof.fromJson(headerProofJson)
+    const serializedHeaderWithProof = BlockHeaderWithProof.serialize({
+      header: header.serialize(),
+      proof: { selector: 2, value: headerProof },
+    })
+    try {
+      await network.store(fakeHeaderKey, serializedHeaderWithProof)
+      assert.fail('should have thrown')
+    } catch (err: any) {
+      assert.equal(
+        err.message,
+        'Block hash from data does not match block hash provided for validation',
+      )
+    }
+    const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, header.hash())
+    headerProof.slot = 1n
+    const fakeProof = BlockHeaderWithProof.serialize({
+      header: header.serialize(),
+      proof: { selector: 2, value: headerProof },
+    })
+    try {
+      await network.store(headerKey, fakeProof)
+      assert.fail('should have thrown')
+    } catch (err: any) {
+      assert.equal(err.message, 'Unable to validate proof for post-merge header')
+    }
   })
 })

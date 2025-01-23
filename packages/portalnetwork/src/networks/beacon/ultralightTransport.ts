@@ -229,8 +229,8 @@ export class UltralightTransport implements LightClientTransport {
   }
 
   onOptimisticUpdate(handler: (optimisticUpdate: LightClientOptimisticUpdate) => void): void {
-    this.network.on('ContentAdded', (_contentKey: Uint8Array, content: Uint8Array) => {
-      const contentType = _contentKey[0]
+    this.network.on('ContentAdded', (contentKey: Uint8Array, content: Uint8Array) => {
+      const contentType = contentKey[0]
       if (contentType === BeaconLightClientNetworkContentType.LightClientOptimisticUpdate) {
         const forkhash = content.slice(0, 4)
         const forkname = this.network.beaconConfig.forkDigest2ForkName(
@@ -246,8 +246,8 @@ export class UltralightTransport implements LightClientTransport {
     })
   }
   onFinalityUpdate(handler: (finalityUpdate: LightClientFinalityUpdate) => void): void {
-    this.network.on('ContentAdded', (_contentKey: Uint8Array, content: Uint8Array) => {
-      const contentType = _contentKey[0]
+    this.network.on('ContentAdded', (contentKey: Uint8Array, content: Uint8Array) => {
+      const contentType = contentKey[0]
       if (contentType === BeaconLightClientNetworkContentType.LightClientFinalityUpdate) {
         const forkhash = content.slice(0, 4)
         const forkname = this.network.beaconConfig.forkDigest2ForkName(
