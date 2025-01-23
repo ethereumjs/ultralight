@@ -26,11 +26,13 @@ import {
   SHANGHAI_BLOCK,
   sszReceiptsListType,
 } from './types.js'
-import { getContentKey, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from './util.js'
+import { getContentKey, verifyPostCapellaHeaderProof, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from './util.js'
 
 import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
+import { RunStatusCode } from '@lodestar/light-client'
+
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'
@@ -152,40 +154,65 @@ export class HistoryNetwork extends BaseNetwork {
     const header = BlockHeader.fromRLPSerializedHeader(headerProof.header, {
       setHardfork: true,
     })
+    if ('blockHash' in validation) {
+      if (bytesToHex(header.hash()) !== validation.blockHash) {
+        throw new Error('Block hash from data does not match block hash provided for validation')
+      }
+    }
     const proof = headerProof.proof
 
     if (header.number < MERGE_BLOCK) {
-      // Only check for proof if pre-merge block header
       if (proof.value === null) {
-        throw new Error('Received block header without proof')
+        throw new Error('Received pre-merge block header without proof')
       }
       if (Array.isArray(proof.value)) {
-        try {
-          if ('blockHash' in validation) {
-            verifyPreMergeHeaderProof(proof.value, validation.blockHash, header.number)
-          } else {
-            verifyPreMergeHeaderProof(
-              proof.value,
-              bytesToHex(header.hash()),
-              validation.blockNumber,
-            )
-          }
-        } catch {
-          throw new Error('Received pre-merge block header with invalid proof')
+        let validated = false
+        if ('blockHash' in validation) {
+          validated = verifyPreMergeHeaderProof(proof.value, validation.blockHash, header.number)
+        } else {
+          validated = verifyPreMergeHeaderProof(
+            proof.value,
+            bytesToHex(header.hash()),
+            validation.blockNumber,
+          )
+        }
+        if (!validated) {
+          throw new Error('Unable to validate proof for pre-merge header')
         }
       }
-    } else {
-      if (header.number < SHANGHAI_BLOCK) {
-        if (proof.value === null) {
-          this.logger('Received post-merge block without proof')
-        }
+    } else if (header.number < SHANGHAI_BLOCK) {
+      if (proof.value === null) {
+        this.logger('Received post-merge block without proof')
+        throw new Error('Received post-merge block header without proof')
+      }
+      let validated = false
+      try {
+        validated = verifyPreCapellaHeaderProof(proof.value as any, header.hash())
+      } catch (err: any) {
+        this.logger(`Unable to validate proof for post-merge header: ${err.message}`)
+      }
+      if (!validated) {
+        throw new Error('Unable to validate proof for post-merge header')
+      }
+    }
+    else {
+      // TODO: Check proof slot to ensure header is from previous sync period and handle ephemeral headers separately
+      if (proof.value === null) {
+        this.logger('Received post-merge block without proof')
+      }
+      const beacon = this.portal.network()['0x500c']
+      if (beacon !== undefined && beacon.lightClient?.status === RunStatusCode.started) {
         try {
-          verifyPreCapellaHeaderProof(proof.value as any, header.hash())
+          verifyPostCapellaHeaderProof(proof.value as any, header.hash(), beacon.historicalSummaries, beacon.beaconConfig)
+          this.logger(`Successfully verified proof for block header ${header.number}`)
         } catch {
-          this.logger('Received post-merge block header with invalid proof')
+          this.logger('Received post-capella block header with invalid proof')
           // TODO: throw new Error('Received post-merge block header with invalid proof')
         }
+      } else {
+        this.logger('Received post-capella block but Beacon light client is not running so cannot verify proof')
       }
+
     }
     await this.indexBlockHash(header.number, bytesToHex(header.hash()))
     return header.hash()
@@ -281,6 +308,7 @@ export class HistoryNetwork extends BaseNetwork {
           await this.put(contentKey, bytesToHex(value))
         } catch (err) {
           this.logger(`Error validating header: ${(err as any).message}`)
+          throw err
         }
         break
       }
@@ -320,8 +348,7 @@ export class HistoryNetwork extends BaseNetwork {
       this.gossipManager.add(contentKey)
     }
     this.logger(
-      `${HistoryNetworkContentType[contentType]} added for ${
-        keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
+      `${HistoryNetworkContentType[contentType]} added for ${keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
       }`,
     )
   }

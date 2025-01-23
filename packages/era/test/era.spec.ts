@@ -3,9 +3,11 @@ import { assert, beforeAll, describe, it } from 'vitest'
 
 import {
   EraTypes,
+  decompressBeaconBlock,
   decompressBeaconState,
   deserializeE2Store,
   getEraIndexes,
+  readBlocksFromEra,
   readEntry,
   readSlotIndex,
 } from '../src/index.js'
@@ -63,6 +65,7 @@ describe('era utilities', () => {
     const thirdRecord = readEntry(data.slice(pointer))
     assert.deepEqual(secondRecord.type, EraTypes.CompressedSignedBeaconBlockType)
     assert.deepEqual(thirdRecord.type, EraTypes.CompressedSignedBeaconBlockType)
+
   })
   it('should read the state slotIndex', () => {
     const stateSlotIndex = readSlotIndex(data)
@@ -80,9 +83,7 @@ describe('era utilities', () => {
   })
 })
 
-// Download mainnet-01183-595cb34b.era from https://mainnet.era.nimbus.team/ and place
-// it in the era/test directory to run this test
-describe.skip('it should be able to extract beacon state from an era file', () => {
+describe('it should be able to extract beacon objects from an era file', () => {
   let data
   beforeAll(() => {
     data = new Uint8Array(readFileSync(__dirname + '/mainnet-01183-595cb34b.era'))
@@ -93,8 +94,28 @@ describe.skip('it should be able to extract beacon state from an era file', () =
       data.slice(indices.stateSlotIndex.recordStart + indices.stateSlotIndex.slotOffsets[0]),
     )
     assert.deepEqual(stateEntry.type, EraTypes.CompressedBeaconState)
-
     const state = await decompressBeaconState(stateEntry.data, indices.stateSlotIndex.startSlot)
     assert.equal(state.slot as any as Number, 9691136)
   }, 150000)
+  it('should read a block from the era file and decompress it', async () => {
+    const indices = getEraIndexes(data)
+    const compressedBlock = readEntry(data.slice(indices.blockSlotIndex!.recordStart + indices.blockSlotIndex!.slotOffsets[0]))
+    const block = (await decompressBeaconBlock(compressedBlock.data, indices.blockSlotIndex!.startSlot))
+    assert.equal(block.message.slot, 9682944)
+  })
+  it('read blocks from an era file', async () => {
+    let count = 0
+    for await (const block of readBlocksFromEra(data)) {
+      assert.exists(block.message.slot)
+      count++
+      if (count > 10) break
+    }
+  })
+  it('reads no blocks from the genesis era file', async () => {
+    const data = new Uint8Array(readFileSync(__dirname + '/mainnet-00000-4b363db9.era'))
+    for await (const block of readBlocksFromEra(data)) {
+      assert.equal(block, undefined)
+
+    }
+  })
 })

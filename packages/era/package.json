@@ -12,8 +12,8 @@
     "build": "tsc",
     "docs": "typedoc src/index.ts",
     "test": "npx vitest run test/* -c=./vitest.config.unit.ts",
-    "coverage": "c8 npm run test",
-    "coverage:all": "c8 npm run test:all",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage",
     "lint": "../../config/cli/lint.sh",
     "lint:fix": "../../config/cli/lint-fix.sh"
   },
@@ -28,13 +28,12 @@
     "snappystream": "^2.1.1"
   },
   "devDependencies": {
-    "@vitest/ui": "^1.2.2",
-    "c8": "^7.12.0",
+    "@vitest/ui": "^3.0.2",
     "eslint": "^8.6.0",
     "tslib": "^2.3.1",
     "typedoc": "^0.24.0",
     "typedoc-plugin-markdown": "^3.11.3",
     "typescript": "^4.4.2",
-    "vitest": "^1.2.2"
+    "vitest": "^3.0.2"
   }
 }

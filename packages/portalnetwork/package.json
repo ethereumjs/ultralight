@@ -13,9 +13,9 @@
     "docs": "typedoc src/index.ts",
     "test": "npx vitest run test/* -c=./vitest.config.unit.ts",
     "test:integration": "npx vitest run ./test/integration/ -c=./vitest.config.integration.ts",
+    "test:ui": "vitest --ui",
     "typecheck": "tsc -p ./tsconfig.types.json",
-    "coverage": "c8 npm run test",
-    "coverage:all": "c8 npm run test:all",
+    "coverage": "vitest run test/* -c=./vitest.config.coverage.ts",
     "lint": "../../config/cli/lint.sh",
     "lint:fix": "../../config/cli/lint-fix.sh"
   },
@@ -66,14 +66,14 @@
     "@types/debug": "^4.1.7",
     "@types/js-yaml": "^4.0.9",
     "@types/ws": "^7.4.7",
-    "@vitest/ui": "^1.2.2",
-    "c8": "^7.12.0",
+    "@vitest/coverage-v8": "^3.0.2",
+    "@vitest/ui": "^3.0.2",
     "eslint": "^8.6.0",
     "js-yaml": "^4.1.0",
     "tslib": "^2.3.1",
     "typedoc": "^0.24.0",
     "typedoc-plugin-markdown": "^3.11.3",
     "typescript": "^5.7.2",
-    "vitest": "^1.2.2"
+    "vitest": "^3.0.2"
   }
 }
