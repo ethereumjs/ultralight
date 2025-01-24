@@ -20,7 +20,6 @@ class PortalNetworkRepl {
   private enr?: SignableENR
   private logger: Debugger
 
-
   async init(port = 9090): Promise<void> {
     try {
       const privateKey = await keys.generateKeyPair('secp256k1')
@@ -67,7 +66,7 @@ class PortalNetworkRepl {
       this.setupEventListeners()
       this.startRepl()
     } catch (error) {
-      console.error('Portal Network initialization failed', error)
+      console.log('Portal Network initialization failed', error)
       process.exit(1)
     }
   }
@@ -142,14 +141,14 @@ class PortalNetworkRepl {
               console.log('Invalid network. Choose "history" or "state"')
           }
         } catch (error) {
-          console.error('Find nodes failed:', error)
+          console.log('Find nodes failed:', error)
         }
         this.displayPrompt()
       }
     })
 
     replServer.defineCommand('findcontent', {
-      help: 'Find content in network (history/state) with ENR and content key. Usage: findcontent <network> <enr> <contentKey>',
+      help: 'Find content in network (history/state) with ENR and content key. Usage: .findcontent <network> <enr> <contentKey>',
       async action(args: string) {
         try {
 
@@ -203,12 +202,83 @@ class PortalNetworkRepl {
       }
     })
 
+    replServer.defineCommand('offer', {
+      help: 'Offer content to a specific network. Usage: .offer <network> <enr> <contentKey> <contentValue>',
+      async action(args: string) {
+        try {
+
+          const context = this.context as any
+          const portalRepl: PortalNetworkRepl = context.portalRepl
+
+          const parts = args.trim().split(/\s+/)
+
+          if (parts.length < 4) {
+            portalRepl.logger('Invalid arguments. Usage: .offer <network> <enr> <contentKey> <contentValue>')
+            return this.displayPrompt()
+          }
+
+          const [network, enr, contentKey, ...contentValueParts] = parts
+          const contentValue = contentValueParts.join(' ')
+
+          const networkObj = network.toLowerCase() === 'history' 
+            ? portalRepl.historyNetwork 
+            : portalRepl.stateNetwork
+
+          if (!networkObj) {
+            portalRepl.logger(`${network} Network not initialized`)
+            return this.displayPrompt()
+          }
+
+          let parsedEnr
+          try {
+            parsedEnr = ENR.decodeTxt(enr)
+          } catch (enrError) {
+            portalRepl.logger('Invalid ENR format: %O', enrError)
+            return this.displayPrompt()
+          }
+
+          let contentKeyBytes, contentValueBytes
+          try {
+            contentKeyBytes = hexToBytes(contentKey)
+            contentValueBytes = new TextEncoder().encode(contentValue)
+          } catch (encodeError) {
+            console.log('Content encoding failed: %O', encodeError)
+            return this.displayPrompt()
+          }
+
+          const MAX_CONTENT_SIZE = 2 * 1024 * 1024
+          if (contentValueBytes.length > MAX_CONTENT_SIZE) {
+            portalRepl.logger(`Content exceeds maximum size of ${MAX_CONTENT_SIZE} bytes`)
+            return this.displayPrompt()
+          }
+
+          portalRepl.logger('Sending content offer: network=%s, key=%o', network, contentKeyBytes)
+          
+          let offerResult
+          try {
+            offerResult = await networkObj.sendOffer(
+              parsedEnr,
+              contentKeyBytes,
+              contentValueBytes,
+            )
+
+            portalRepl.logger('Content offer result: %O', offerResult)
+          } catch (offerError) {
+            console.log('Content offer failed: %O', offerError)
+          }
+        } catch (error) {
+          console.log('Offer operation failed: %O', error)
+        }
+        
+        this.displayPrompt()
+      }
+    })
+
     replServer.defineCommand('status', {
       help: 'Show current Portal Network status',
       action() {
         const context = this.context as any
         const portalRepl: PortalNetworkRepl = context.portalRepl
-
         portalRepl.logger('Portal Network Status:')
         portalRepl.logger('History Network:', !!portalRepl.historyNetwork)
         portalRepl.logger('State Network:', !!portalRepl.stateNetwork)
