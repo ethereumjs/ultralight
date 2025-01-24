@@ -26,6 +26,7 @@
     "@ethereumjs/block": "^5.3.0",
     "@lodestar/config": "^1.21.0",
     "@lodestar/types": "^1.21.0",
+    "@ethereumjs/rlp": "^5.0.2",
     "snappystream": "^2.1.1"
   },
   "devDependencies": {
