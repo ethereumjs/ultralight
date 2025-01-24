@@ -6,7 +6,7 @@ import { UnsnappyStream } from 'snappystream'
 import { Duplex } from 'stream'
 import type { BlockBytes } from '@ethereumjs/block'
 import { Block } from '@ethereumjs/block'
-import { UintBigintType } from '@chainsafe/ssz'
+import { ByteVectorType, ContainerType, ListCompositeType, UintBigintType } from '@chainsafe/ssz'
 import { RLP } from '@ethereumjs/rlp'
 
 export function readType(bytes: Uint8Array) {
@@ -214,4 +214,29 @@ export async function readOtherEntries(bytes: Uint8Array) {
 export async function readAccumulatorRoot(bytes: Uint8Array) {
   const { accumulatorRoot } = await readOtherEntries(bytes)
   return accumulatorRoot
+}
+
+
+export async function validateERA1(bytes: Uint8Array) {
+  const accumulatorRoot = await readAccumulatorRoot(bytes)
+  const blockTuples = await readERA1(bytes)
+  const headerRecords = []
+  for (let i = 0; i < 8192; i++) {
+    const tuple = await blockTuples!.next()
+    if (tuple.value === undefined) {
+      throw new Error('not enough block tuples')
+    }
+    const headerRecord = {
+      blockHash: tuple.value.block.header.hash(),
+      totalDifficulty: tuple.value.totalDifficulty,
+    }
+    headerRecords.push(headerRecord)
+  }
+  const HeaderRecord = new ContainerType({
+    blockHash: new ByteVectorType(32),
+    totalDifficulty: new UintBigintType(32),
+  })
+  const EpochAccumulator = new ListCompositeType(HeaderRecord, 8192)  
+  const epochAccumulatorRoot = EpochAccumulator.hashTreeRoot(headerRecords)
+  return equalsBytes(epochAccumulatorRoot, accumulatorRoot)
 }
