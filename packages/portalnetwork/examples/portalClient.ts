@@ -1,17 +1,11 @@
 import { SignableENR, ENR } from '@chainsafe/enr'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
-import { 
-  PortalNetwork, 
-  NetworkId, 
-  TransportLayer, 
-  BaseNetwork, 
-  HistoryNetwork, 
-  StateNetwork,
-} from '../../portalnetwork/src'
+import { PortalNetwork, NetworkId, TransportLayer, BaseNetwork } from '../../portalnetwork/src'
 import repl from 'repl'
 import { hexToBytes } from '@ethereumjs/util'
 import debug, { Debugger } from 'debug'
+import { DEFAULT_BOOTNODES } from '../src/util/bootnodes'
 
 class PortalNetworkRepl {
   private node?: PortalNetwork
@@ -27,7 +21,7 @@ class PortalNetworkRepl {
 
       this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal')
 
-      const nodeAddr = multiaddr(`/ip4/127.0.0.1/udp/${port}`)
+      const nodeAddr = multiaddr(`/ip4/0.0.0.0/udp/${port}`)
       this.enr.setLocationMultiaddr(nodeAddr)
 
       this.node = await PortalNetwork.create({
@@ -41,19 +35,11 @@ class PortalNetworkRepl {
           bindAddrs: { ip4: nodeAddr },
           privateKey,
         },
+        bootnodes: DEFAULT_BOOTNODES.mainnet,
       })
 
-      this.historyNetwork = new HistoryNetwork({
-        client: this.node,
-        networkId: NetworkId.HistoryNetwork
-      })
-      this.stateNetwork = new StateNetwork({
-        client: this.node,
-        networkId: NetworkId.StateNetwork
-      })
-
-      this.node.networks[NetworkId.HistoryNetwork] = this.historyNetwork
-      this.node.networks[NetworkId.StateNetwork] = this.stateNetwork
+      this.historyNetwork = this.node.network()['0x500b']!
+      this.stateNetwork = this.node.network()['0x500c']!
 
       await this.node.start()
 
@@ -74,15 +60,37 @@ class PortalNetworkRepl {
   private setupEventListeners(): void {
     if (!this.node) return
 
-    this.node.on('SendTalkReq', (nodeId, requestId, payload) => 
-      this.logger('Sent talk request', { nodeId, requestId, payload }))
-    
-    this.node.on('SendTalkResp', (nodeId, requestId, payload) => 
-      this.logger('Received talk response', { nodeId, requestId, payload }))
+    this.node.on('SendTalkReq', (nodeId, requestId, payload) =>
+      this.logger('Sent talk request', { nodeId, requestId, payload }),
+    )
+
+    this.node.on('SendTalkResp', (nodeId, requestId, payload) =>
+      this.logger('Received talk response', { nodeId, requestId, payload }),
+    )
   }
 
   private startRepl(): void {
     const replServer = repl.start('portal> ')
+
+    replServer.defineCommand('debug', {
+      help: 'Set debug log topics (e.g. *Portal*,*uTP*)',
+      async action(topics: string) {
+        const context = this.context as any
+        const portalRepl: PortalNetworkRepl = context.portalRepl
+        portalRepl.node?.enableLog(topics)
+        this.displayPrompt()
+      },
+    })
+
+    replServer.defineCommand('bootstrap', {
+      help: 'Bootstrap the network',
+      async action() {
+        const context = this.context as any
+        const portalRepl: PortalNetworkRepl = context.portalRepl
+        await portalRepl.node?.bootstrap()
+        this.displayPrompt()
+      },
+    })
 
     replServer.defineCommand('ping', {
       help: 'Send ping to network (history/state)',
@@ -91,9 +99,10 @@ class PortalNetworkRepl {
         const portalRepl: PortalNetworkRepl = context.portalRepl
 
         try {
-          const networkObj = network.toLowerCase() === 'history' 
-            ? portalRepl.historyNetwork 
-            : portalRepl.stateNetwork
+          const networkObj =
+            network.toLowerCase() === 'history'
+              ? portalRepl.historyNetwork
+              : portalRepl.stateNetwork
 
           if (!networkObj) {
             portalRepl.logger(`${network} Network not initialized`)
@@ -107,7 +116,7 @@ class PortalNetworkRepl {
           portalRepl.logger(`Ping to ${network} network failed`, error)
         }
         this.displayPrompt()
-      }
+      },
     })
 
     replServer.defineCommand('findnodes', {
@@ -117,7 +126,7 @@ class PortalNetworkRepl {
         const portalRepl: PortalNetworkRepl = context.portalRepl
 
         const [network, enr, ...distancesStr] = args.split(' ')
-        const distances = distancesStr.map(d => parseInt(d, 10))
+        const distances = distancesStr.map((d) => parseInt(d, 10))
 
         try {
           switch (network.toLowerCase()) {
@@ -144,14 +153,13 @@ class PortalNetworkRepl {
           console.log('Find nodes failed:', error)
         }
         this.displayPrompt()
-      }
+      },
     })
 
     replServer.defineCommand('findcontent', {
       help: 'Find content in network (history/state) with ENR and content key. Usage: .findcontent <network> <enr> <contentKey>',
       async action(args: string) {
         try {
-
           const context = this.context as any
           const portalRepl: PortalNetworkRepl = context.portalRepl
 
@@ -163,9 +171,10 @@ class PortalNetworkRepl {
 
           const [network, enr, contentKey] = parts
 
-          const networkObj = network.toLowerCase() === 'history' 
-            ? portalRepl.historyNetwork 
-            : portalRepl.stateNetwork
+          const networkObj =
+            network.toLowerCase() === 'history'
+              ? portalRepl.historyNetwork
+              : portalRepl.stateNetwork
 
           if (!networkObj) {
             portalRepl.logger(`${network} Network not initialized`)
@@ -199,30 +208,32 @@ class PortalNetworkRepl {
           console.log('Find content operation failed', error)
         }
         this.displayPrompt()
-      }
+      },
     })
 
     replServer.defineCommand('offer', {
       help: 'Offer content to a specific network. Usage: .offer <network> <enr> <contentKey> <contentValue>',
       async action(args: string) {
         try {
-
           const context = this.context as any
           const portalRepl: PortalNetworkRepl = context.portalRepl
 
           const parts = args.trim().split(/\s+/)
 
           if (parts.length < 4) {
-            portalRepl.logger('Invalid arguments. Usage: .offer <network> <enr> <contentKey> <contentValue>')
+            portalRepl.logger(
+              'Invalid arguments. Usage: .offer <network> <enr> <contentKey> <contentValue>',
+            )
             return this.displayPrompt()
           }
 
           const [network, enr, contentKey, ...contentValueParts] = parts
           const contentValue = contentValueParts.join(' ')
 
-          const networkObj = network.toLowerCase() === 'history' 
-            ? portalRepl.historyNetwork 
-            : portalRepl.stateNetwork
+          const networkObj =
+            network.toLowerCase() === 'history'
+              ? portalRepl.historyNetwork
+              : portalRepl.stateNetwork
 
           if (!networkObj) {
             portalRepl.logger(`${network} Network not initialized`)
@@ -253,14 +264,10 @@ class PortalNetworkRepl {
           }
 
           portalRepl.logger('Sending content offer: network=%s, key=%o', network, contentKeyBytes)
-          
+
           let offerResult
           try {
-            offerResult = await networkObj.sendOffer(
-              parsedEnr,
-              contentKeyBytes,
-              contentValueBytes,
-            )
+            offerResult = await networkObj.sendOffer(parsedEnr, contentKeyBytes, contentValueBytes)
 
             portalRepl.logger('Content offer result: %O', offerResult)
           } catch (offerError) {
@@ -269,9 +276,9 @@ class PortalNetworkRepl {
         } catch (error) {
           console.log('Offer operation failed: %O', error)
         }
-        
+
         this.displayPrompt()
-      }
+      },
     })
 
     replServer.defineCommand('status', {
@@ -285,7 +292,7 @@ class PortalNetworkRepl {
         portalRepl.logger('Node initialized:', !!portalRepl.node)
 
         this.displayPrompt()
-      }
+      },
     })
 
     replServer.context.portalRepl = this
@@ -308,7 +315,7 @@ async function main() {
   }
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.log('Unhandled error in main', err)
   process.exit(1)
 })
