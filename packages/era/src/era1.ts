@@ -89,7 +89,8 @@ export async function parseEntry(entry: e2StoreEntry) {
       data = Block.fromRLPSerializedBlock(decompressed, { setHardfork: true })
       break
     case bytesToHex(EraTypes.CompressedReceipts):
-      data = decodeReceipts(decompressed)
+      data = decompressed
+      // data = decodeReceipts(decompressed)
       break
     case bytesToHex(EraTypes.TotalDifficulty):
       data = new UintBigintType(32).deserialize(decompressed)
