@@ -4,7 +4,7 @@ import type { e2StoreEntry } from './types.js'
 import { EraTypes } from './types.js'
 import { UnsnappyStream } from 'snappystream'
 import { Duplex } from 'stream'
-import type { BlockBytes} from '@ethereumjs/block';
+import type { BlockBytes } from '@ethereumjs/block'
 import { Block } from '@ethereumjs/block'
 import { UintBigintType } from '@chainsafe/ssz'
 import { RLP } from '@ethereumjs/rlp'
@@ -133,23 +133,19 @@ export function readBlockTupleFromERA1(
   x: number,
 ) {
   const headerEntry = readEntry(bytes.slice(recordStart + offsets[x]))
-  const length = headerEntry.data.length + 8
-  const bodyEntry = readEntry(bytes.slice(recordStart + offsets[x] + length))
-  const receiptsEntry = readEntry(
-    bytes.slice(recordStart + offsets[x] + length + bodyEntry.data.length + 8),
-  )
+  const headerLength = headerEntry.data.length + 8
+  const bodyEntry = readEntry(bytes.slice(recordStart + offsets[x] + headerLength))
+  const bodyLength = bodyEntry.data.length + 8
+  const receiptsEntry = readEntry(bytes.slice(recordStart + offsets[x] + headerLength + bodyLength))
+  const receiptsLength = receiptsEntry.data.length + 8
   const totalDifficultyEntry = readEntry(
     bytes.slice(
-      recordStart +
-        offsets[x] +
-        length +
-        bodyEntry.data.length +
-        8 +
-        receiptsEntry.data.length +
-        8,
+      recordStart + offsets[x] + headerLength + bodyLength + receiptsEntry.data.length + 8,
     ),
   )
-  return { headerEntry, bodyEntry, receiptsEntry, totalDifficultyEntry }
+  const totalDifficultyLength = totalDifficultyEntry.data.length + 8
+  const totalLength = headerLength + bodyLength + receiptsLength + totalDifficultyLength
+  return { headerEntry, bodyEntry, receiptsEntry, totalDifficultyEntry, length: totalLength }
 }
 
 export async function* readBlockTuplesFromERA1(
@@ -160,7 +156,8 @@ export async function* readBlockTuplesFromERA1(
 ) {
   for (let x = 0; x < count; x++) {
     try {
-      const { headerEntry, bodyEntry, receiptsEntry, totalDifficultyEntry } = readBlockTupleFromERA1(bytes, recordStart, offsets, x)
+      const { headerEntry, bodyEntry, receiptsEntry, totalDifficultyEntry } =
+        readBlockTupleFromERA1(bytes, recordStart, offsets, x)
       const { header, body, receipts, totalDifficulty } = await parseBlockTuple({
         headerEntry,
         bodyEntry,
@@ -188,13 +185,33 @@ export async function readBlockTupleAtIndex(bytes: Uint8Array, index: number) {
   const { data, type, count, recordStart } = readType(bytes)
   if (equalsBytes(type, EraTypes.BlockIndex)) {
     const { offsets } = readBlockIndex(data, count)
-    const { headerEntry, bodyEntry, receiptsEntry, totalDifficultyEntry } = readBlockTupleFromERA1(bytes, recordStart, offsets, index)
+    const { headerEntry, bodyEntry, receiptsEntry, totalDifficultyEntry, length } =
+      readBlockTupleFromERA1(bytes, recordStart, offsets, index)
     const { header, body, receipts, totalDifficulty } = await parseBlockTuple({
       headerEntry,
       bodyEntry,
       receiptsEntry,
       totalDifficultyEntry,
     })
-    return { header, body, receipts, totalDifficulty }
+    return { header, body, receipts, totalDifficulty, length }
   }
+}
+
+export async function readOtherEntries(bytes: Uint8Array) {
+  const { data, count, recordStart } = readType(bytes)
+  const { offsets } = readBlockIndex(data, count)
+  const last = await readBlockTupleAtIndex(bytes, count - 1)
+  const otherEntries = []
+  let next = recordStart + offsets[count - 1] + last!.length
+  let nextEntry = readEntry(bytes.slice(next))
+  while (!equalsBytes(nextEntry.type, EraTypes.AccumulatorRoot)) {
+    otherEntries.push(nextEntry)
+    next = next + nextEntry.data.length + 8
+    nextEntry = readEntry(bytes.slice(next))
+  }
+  return { accumulatorRoot: nextEntry.data, otherEntries }
+}
+export async function readAccumulatorRoot(bytes: Uint8Array) {
+  const { accumulatorRoot } = await readOtherEntries(bytes)
+  return accumulatorRoot
 }
