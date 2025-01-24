@@ -7,6 +7,7 @@ import {
   readBlockTupleAtIndex,
   readAccumulatorRoot,
   readOtherEntries,
+  validateERA1,
 } from '../src/index.js'
 import { equalsBytes } from '@ethereumjs/util'
 
@@ -49,6 +50,7 @@ const main = async () => {
     receipts: receipts.length,
     totalDifficulty,
   })
+  console.log(await validateERA1(era1_0))
 }
 
 main()
