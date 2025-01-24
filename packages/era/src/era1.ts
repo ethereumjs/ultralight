@@ -5,7 +5,6 @@ import { EraTypes } from './types.js'
 import { UnsnappyStream } from 'snappystream'
 import { Duplex } from 'stream'
 import { Block, BlockHeader } from '@ethereumjs/block'
-import { decodeReceipts } from 'portalnetwork'
 import { UintBigintType } from '@chainsafe/ssz'
 
 export function readType(bytes: Uint8Array) {
@@ -104,10 +103,10 @@ export async function parseEntry(entry: e2StoreEntry) {
   return { type: entry.type, data }
 }
 
-export async function* readBlocksFromERA1(bytes: Uint8Array, count: number, offsets: number[]) {
+export async function* readBlocksFromERA1(bytes: Uint8Array, count: number, offsets: number[], recordStart: number) {
   for (let x = 0; x < count; x++) {
     try {
-      const entry = readEntry(bytes.slice(offsets[x]))
+      const entry = readEntry(bytes.slice(recordStart + offsets[x]))
       const { type, data } = await parseEntry(entry)
       yield { type, data }
     } catch {
@@ -130,6 +129,6 @@ export async function readERA1(bytes: Uint8Array) {
   const { data, type, count, recordStart } = readType(bytes)
   if (equalsBytes(type, EraTypes.BlockIndex)) {
     const { offsets } = readBlockIndex(data, count)
-    return readBlocksFromERA1(bytes.slice(recordStart), count, offsets)
+    return readBlocksFromERA1(bytes, count, offsets, recordStart)
   }
 }
