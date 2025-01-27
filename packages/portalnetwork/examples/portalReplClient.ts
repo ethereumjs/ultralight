@@ -7,6 +7,7 @@ import { hexToBytes } from '@ethereumjs/util'
 import debug, { Debugger } from 'debug'
 import { DEFAULT_BOOTNODES } from '../src/util/bootnodes'
 
+const replDebugString = 'REPL'
 class PortalNetworkRepl {
   private node?: PortalNetwork
   private historyNetwork?: BaseNetwork
@@ -19,7 +20,7 @@ class PortalNetworkRepl {
       const privateKey = await keys.generateKeyPair('secp256k1')
       this.enr = SignableENR.createFromPrivateKey(privateKey)
 
-      this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal')
+      this.logger = debug(replDebugString)
 
       const nodeAddr = multiaddr(`/ip4/0.0.0.0/udp/${port}`)
       this.enr.setLocationMultiaddr(nodeAddr)
@@ -43,7 +44,7 @@ class PortalNetworkRepl {
 
       await this.node.start()
 
-      this.node.enableLog('*Portal*,*uTP*,*discv5*')
+      this.node.enableLog(replDebugString)
 
       this.logger('Portal Network initialized successfully')
       this.logger('History Network status:', !!this.historyNetwork)
@@ -64,7 +65,7 @@ class PortalNetworkRepl {
       async action(topics: string) {
         const context = this.context as any
         const portalRepl: PortalNetworkRepl = context.portalRepl
-        portalRepl.node?.enableLog(topics)
+        portalRepl.node?.enableLog(`${replDebugString},${topics}`)
         this.displayPrompt()
       },
     })
@@ -112,7 +113,7 @@ class PortalNetworkRepl {
 
           const [network, enr, ...distancesStr] = args.split(' ')
           const distances = distancesStr.map((d) => parseInt(d, 10))
-       
+
           let enrObject
           switch (network.toLowerCase()) {
             case 'history':
@@ -273,7 +274,7 @@ class PortalNetworkRepl {
             portalRepl.logger(`${network} Network not initialized`)
             return this.displayPrompt()
           }
-    
+
           try {
             ENR.decodeTxt(enr)
           } catch (enrError) {
@@ -290,9 +291,9 @@ class PortalNetworkRepl {
         } catch (error) {
           this.context.portalRepl.logger.error('AddENR operation failed: %O', error)
         }
-        
+
         this.displayPrompt()
-      }
+      },
     })
 
     replServer.defineCommand('status', {
@@ -318,9 +319,7 @@ class PortalNetworkRepl {
   }
 
   private getNetworkByName(network: string): BaseNetwork | undefined {
-    return network.toLowerCase() === 'history' 
-      ? this.historyNetwork 
-      : this.stateNetwork
+    return network.toLowerCase() === 'history' ? this.historyNetwork : this.stateNetwork
   }
 }
 
