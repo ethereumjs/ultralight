@@ -6,6 +6,7 @@ import {
   ContentMessageType,
   FoundContent,
   MessageCodes,
+  PingPongPayloadExtensions,
   PortalWireMessageType,
   RequestCode,
   decodeHistoryNetworkContentKey,
@@ -40,6 +41,10 @@ export class HistoryNetwork extends BaseNetwork {
   public blockHashIndex: Map<string, string>
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, networkId: NetworkId.HistoryNetwork, db, radius, maxStorage })
+    this.capabilities = [
+      PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
+      PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD,
+    ]
     this.networkId = NetworkId.HistoryNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
     this.routingTable.setLogger(this.logger)

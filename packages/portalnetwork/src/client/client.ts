@@ -6,6 +6,7 @@ import { keys } from '@libp2p/crypto'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import { fromNodeAddress, multiaddr } from '@multiformats/multiaddr'
 import debug from 'debug'
+import packageJson from '../../package.json' assert { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import {
@@ -33,9 +34,13 @@ import type {
   PortalNetworkOpts,
 } from './types.js'
 import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
+import {
+  type IClientInfo,
+} from '../wire/payloadExtensions.js'
 import { RateLimiter } from '../transports/rateLimiter.js'
 
 export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
+  clientInfo: IClientInfo
   eventLog: boolean
   discv5: Discv5
   networks: Map<NetworkId, BaseNetwork>
@@ -156,6 +161,8 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       utpTimeout: opts.utpTimeout,
       gossipCount: opts.gossipCount,
       shouldRefresh: opts.shouldRefresh,
+      operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture,
+      shortCommit: opts.shortCommit,
     })
     for (const network of portal.networks.values()) {
       try {
@@ -178,6 +185,12 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   constructor(opts: PortalNetworkOpts) {
     // eslint-disable-next-line constructor-super
     super()
+    this.clientInfo = {
+      clientName: 'ultralight',
+      clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
+      operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture ?? '',
+      programmingLanguageAndVersion: `typescript${packageJson.devDependencies.typescript}`,
+    }
     this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
     // cache signature to ensure ENR can be encoded on startup
@@ -426,8 +439,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       await this.uTP.handleUtpPacket(packetBuffer, src)
     } catch (err: any) {
       this.logger.extend('error')(
-        `handleUTP error: ${err.message}.  SrcId: ${
-          src.nodeId
+        `handleUTP error: ${err.message}.  SrcId: ${src.nodeId
         } MultiAddr: ${src.socketAddr.toString()}`,
       )
     }

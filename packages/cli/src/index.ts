@@ -4,7 +4,6 @@ import debug from 'debug'
 import jayson from 'jayson/promise/index.js'
 import { PortalNetwork, cliConfig } from 'portalnetwork'
 import * as PromClient from 'prom-client'
-
 import { args } from './cliArgs.js'
 import { RPCManager } from './rpc/rpc.js'
 
@@ -25,6 +24,9 @@ const main = async () => {
   let web3: jayson.Client | undefined
 
   const portalConfig = await cliConfig(args)
+
+  portalConfig.operatingSystemAndCpuArchitecture = args.arch
+  portalConfig.shortCommit = args.commit ?? execSync('git rev-parse HEAD').toString().slice(0, 7)
 
   const portal = await PortalNetwork.create(portalConfig)
 

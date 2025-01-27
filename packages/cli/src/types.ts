@@ -280,6 +280,8 @@ export interface ClientOpts {
   storage: string
   trustedBlockRoot?: string
   gossipCount?: number
+  arch: string
+  commit?: string
 }
 
 export interface DevnetOpts {

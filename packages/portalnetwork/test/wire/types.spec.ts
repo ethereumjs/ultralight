@@ -1,14 +1,201 @@
 import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
-import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes, utf8ToBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
+import { ContentMessageType, MessageCodes, PortalWireMessageType } from '../../src/wire/types.js'
+
 import {
-  ContentMessageType,
-  MessageCodes,
-  PingPongCustomDataType,
-  PortalWireMessageType,
-} from '../../src/wire/types.js'
+  BasicRadius,
+  ClientInfoAndCapabilities,
+  ErrorPayload,
+  HistoryRadius,
+  PingPongPayloadExtensions,
+  clientInfoStringToBytes,
+} from '../../src/wire/index.js'
+
+describe('ping pong message encoding', () => {
+  it('should encode type 0 ping with client info', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+      clientInfo: "trin/v0.1.1-b61fdc5c/linux-x86_64/rustc1.81.0",
+      capabilities: [0, 1, 65535]
+    }
+    const payload = ClientInfoAndCapabilities.serialize({
+      ClientInfo: clientInfoStringToBytes(params.clientInfo),
+      DataRadius: params.dataRadius,
+      Capabilities: params.capabilities,
+    })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PING,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = '0x00010000000000000000000e00000028000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff550000007472696e2f76302e312e312d62363166646335632f6c696e75782d7838365f36342f7275737463312e38312e3000000100ffff'
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 0 ping without client info', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+      clientInfo: "",
+      capabilities: [0, 1, 65535]
+    }
+    const payload = ClientInfoAndCapabilities.serialize({
+      ClientInfo: clientInfoStringToBytes(params.clientInfo),
+      DataRadius: params.dataRadius,
+      Capabilities: params.capabilities,
+    })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PING,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = '0x00010000000000000000000e00000028000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff2800000000000100ffff'
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 0 pong with client info', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+      clientInfo: "trin/v0.1.1-b61fdc5c/linux-x86_64/rustc1.81.0",
+      capabilities: [0, 1, 65535]
+    }
+    const payload = ClientInfoAndCapabilities.serialize({
+      ClientInfo: clientInfoStringToBytes(params.clientInfo),
+      DataRadius: params.dataRadius,
+      Capabilities: params.capabilities,
+    })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PONG,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = '0x01010000000000000000000e00000028000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff550000007472696e2f76302e312e312d62363166646335632f6c696e75782d7838365f36342f7275737463312e38312e3000000100ffff'
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 0 pong without client info', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+      clientInfo: "",
+      capabilities: [0, 1, 65535]
+    }
+    const payload = ClientInfoAndCapabilities.serialize({
+      ClientInfo: clientInfoStringToBytes(params.clientInfo),
+      DataRadius: params.dataRadius,
+      Capabilities: params.capabilities,
+    })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PONG,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = '0x01010000000000000000000e00000028000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff2800000000000100ffff'
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 1 ping', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+    }
+    const payload = BasicRadius.serialize({ dataRadius: params.dataRadius })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PING,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = '0x00010000000000000001000e000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 1 pong', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+    }
+    const payload = BasicRadius.serialize({ dataRadius: params.dataRadius })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PONG,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = '0x01010000000000000001000e000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 2 ping', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+      ephemeralHeaderCount: 4242
+    }
+    const payload = HistoryRadius.serialize({ dataRadius: params.dataRadius, ephemeralHeadersCount: params.ephemeralHeaderCount })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PING,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = '0x00010000000000000002000e000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff9210'
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 2 pong', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      dataRadius: 2n ** 256n - 2n,
+      ephemeralHeaderCount: 4242
+    }
+    const payload = HistoryRadius.serialize({ dataRadius: params.dataRadius, ephemeralHeadersCount: params.ephemeralHeaderCount })
+    const pingMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PONG,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = '0x01010000000000000002000e000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff9210'
+    assert.equal(bytesToHex(pingMessage), expectedOutput, 'ping message encoded correctly')
+  })
+  it('should encode type 65535 pong', () => {
+    const params = {
+      enrSeq: BigInt(1),
+      errorCode: 2,
+      message: 'hello world'
+    }
+    const payload = ErrorPayload.serialize({ errorCode: params.errorCode, message: utf8ToBytes(params.message) })
+    const pongMessage = PortalWireMessageType.serialize({
+      selector: MessageCodes.PONG,
+      value: {
+        enrSeq: params.enrSeq,
+        payloadType: PingPongPayloadExtensions.ERROR_RESPONSE,
+        customPayload: payload,
+      },
+    })
+    const expectedOutput = '0x010100000000000000ffff0e00000002000600000068656c6c6f20776f726c64'
+    assert.equal(bytesToHex(pongMessage), expectedOutput, 'pong message encoded correctly')
+  })
+})
 
 describe('message encoding should match test vectors', () => {
   // Validate PING/PONG message encoding
@@ -21,11 +208,12 @@ describe('message encoding should match test vectors', () => {
       selector: MessageCodes.PING,
       value: {
         enrSeq,
-        customPayload: PingPongCustomDataType.serialize({ radius: dataRadius }),
+        payloadType: PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD,
+        customPayload: BasicRadius.serialize({ dataRadius }),
       },
     })
     testVector =
-      '0x0001000000000000000c000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+      '0x00010000000000000001000e000000feffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
     assert.equal(bytesToHex(payload), testVector, 'ping message encoded correctly')
   })
 

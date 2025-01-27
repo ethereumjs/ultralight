@@ -12,11 +12,6 @@ import {
 
 import type { BitArray } from '@chainsafe/ssz'
 
-// Ping/Pong Custom Data type -- currently identical for State and History networks
-export const PingPongCustomDataType = new ContainerType({
-  radius: new UintBigintType(32),
-})
-
 export enum FoundContent {
   UTP = 0,
   CONTENT = 1,
@@ -41,24 +36,37 @@ export enum MessageCodes {
 export const ByteList = new ByteListType(2048)
 export const Bytes2 = new ByteVectorType(2)
 export const ENRs = new ListCompositeType(ByteList, 32)
+/**
+ * Numeric identifier which tells clients how the payload field should be decoded.
+ */
+export const PingPongPayloadType = new UintNumberType(2)
+
+/**
+ * SSZ encoded extension payload
+ */
+export const PingPongPayload = new ByteListType(1100)
 export type PingMessage = {
   enrSeq: bigint
+  payloadType: number
   customPayload: PingPongCustomData
 }
 
 export type PongMessage = {
   enrSeq: bigint
+  payloadType: number
   customPayload: PingPongCustomData
 }
 
 export const PingMessageType = new ContainerType({
   enrSeq: new UintBigintType(8),
-  customPayload: ByteList,
+  payloadType: PingPongPayloadType,
+  customPayload: PingPongPayload,
 })
 
 export const PongMessageType = new ContainerType({
   enrSeq: new UintBigintType(8),
-  customPayload: ByteList,
+  payloadType: PingPongPayloadType,
+  customPayload: PingPongPayload,
 })
 
 export type FindNodesMessage = {
