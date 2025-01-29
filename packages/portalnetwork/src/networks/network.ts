@@ -367,19 +367,6 @@ export abstract class BaseNetwork extends EventEmitter {
 
   handlePing = async (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
     if (!this.routingTable.getWithPending(src.nodeId)?.value) {
-      if (
-        pingMessage.payloadType !== PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES
-      ) {
-        const customPayload = ErrorPayload.serialize({
-          errorCode: PingPongErrorCodes.EXTENSION_NOT_SUPPORTED,
-          message: hexToBytes(
-            fromAscii(
-              `First PING message must be type 0: CLIENT_INFO_RADIUS_AND_CAPABILITIES.  Received type ${pingMessage.payloadType}`,
-            ),
-          ),
-        })
-        return this.sendPong(src, id, customPayload, PingPongPayloadExtensions.ERROR_RESPONSE)
-      }
       // Check to see if node is already in corresponding network routing table and add if not
       const enr = this.findEnr(src.nodeId)
       if (enr !== undefined) {
