@@ -164,7 +164,7 @@ export function encodingTest(
     const encodedPacket = testPacket.encode()
     assert.equal(bytesToHex(encodedPacket), expectedResult, 'Packet encoding test passed')
     const testHeader = testPacket.header
-    const decodedPacket = Packet.fromBuffer(Buffer.from(expectedResult.slice(2), 'hex'))
+    const decodedPacket = Packet.fromBuffer(hexToBytes(expectedResult))
     const decodedHeader = decodedPacket.header
     assert.equal(
       Object.entries(decodedHeader).toString(),
@@ -190,8 +190,8 @@ export function encodingTest(
     // }
     if (packetType === PacketType.ST_DATA) {
       assert.equal(
-        bytesToHex(Buffer.from(testData.payload!)),
-        bytesToHex(Buffer.from(Uint8Array.from(decodedPacket.payload!))),
+        bytesToHex(testData.payload!),
+        bytesToHex(Uint8Array.from(decodedPacket.payload!)),
         `Successfully encoded and decoded DATA Packet payload.`,
       )
     }

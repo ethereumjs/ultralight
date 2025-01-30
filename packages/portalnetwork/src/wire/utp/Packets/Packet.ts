@@ -1,5 +1,5 @@
 import { createPacketHeader } from './index.js'
-
+import { concatBytes } from '@ethereumjs/util'
 import type {
   PacketHeader,
   PacketInput,
@@ -13,27 +13,28 @@ export class Packet<T extends PacketType> {
   public readonly payload?: Uint8Array
   public readonly _size: number
 
-  public static fromBuffer(buffer: Buffer): Packet<PacketType> {
-    const extension = buffer.readUInt8(1)
+  public static fromBuffer(buffer: Uint8Array): Packet<PacketType> {
+    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+    
     const metaData = {
       pType: buffer[0] >> 4,
-      extension: buffer.readUInt8(1),
-      connectionId: buffer.readUInt16BE(2),
-      timestampMicroseconds: buffer.readUint32BE(4),
-      timestampDifferenceMicroseconds: buffer.readUint32BE(8),
-      wndSize: buffer.readUInt32BE(12),
-      seqNr: buffer.readUInt16BE(16),
-      ackNr: buffer.readUInt16BE(18),
+      extension: view.getUint8(1),
+      connectionId: view.getUint16(2, false), // false = big-endian
+      timestampMicroseconds: view.getUint32(4, false),
+      timestampDifferenceMicroseconds: view.getUint32(8, false),
+      wndSize: view.getUint32(12, false),
+      seqNr: view.getUint16(16, false),
+      ackNr: view.getUint16(18, false),
     }
-    let packet: Packet<any>
-    if (extension === 1) {
-      const size = buffer.readUInt8(21)
-      const bitmask = buffer.subarray(22, 22 + size)
-      packet = Packet.fromOpts({
+
+    if (metaData.extension === 1) {
+      const size = view.getUint8(21)
+      const bitmask = buffer.slice(22, 22 + size)
+      const packet = Packet.fromOpts({
         header: {
           version: 1,
           ...metaData,
-          bitmask: Uint8Array.from(bitmask),
+          bitmask,
         },
       })
       return packet
@@ -43,7 +44,7 @@ export class Packet<T extends PacketType> {
           version: 1,
           ...metaData,
         },
-        payload: buffer.subarray(20),
+        payload: buffer.slice(20),
       })
       return packet
     }
@@ -60,10 +61,10 @@ export class Packet<T extends PacketType> {
   public get size() {
     return this._size
   }
-  public encode(): Buffer {
+  public encode(): Uint8Array {
     const buffer = this.header.encode()
     if (this.payload) {
-      return Buffer.concat([buffer, Buffer.from(this.payload)])
+      return concatBytes(buffer, (this.payload))
     }
     return buffer
   }

@@ -22,6 +22,7 @@ import { WriteSocket } from '../../../src/wire/utp/Socket/WriteSocket.js'
 
 import { ENR } from '@chainsafe/enr'
 import { RequestManager } from '../../../src/wire/utp/PortalNetworkUtp/requestManager.js'
+import { utf8ToBytes } from '@ethereumjs/util'
 
 const sampleSize = 50000
 const enr = ENR.decodeTxt(
@@ -142,14 +143,14 @@ describe('PortalNetworkUTP test', async () => {
       connectionId,
       socketIds[RequestCode.FOUNDCONTENT_WRITE].sndId,
       socketIds[RequestCode.FOUNDCONTENT_WRITE].rcvId,
-      Buffer.from('test'),
+      utf8ToBytes('test'),
     )
     assert.ok(socket, 'UTPSocket created by PortalNetworkUTP')
     assert.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
     assert.equal(socket.rcvConnectionId, connectionId, 'UTPSocket has correct rcvConnectionId')
     assert.equal(socket.remoteAddress, enr, 'UTPSocket has correct peerId')
     assert.equal(socket.type, UtpSocketType.WRITE, 'UTPSocket has correct requestCode')
-    assert.deepEqual(socket.content, Buffer.from('test'), 'UTPSocket has correct content')
+    assert.deepEqual(socket.content, utf8ToBytes('test'), 'UTPSocket has correct content')
     assert.equal(
       socket.ackNr,
       startingNrs[RequestCode.FOUNDCONTENT_WRITE].ackNr,
@@ -185,7 +186,7 @@ describe('PortalNetworkUTP test', async () => {
       connectionId,
       socketIds[RequestCode.OFFER_WRITE].sndId,
       socketIds[RequestCode.OFFER_WRITE].rcvId,
-      Buffer.from('test'),
+      utf8ToBytes('test'),
     )
     assert.equal(socket.type, UtpSocketType.WRITE, 'UTPSocket has correct requestCode')
     assert.equal(socket.sndConnectionId, connectionId, 'UTPSocket has correct sndConnectionId')
@@ -238,7 +239,7 @@ describe('RequestManager', () => {
       requestManager: mgr,
       requestCode: RequestCode.FINDCONTENT_READ,
       contentKeys: [],
-      content: Buffer.from('test'),
+      content: utf8ToBytes('test'),
     })
     const packet1 = Packet.fromOpts({
       header: {
