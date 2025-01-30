@@ -34,9 +34,7 @@ import type {
   PortalNetworkOpts,
 } from './types.js'
 import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
-import {
-  type IClientInfo,
-} from '../wire/payloadExtensions.js'
+import { type IClientInfo } from '../wire/payloadExtensions.js'
 import { RateLimiter } from '../transports/rateLimiter.js'
 
 export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
@@ -132,7 +130,12 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     switch (opts.transport) {
       case TransportLayer.WEB: {
         opts.proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
-        config.transport = new WebSocketTransportService(ma, config.enr.nodeId, opts.proxyAddress, new RateLimiter())
+        config.transport = new WebSocketTransportService(
+          ma,
+          config.enr.nodeId,
+          opts.proxyAddress,
+          new RateLimiter(),
+        )
         break
       }
       case TransportLayer.MOBILE:
@@ -428,9 +431,11 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    * @param msgId uTP message ID
    * @param packetBuffer uTP packet encoded to Buffer
    */
-  private handleUTP = async (src: INodeAddress, msg: ITalkReqMessage, packetBuffer: Buffer) => {
+  private handleUTP = async (src: INodeAddress, msg: ITalkReqMessage, packetBuffer: Uint8Array) => {
     if (this.uTP.requestManagers[src.nodeId] === undefined) {
-      this.logger.extend('handleUTP').extend('error')(`Received uTP packet from peer with no uTP stream history: ${src.nodeId}.  Blacklisting peer.`)
+      this.logger.extend('handleUTP').extend('error')(
+        `Received uTP packet from peer with no uTP stream history: ${src.nodeId}.  Blacklisting peer.`,
+      )
       this.addToBlackList(src.socketAddr)
       return
     }
@@ -439,7 +444,8 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       await this.uTP.handleUtpPacket(packetBuffer, src)
     } catch (err: any) {
       this.logger.extend('error')(
-        `handleUTP error: ${err.message}.  SrcId: ${src.nodeId
+        `handleUTP error: ${err.message}.  SrcId: ${
+          src.nodeId
         } MultiAddr: ${src.socketAddr.toString()}`,
       )
     }
@@ -465,11 +471,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         : (this.discv5.findEnr(enr.nodeId) ?? fromNodeAddress(enr.socketAddr.nodeAddress(), 'udp'))
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
-      const res = await this.discv5.sendTalkReq(
-        remote,
-        Buffer.from(payload),
-        hexToBytes(messageNetwork),
-      )
+      const res = await this.discv5.sendTalkReq(remote, payload, hexToBytes(messageNetwork))
       this.eventLog && this.emit('SendTalkReq', enr.nodeId, bytesToHex(res), bytesToHex(payload))
       return res
     } catch (err: any) {
@@ -503,20 +505,20 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public addToBlackList = (ma: Multiaddr) => {
-    (<RateLimiter>(
-      (<any>this.discv5.sessionService.transport)['rateLimiter']
-    )).addToBlackList(ma.nodeAddress().address)
+    (<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).addToBlackList(
+      ma.nodeAddress().address,
+    )
   }
 
   public isBlackListed = (ma: Multiaddr) => {
-    return (<RateLimiter>(
-      (<any>this.discv5.sessionService.transport)['rateLimiter']
-    )).isBlackListed(ma.nodeAddress().address)
+    return (<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).isBlackListed(
+      ma.nodeAddress().address,
+    )
   }
 
   public removeFromBlackList = (ma: Multiaddr) => {
-    (<RateLimiter>(
-      (<any>this.discv5.sessionService.transport)['rateLimiter']
-    )).removeFromBlackList(ma.nodeAddress().address)
+    (<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).removeFromBlackList(
+      ma.nodeAddress().address,
+    )
   }
 }

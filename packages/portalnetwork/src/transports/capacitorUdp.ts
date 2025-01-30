@@ -16,6 +16,22 @@ import type {
 import type { ENR } from '@chainsafe/enr'
 import type { Multiaddr } from '@multiformats/multiaddr'
 
+function uint8ArrayToBase64(array: Uint8Array): string {
+  return globalThis.btoa(
+    Array.from(array)
+      .map(val => String.fromCharCode(val))
+      .join('')
+  );
+}
+
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binaryString = globalThis.atob(base64);
+  return new Uint8Array(
+    Array.from(binaryString)
+      .map(char => char.charCodeAt(0))
+  );
+}
+
 /**
  * This class is responsible for encoding outgoing Packets and decoding incoming Packets over UDP
  */
@@ -53,7 +69,7 @@ export class CapacitorUDPTransportService
       port,
     })
     UDP.addListener('receive', (ret: any) => {
-      this.handleIncoming(new Uint8Array(Buffer.from(ret.buffer, 'base64')), {
+      this.handleIncoming(base64ToUint8Array(ret.buffer), {
         family: 'IPv4',
         address: ret.remoteAddress,
         port: ret.remotePort,
@@ -72,7 +88,7 @@ export class CapacitorUDPTransportService
       socketId: this.socket.socketId,
       address: nodeAddr.host,
       port: nodeAddr.port,
-      buffer: encodePacket(toId, packet).toString('base64'),
+      buffer: uint8ArrayToBase64(encodePacket(toId, packet)),
     })
   }
 
@@ -84,7 +100,7 @@ export class CapacitorUDPTransportService
       `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`,
     )
     try {
-      const packet = decodePacket(this.srcId, Buffer.from(data))
+      const packet = decodePacket(this.srcId, (data))
       this.emit('packet', multiaddr, packet)
     } catch (e) {
       this.emit('decodeError', e as any, multiaddr)

@@ -7,6 +7,8 @@ import { assert, describe, expect, it } from 'vitest'
 import { UltralightProvider } from '../../src/client/provider.js'
 import { TransportLayer } from '../../src/index.js'
 import { NetworkId } from '../../src/networks/types.js'
+import { hexToBytes } from 'ethereum-cryptography/utils'
+import { bytesToHex, bytesToUnprefixedHex } from '@ethereumjs/util'
 
 describe('Test provider functionality', () => {
   it('should test provider API', async () => {
@@ -24,21 +26,25 @@ describe('Test provider functionality', () => {
         enr,
         privateKey,
       },
-      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }, { networkId: NetworkId.StateNetwork }], bootnodes: [],
+      supportedNetworks: [
+        { networkId: NetworkId.HistoryNetwork },
+        { networkId: NetworkId.StateNetwork },
+      ],
+      bootnodes: [],
     })
-
 
     // Stub getBlockByHash for unit testing
     provider.portal.ETH.getBlockByHash = async (_hash: Uint8Array) => {
       return Block.fromBlockData({ header: BlockHeader.fromHeaderData({ number: 2n }) })
     }
 
-    provider.portal.ETH.getBlockByNumber = async (blockNumber: number | bigint | "latest" | "finalized") => {
+    provider.portal.ETH.getBlockByNumber = async (
+      blockNumber: number | bigint | 'latest' | 'finalized',
+    ) => {
       return Block.fromBlockData({
         header: BlockHeader.fromHeaderData({
           number: typeof blockNumber === 'string' ? 0n : blockNumber,
-
-        })
+        }),
       })
     }
 
@@ -47,7 +53,7 @@ describe('Test provider functionality', () => {
     }
 
     provider.portal.ETH.getCode = async (_address: Uint8Array) => {
-      return new Uint8Array(Buffer.from('60806040', 'hex'))
+      return hexToBytes('0x60806040')
     }
 
     provider.portal.ETH.getBalance = async (_address: Uint8Array) => {
@@ -58,63 +64,69 @@ describe('Test provider functionality', () => {
       const result = new Uint8Array(32)
       result[30] = 0x00
       result[31] = 0x01
-      return Buffer.from(result).toString('hex')
+      return bytesToUnprefixedHex(result)
     }
 
     provider.portal.ETH.call = async (_txObject: any) => {
-      return Buffer.from([0x00, 0x01]).toString('hex')
+      return bytesToUnprefixedHex(new Uint8Array([0x00, 0x01]))
     }
 
-    const blockByHash = await provider.request({
+    const blockByHash = (await provider.request({
       method: 'eth_getBlockByHash',
-      params: ['0x123', false]
-    }) as { result: { number: string } }
+      params: ['0x123', false],
+    })) as { result: { number: string } }
     expect(blockByHash.result.number).toBe('0x2')
 
-    const blockByNumber = await provider.request({
+    const blockByNumber = (await provider.request({
       method: 'eth_getBlockByNumber',
-      params: [100, false]
-    }) as { result: { number: string } }
+      params: [100, false],
+    })) as { result: { number: string } }
     expect(blockByNumber.result.number).toBe('0x64')
 
-    const balance = await provider.request({
+    const balance = (await provider.request({
       method: 'eth_getBalance',
-      params: ['0x3DC00AaD844393c110b61aED5849b7c82104e748', '0x0']
-    }) as { result: string }
+      params: ['0x3DC00AaD844393c110b61aED5849b7c82104e748', '0x0'],
+    })) as { result: string }
     expect(balance.result).toBe('0xde0b6b3a7640000')
 
-
-    const storage = await provider.request({
+    const storage = (await provider.request({
       method: 'eth_getStorageAt',
       params: [
         '0x1234567890123456789012345678901234567890',
         '0x0000000000000000000000000000000000000000000000000000000000000000',
-        '0x64'
-      ]
-    }) as { result: string }
+        '0x64',
+      ],
+    })) as { result: string }
     expect(storage.result).toBe('0x' + '00'.repeat(30) + '0001')
 
-    const call = await provider.request({
+    const call = (await provider.request({
       method: 'eth_call',
-      params: [{
-        to: '0x1234567890123456789012345678901234567890',
-        data: '0x70a08231000000000000000000000000'
-      }, '0x64']
-    }) as { result: string }
+      params: [
+        {
+          to: '0x1234567890123456789012345678901234567890',
+          data: '0x70a08231000000000000000000000000',
+        },
+        '0x64',
+      ],
+    })) as { result: string }
     expect(call.result).toBe('0x0001')
 
-    await expect(provider.request({
-      method: 'eth_unsupportedMethod',
-      params: []
-    })).rejects.toThrow()
+    await expect(
+      provider.request({
+        method: 'eth_unsupportedMethod',
+        params: [],
+      }),
+    ).rejects.toThrow()
 
-    await expect(provider.request({
-      method: 'eth_getBlockByHash',
-      params: ['0x123']
-    })).resolves.toEqual({
+    await expect(
+      provider.request({
+        method: 'eth_getBlockByHash',
+        params: ['0x123'],
+      }),
+    ).resolves.toEqual({
       error: {
         code: -32602,
-        message: 'Invalid params for eth_getBlockByHash'
+        message: 'Invalid params for eth_getBlockByHash',
       },
       id: null,
       jsonrpc: '2.0',

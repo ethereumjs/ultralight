@@ -53,7 +53,7 @@ export class WebSocketTransportService
     this.multiaddr = multiaddr
     this.srcId = srcId
     this.socket = new WebSocketAsPromised(proxyAddress, {
-      packMessage: (data: Buffer) => data.buffer,
+      packMessage: (data: Uint8Array) => data.buffer,
       unpackMessage: (data) => data,
       //@ts-ignore node websocket types don't match browser websocket types - so tell Typescript not to worry about it
       createWebSocket: (url) => new WebSocket(url),

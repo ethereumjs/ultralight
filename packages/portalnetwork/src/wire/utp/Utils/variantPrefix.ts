@@ -1,3 +1,4 @@
+import { concatBytes } from '@ethereumjs/util'
 import * as leb from '@thi.ng/leb128'
 
 /**
@@ -7,7 +8,7 @@ import * as leb from '@thi.ng/leb128'
  */
 export function attatchPrefix(content: Uint8Array): Uint8Array {
   const prefix = leb.encodeULEB128(content.length)
-  return Uint8Array.from(Buffer.concat([prefix, content]))
+  return concatBytes(prefix, content)
 }
 
 /**
@@ -19,7 +20,7 @@ export function encodeWithVariantPrefix(contents: Uint8Array[]): Uint8Array {
   const packed: Uint8Array[] = contents.map((content) => {
     return attatchPrefix(content)
   })
-  return Uint8Array.from(Buffer.concat(packed))
+  return concatBytes(...packed)
 }
 
 type length = number

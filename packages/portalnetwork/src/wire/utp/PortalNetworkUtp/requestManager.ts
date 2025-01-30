@@ -78,7 +78,7 @@ export class RequestManager {
    * Handles an incoming uTP packet.
    * @param packetBuffer buffer containing the incoming packet
    */
-  async handlePacket(packetBuffer: Buffer) {
+  async handlePacket(packetBuffer: Uint8Array) {
     const packet = Packet.fromBuffer(packetBuffer)
     const request = this.lookupRequest(packet.header.connectionId)
     switch (request) {

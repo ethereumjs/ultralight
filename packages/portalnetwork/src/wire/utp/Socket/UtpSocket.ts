@@ -81,7 +81,7 @@ export abstract class UtpSocket {
     clearTimeout(this.packetManager.congestionControl.timeoutCounter)
   }
 
-  async sendPacket<T extends PacketType>(packet: Packet<T>): Promise<Buffer> {
+  async sendPacket<T extends PacketType>(packet: Packet<T>): Promise<Uint8Array> {
     const msg = packet.encode()
     this.logger.extend('SEND').extend(PacketType[packet.header.pType])(
       `pid: ${packet.header.connectionId} sNr: ${packet.header.seqNr} aNr: ${packet.header.ackNr}`,

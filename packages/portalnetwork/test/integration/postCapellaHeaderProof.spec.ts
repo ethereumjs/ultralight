@@ -32,7 +32,7 @@ describe('Block Bridge Data Test', () => {
         ]
         const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
         const enr1 = SignableENR.createFromPrivateKey(pk1)
-        const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5034`)
+        const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5033`)
 
         const client = await PortalNetwork.create({
             supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }, { networkId: NetworkId.BeaconChainNetwork }], config: { enr: enr1, bindAddrs: { ip4: initMa }, privateKey: pk1 }

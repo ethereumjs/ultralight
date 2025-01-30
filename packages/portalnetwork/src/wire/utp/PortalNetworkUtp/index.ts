@@ -120,7 +120,7 @@ export class PortalNetworkUTP {
     return newRequest
   }
 
-  async handleUtpPacket(packetBuffer: Buffer, srcId: INodeAddress): Promise<void> {
+  async handleUtpPacket(packetBuffer: Uint8Array, srcId: INodeAddress): Promise<void> {
     if (this.requestManagers[srcId.nodeId] === undefined) {
       throw new Error(`No request manager for ${srcId.nodeId}`)
     }
@@ -159,7 +159,7 @@ export class PortalNetworkUTP {
     }
   }
 
-  async send(enr: ENR | INodeAddress, msg: Buffer, networkId: NetworkId) {
+  async send(enr: ENR | INodeAddress, msg: Uint8Array, networkId: NetworkId) {
     try {
       await this.client.sendPortalNetworkMessage(enr, msg, networkId, true)
     } catch (err) {
