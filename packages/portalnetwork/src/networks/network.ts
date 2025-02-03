@@ -327,17 +327,21 @@ export abstract class BaseNetwork extends EventEmitter {
             this.logger.extend('PONG')(
               `Client ${shortId(enr.nodeId)} is ${decodeClientInfo(ClientInfo).clientName} node with capabilities: ${Capabilities}`,
             )
-            this.routingTable.updateRadius(enr.nodeId, DataRadius)
+            this.routingTable.updateNodeFromPong(enr, {
+              capabilities: Capabilities,
+              clientInfo: decodeClientInfo(ClientInfo),
+              radius: DataRadius,
+            })
             break
           }
           case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
             const { dataRadius } = BasicRadius.deserialize(pongMessage.customPayload)
-            this.routingTable.updateRadius(enr.nodeId, dataRadius)
+            this.routingTable.updateNodeFromPong(enr, { radius: dataRadius })
             break
           }
           case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
             const { dataRadius } = HistoryRadius.deserialize(pongMessage.customPayload)
-            this.routingTable.updateRadius(enr.nodeId, dataRadius)
+            this.routingTable.updateNodeFromPong(enr, { radius: dataRadius })
             break
           }
           case PingPongPayloadExtensions.ERROR_RESPONSE: {
@@ -377,20 +381,26 @@ export abstract class BaseNetwork extends EventEmitter {
     if (this.capabilities.includes(pingMessage.payloadType)) {
       switch (pingMessage.payloadType) {
         case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
-          const { DataRadius } = ClientInfoAndCapabilities.deserialize(pingMessage.customPayload)
-          this.routingTable.updateRadius(src.nodeId, DataRadius)
+          const { DataRadius, Capabilities, ClientInfo } = ClientInfoAndCapabilities.deserialize(
+            pingMessage.customPayload,
+          )
+          this.routingTable.updateNodeFromPing(src, {
+            capabilities: Capabilities,
+            clientInfo: decodeClientInfo(ClientInfo),
+            radius: DataRadius,
+          })
           pongPayload = this.pingPongPayload(pingMessage.payloadType)
           break
         }
         case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
           const { dataRadius } = BasicRadius.deserialize(pingMessage.customPayload)
-          this.routingTable.updateRadius(src.nodeId, dataRadius)
+          this.routingTable.updateNodeFromPing(src, { radius: dataRadius })
           pongPayload = this.pingPongPayload(pingMessage.payloadType)
           break
         }
         case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
           const { dataRadius } = HistoryRadius.deserialize(pingMessage.customPayload)
-          this.routingTable.updateRadius(src.nodeId, dataRadius)
+          this.routingTable.updateNodeFromPing(src, { radius: dataRadius })
           pongPayload = this.pingPongPayload(pingMessage.payloadType)
           break
         }
