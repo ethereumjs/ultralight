@@ -298,6 +298,10 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     await this.discv5.start()
     await this.db.open()
     const storedIndex = await this.db.getBlockIndex()
+    const storedEnrCache = await this.db.get('enr_cache')
+    if (storedEnrCache) {
+      this.enrCache = new Map(JSON.parse(storedEnrCache))
+    }
     for (const network of this.networks.values()) {
       try {
         // Check for stored radius in db
@@ -334,6 +338,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     await this.discv5.stop()
     this.discv5.removeAllListeners()
     this.removeAllListeners()
+    await this.db.put('enr_cache', JSON.stringify([...this.enrCache.entries()]))
     await this.db.close()
     for (const network of this.networks.values()) {
       network.stopRefresh()
