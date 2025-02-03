@@ -88,6 +88,7 @@ describe('store -- Block Bodies and Receipts', async () => {
     header: block.header.serialize(),
     proof,
   })
+
   const headerKey = getContentKey(
     HistoryNetworkContentType.BlockHeader,
     hexToBytes(serializedBlock.blockHash),
