@@ -298,9 +298,13 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     await this.discv5.start()
     await this.db.open()
     const storedIndex = await this.db.getBlockIndex()
-    const storedEnrCache = await this.db.get('enr_cache')
-    if (storedEnrCache) {
-      this.enrCache = new Map(JSON.parse(storedEnrCache))
+    try {
+      const storedEnrCache = await this.db.get('enr_cache')
+      if (storedEnrCache) {
+        this.enrCache = new Map(JSON.parse(storedEnrCache))
+      }
+    } catch {
+      // No action
     }
     for (const network of this.networks.values()) {
       try {
