@@ -3,21 +3,21 @@ import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { hexToBytes } from 'ethereum-cryptography/utils'
 import { assert, describe, it } from 'vitest'
-import type { HistoryNetwork, INodeAddress } from '../../src'
+import type { HistoryNetwork } from '../../src'
 import {
   ClientInfoAndCapabilities,
   HistoryRadius,
   NetworkId,
   PingPongPayloadExtensions,
   PortalNetwork,
-  PortalWireMessageType,
   TransportLayer,
 } from '../../src/index.js'
+import { ScoredPeer } from '../../src/networks/peers.js'
 
 const privateKeys = [
-    '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
-    '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
-  ]
+  '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
+  '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
+]
 
 const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
 const enr1 = SignableENR.createFromPrivateKey(pk1)
@@ -62,16 +62,16 @@ describe('PING/PONG', async () => {
       await network1.sendPing(network2?.enr!.toENR(), 1)
       assert.fail('should have failed')
     } catch (e) {
-      assert.equal(
-        e.message,
-        'First PING message must be type 0: CLIENT_INFO_RADIUS_AND_CAPABILITIES.',
-      )
+      assert.equal(e.message, 'Peer is not know to support extension type: 1')
     }
   })
   it('should exchange type 0 PING/PONG', async () => {
     const pingpong = await network1.sendPing(network2?.enr!.toENR(), 0)
     assert.exists(pingpong, 'should have received a pong')
-    assert.equal(pingpong!.payloadType, PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES)
+    assert.equal(
+      pingpong!.payloadType,
+      PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
+    )
     const { DataRadius } = ClientInfoAndCapabilities.deserialize(pingpong!.customPayload)
     assert.equal(DataRadius, network2.nodeRadius)
   })
@@ -83,6 +83,18 @@ describe('PING/PONG', async () => {
     assert.equal(dataRadius, network2.nodeRadius)
   })
   it('should receive error response from unsupported capability', async () => {
+    // falsely update peer's capabilities in network census
+    network1.routingTable.networkCensus.set(
+      network2.enr!.nodeId,
+      new ScoredPeer({
+        nodeAddress: {
+          nodeId: network2.enr!.nodeId,
+          socketAddr: network2.enr!.getLocationMultiaddr('udp')!,
+        },
+        capabilities: [1],
+      }),
+    )
+    // send ping with unsupported capability
     const pingpong = await network1.sendPing(network2?.enr!.toENR(), 1)
     assert.exists(pingpong, 'should have received a pong')
     assert.equal(pingpong!.payloadType, PingPongPayloadExtensions.ERROR_RESPONSE)
