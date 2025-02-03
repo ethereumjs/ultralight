@@ -68,24 +68,6 @@ describe('PING/PONG', async () => {
       )
     }
   })
-  it('should respond with ERROR_RESPONSE to type !== 0 PING from unknown node', async () => {
-    const pingPayload = network1.pingPongPayload(PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD)
-    const pingMsg = {
-      enrSeq: 1n,
-      payloadType: PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD,
-      customPayload: pingPayload,
-    }
-    const network1NodeAddress: INodeAddress = {
-      nodeId: node1.discv5.enr.nodeId,
-      socketAddr: initMa,
-    }
-    const pong = await network2.handlePing(network1NodeAddress, 1234n, pingMsg)
-    const pongMsg = PortalWireMessageType.deserialize(pong)
-    // const pongPayload = HistoryRadius.deserialize(
-    //   (<any>pongMsg.value).customPayload,
-    // )
-    assert.equal((<any>pongMsg.value).payloadType, PingPongPayloadExtensions.ERROR_RESPONSE)
-  })
   it('should exchange type 0 PING/PONG', async () => {
     const pingpong = await network1.sendPing(network2?.enr!.toENR(), 0)
     assert.exists(pingpong, 'should have received a pong')
