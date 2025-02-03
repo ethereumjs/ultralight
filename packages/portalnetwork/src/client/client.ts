@@ -266,6 +266,12 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     // TODO: Decide whether to put everything on a centralized event bus
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
+    this.discv5.on('enrAdded', (enr: ENR) => {
+      this.updateENRCache([enr])
+    })
+    this.discv5.on('discovered', (enr: ENR) => {
+      this.updateENRCache([enr])
+    })
     // if (this.discv5.sessionService.transport instanceof HybridTransportService) {
     //   ;(this.discv5.sessionService as any).send = this.send.bind(this)
     // }
@@ -406,6 +412,9 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     src: ENR | null,
     message: ITalkReqMessage,
   ) => {
+    if (src) {
+      this.updateENRCache([src])
+    }
     this.metrics?.totalBytesReceived.inc(message.request.length)
     if (bytesToHex(message.protocol) === NetworkId.UTPNetwork) {
       await this.handleUTP(nodeAddress, message, message.request)
@@ -422,8 +431,11 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     await network.handle(message, nodeAddress)
   }
 
-  private onTalkResp = (_: any, __: any, message: ITalkRespMessage) => {
+  private onTalkResp = (_: INodeAddress, src: ENR | null, message: ITalkRespMessage) => {
     this.metrics?.totalBytesReceived.inc(message.response.length)
+    if (src) {
+      this.updateENRCache([src])
+    }
   }
 
   /**
@@ -465,6 +477,9 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     networkId: NetworkId,
     utpMessage?: boolean,
   ): Promise<Uint8Array> => {
+    if (enr instanceof ENR) {
+      this.updateENRCache([enr])
+    }
     const messageNetwork = utpMessage !== undefined ? NetworkId.UTPNetwork : networkId
     const remote =
       enr instanceof ENR
