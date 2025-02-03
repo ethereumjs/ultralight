@@ -13,7 +13,7 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   /**
    * Map of all known peers in the network
    */
-  private networkCensus: Map<string, ScoredPeer>
+  public networkCensus: Map<string, ScoredPeer>
   constructor(nodeId: NodeId) {
     super(nodeId)
     this.radiusMap = new Map()
