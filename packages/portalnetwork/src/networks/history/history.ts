@@ -104,7 +104,7 @@ export class HistoryNetwork extends BaseNetwork {
   /**
    * Retrieve a blockheader from the DB by hash
    * @param blockHash the hash of the blockheader sought
-   * @param asBytes return the header as RLP encoded bytes or as an @ethereumjs/block BlockHeader
+   * @param asBytes return the header as RLP encoded bytes or as an `@ethereumjs/block` BlockHeader
    * @returns the bytes or Blockheader if found or else undefined
    */
   public getBlockHeaderFromDB = async (
@@ -118,6 +118,7 @@ export class HistoryNetwork extends BaseNetwork {
     const value = await this.findContentLocally(contentKey)
     if (value === undefined) return undefined
     const header = BlockHeaderWithProof.deserialize(value).header
+
     return asBytes === true
       ? header
       : BlockHeader.fromRLPSerializedHeader(header, { setHardfork: true })
@@ -385,8 +386,7 @@ export class HistoryNetwork extends BaseNetwork {
       this.gossipManager.add(contentKey)
     }
     this.logger(
-      `${HistoryNetworkContentType[contentType]} added for ${
-        keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
+      `${HistoryNetworkContentType[contentType]} added for ${keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
       }`,
     )
   }

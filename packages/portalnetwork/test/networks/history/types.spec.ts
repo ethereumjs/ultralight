@@ -1,17 +1,14 @@
 import { readFileSync } from 'fs'
-import { ProofType } from '@chainsafe/persistent-merkle-tree'
-import { ContainerType, UintBigintType } from '@chainsafe/ssz'
+import { ContainerType } from '@chainsafe/ssz'
 import { BlockHeader } from '@ethereumjs/block'
 import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
-import { NetworkId, PortalNetwork } from '../../../src/index.js'
 import { historicalEpochs } from '../../../src/networks/history/data/epochHashes.js'
 import {
   ContentKeyType,
   Receipt,
   getContentId,
-  getContentKey,
 } from '../../../src/networks/history/index.js'
 import {
   BlockHeaderWithProof,
@@ -22,8 +19,8 @@ import {
 
 import testData from './testData/headerWithProof.json' assert { type: 'json' }
 
-import type { HistoryNetwork, TxReceiptType } from '../../../src/networks/history/index.js'
-import { AccumulatorProofType, generatePreMergeHeaderProof, verifyPreCapellaHeaderProof, verifyPreMergeHeaderProof } from '../../../dist/index.js'
+import { AccumulatorProofType, generatePreMergeHeaderProof, verifyPreMergeHeaderProof } from '../../../dist/index.js'
+import type { TxReceiptType } from '../../../src/networks/history/index.js'
 
 describe('History Subnetwork contentKey serialization/deserialization', () => {
   it('content Key', () => {
