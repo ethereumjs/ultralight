@@ -2,6 +2,7 @@ import { KademliaRoutingTable } from '@chainsafe/discv5'
 
 import type { ENR, NodeId } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
+import type { IClientInfo, INodeAddress } from '../index.js'
 import { shortId } from '../index.js'
 import { ScoredPeer } from '../networks/peers.js'
 export class PortalNetworkRoutingTable extends KademliaRoutingTable {
@@ -108,5 +109,81 @@ export class PortalNetworkRoutingTable extends KademliaRoutingTable {
     this.ignored = this.ignored.slice(splitIndex)
     before - this.ignored.length > 0 &&
       this.logger!(`${before - this.ignored.length} nodeId's are no longer ignored`)
+  }
+
+  public nodeInCensus = (nodeId: NodeId) => {
+    return this.networkCensus.has(nodeId)
+  }
+
+  public updateNodeFromPing = (
+    nodeAddress: INodeAddress,
+    {
+      capabilities,
+      clientInfo,
+      radius,
+    }: {
+      radius: bigint
+      capabilities?: number[]
+      clientInfo?: IClientInfo
+    },
+  ) => {
+    this.updateCensusFromNodeAddress(nodeAddress)
+    this.updateRadius(nodeAddress.nodeId, radius)
+    const peer = this.networkCensus.get(nodeAddress.nodeId)!
+    peer.radius = radius
+    if (capabilities !== undefined) {
+      peer.capabilities = capabilities
+    }
+    if (clientInfo !== undefined) {
+      peer.clientInfo = clientInfo
+    }
+  }
+
+  public updateNodeFromPong = (
+    enr: ENR,
+    {
+      capabilities,
+      clientInfo,
+      radius,
+    }: {
+      radius: bigint
+      capabilities?: number[]
+      clientInfo?: IClientInfo
+    },
+  ) => {
+    this.updateCensusFromENR(enr)
+    this.updateRadius(enr.nodeId, radius)
+    const peer = this.networkCensus.get(enr.nodeId)!  
+    peer.enr = enr
+    peer.radius = radius
+    if (capabilities !== undefined) {
+      peer.capabilities = capabilities
+    }
+    if (clientInfo !== undefined) {
+      peer.clientInfo = clientInfo
+    }
+  
+  }
+
+  public updateCensusFromENR = (enr: ENR) => {
+    const peer = this.networkCensus.get(enr.nodeId)
+    if (peer) {
+      peer.enr = enr
+    } else {
+      const nodeAddress: INodeAddress = {
+        nodeId: enr.nodeId,
+        socketAddr: enr.getLocationMultiaddr('udp')!,
+      }
+      this.networkCensus.set(enr.nodeId, new ScoredPeer({ nodeAddress, enr }))
+    }
+  }
+
+  public updateCensusFromNodeAddress = (nodeAddress: INodeAddress) => {
+    const peer = this.networkCensus.get(nodeAddress.nodeId)
+    if (peer) {
+      peer.nodeAddress = nodeAddress
+    } else {
+      this.networkCensus.set(nodeAddress.nodeId, new ScoredPeer({ nodeAddress }))
+    }
   }
 }
