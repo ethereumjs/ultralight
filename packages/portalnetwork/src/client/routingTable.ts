@@ -3,16 +3,22 @@ import { KademliaRoutingTable } from '@chainsafe/discv5'
 import type { ENR, NodeId } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import { shortId } from '../index.js'
+import { ScoredPeer } from '../networks/peers.js'
 export class PortalNetworkRoutingTable extends KademliaRoutingTable {
   public logger?: Debugger
   private radiusMap: Map<NodeId, bigint>
   private gossipMap: Map<NodeId, Set<Uint8Array>>
   private ignored: [number, NodeId][]
+  /**
+   * Map of all known peers in the network
+   */
+  private networkCensus: Map<string, ScoredPeer>
   constructor(nodeId: NodeId) {
     super(nodeId)
     this.radiusMap = new Map()
     this.gossipMap = new Map()
     this.ignored = []
+    this.networkCensus = new Map()
   }
 
   public setLogger(logger: Debugger) {
