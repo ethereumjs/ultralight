@@ -155,7 +155,7 @@ export abstract class BaseNetwork extends EventEmitter {
     return this.portal.sendPortalNetworkResponse(src, requestId, payload)
   }
   findEnr(nodeId: string): ENR | undefined {
-    return this.portal.discv5.findEnr(nodeId) ?? this.routingTable.getWithPending(nodeId)?.value
+    return this.portal.findENR(nodeId) ?? this.routingTable.getWithPending(nodeId)?.value
   }
 
   public async put(contentKey: Uint8Array, content: string) {

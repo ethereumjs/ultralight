@@ -485,7 +485,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     const remote =
       enr instanceof ENR
         ? enr
-        : (this.discv5.findEnr(enr.nodeId) ?? fromNodeAddress(enr.socketAddr.nodeAddress(), 'udp'))
+        : (this.findENR(enr.nodeId) ?? fromNodeAddress(enr.socketAddr.nodeAddress(), 'udp'))
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
       const res = await this.discv5.sendTalkReq(remote, payload, hexToBytes(messageNetwork))
@@ -545,7 +545,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     }
   }
 
-  public findENR = (nodeId: string) => {
-    return this.enrCache.get(nodeId)
+  public findENR = (nodeId: string): ENR | undefined => {
+    return this.enrCache.get(nodeId) ?? this.discv5.findEnr(nodeId)
   }
 }
