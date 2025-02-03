@@ -277,6 +277,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     // }
     this.discv5.sessionService.on('established', async (nodeAddr, enr) => {
       this.discv5.findEnr(enr.nodeId) === undefined && this.discv5.addEnr(enr)
+      this.updateENRCache([enr])
     })
     if (opts.metrics) {
       this.metrics = opts.metrics
