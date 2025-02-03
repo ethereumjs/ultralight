@@ -298,14 +298,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     await this.discv5.start()
     await this.db.open()
     const storedIndex = await this.db.getBlockIndex()
-    try {
-      const storedEnrCache = await this.db.get('enr_cache')
-      if (storedEnrCache) {
-        this.enrCache = new Map(JSON.parse(storedEnrCache))
-      }
-    } catch {
-      // No action
-    }
+    await this.loadENRCache()
     for (const network of this.networks.values()) {
       try {
         // Check for stored radius in db
@@ -342,7 +335,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     await this.discv5.stop()
     this.discv5.removeAllListeners()
     this.removeAllListeners()
-    await this.db.put('enr_cache', JSON.stringify([...this.enrCache.entries()]))
+    await this.storeENRCache()
     await this.db.close()
     for (const network of this.networks.values()) {
       network.stopRefresh()
@@ -556,5 +549,21 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
   public findENR = (nodeId: string): ENR | undefined => {
     return this.enrCache.get(nodeId) ?? this.discv5.findEnr(nodeId)
+  }
+
+  public storeENRCache = async () => {
+    const cache = Array.from(this.enrCache.entries()).map(([nodeId, enr]) => [nodeId, enr.encodeTxt()])
+    await this.db.put('enr_cache', JSON.stringify(cache))
+  }
+
+  public loadENRCache = async () => {
+    try { 
+      const storedEnrCache = await this.db.get('enr_cache')
+      if (storedEnrCache) {
+        this.enrCache = new Map(JSON.parse(storedEnrCache))
+      }
+    } catch {
+      // No action
+    }
   }
 }
