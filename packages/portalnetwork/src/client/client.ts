@@ -522,4 +522,14 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       ma.nodeAddress().address,
     )
   }
+
+  public updateENRCache = (enrs: ENR[]) => {
+    for (const enr of enrs) {
+      this.enrCache.set(enr.nodeId, enr)
+    }
+  }
+
+  public findENR = (nodeId: string) => {
+    return this.enrCache.get(nodeId)
+  }
 }
