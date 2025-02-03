@@ -296,9 +296,6 @@ export abstract class BaseNetwork extends EventEmitter {
       this.logger(`Invalid ENR provided. PING aborted`)
       return
     }
-    if (!this.routingTable.getWithPending(enr.nodeId)?.value && extensionType !== 0) {
-      throw new Error(`First PING message must be type 0: CLIENT_INFO_RADIUS_AND_CAPABILITIES.`)
-    }
     const timeout = setTimeout(() => {
       return undefined
     }, 3000)
