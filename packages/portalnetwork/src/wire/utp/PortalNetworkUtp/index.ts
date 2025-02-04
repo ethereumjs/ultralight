@@ -3,10 +3,11 @@ import type {
   INewRequest,
   INodeAddress,
   PortalNetwork,
+  PortalNetworkMetrics,
 } from '../../../index.js'
 import {
-  NetworkNames,
   NetworkId,
+  NetworkNames,
   Packet,
   PacketType,
   RequestCode,

@@ -57,7 +57,6 @@ import { FoundContent } from '../wire/types.js'
 
 import { NetworkDB } from './networkDB.js'
 
-import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
 import type { SignableENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
@@ -113,11 +112,6 @@ export abstract class BaseNetwork extends EventEmitter {
       db,
       logger: this.logger,
     })
-    if (this.portal.metrics) {
-      this.portal.metrics.knownHistoryNodes.collect = () => {
-        this.portal.metrics?.knownHistoryNodes.set(this.routingTable.size)
-      }
-    }
     this.gossipManager = new GossipManager(this, gossipCount)
   }
 
