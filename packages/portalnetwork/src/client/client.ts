@@ -544,24 +544,31 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
   public updateENRCache = (enrs: ENR[]) => {
     for (const enr of enrs) {
-      this.enrCache.set(enr.nodeId, enr)
+      this.enrCache.updateENR(enr)
     }
   }
 
   public findENR = (nodeId: string): ENR | undefined => {
-    return this.enrCache.get(nodeId) ?? this.discv5.findEnr(nodeId)
+    return this.enrCache.getENR(nodeId) ?? this.discv5.findEnr(nodeId)
   }
 
   public storeENRCache = async () => {
-    const cache = Array.from(this.enrCache.entries()).map(([nodeId, enr]) => [nodeId, enr.encodeTxt()])
+    const cache = Array.from(this.enrCache['peers'].values())
+      .filter((peer) => peer.enr !== undefined)
+      .map((peer) => {
+        return peer.enr!.encodeTxt()
+      })
     await this.db.put('enr_cache', JSON.stringify(cache))
   }
 
   public loadENRCache = async () => {
-    try { 
+    try {
       const storedEnrCache = await this.db.get('enr_cache')
       if (storedEnrCache) {
-        this.enrCache = new Map(JSON.parse(storedEnrCache))
+        const enrs = JSON.parse(storedEnrCache)
+        for (const enr of enrs) {
+          this.enrCache.updateENR(ENR.decodeTxt(enr))
+        }
       }
     } catch {
       // No action
