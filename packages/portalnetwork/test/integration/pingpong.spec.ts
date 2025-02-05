@@ -57,17 +57,6 @@ describe('PING/PONG', async () => {
   await node2.start()
   const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-  // it('should fail if first ping is not CLIENT_INFO_RADIUS_AND_CAPABILITIES', async () => {
-  //   try {
-  //     await network1.sendPing(network2?.enr!.toENR(), 1)
-  //     assert.fail('should have failed')
-  //   } catch (e) {
-  //     assert.equal(
-  //       e.message,
-  //       'First PING message must be type 0: CLIENT_INFO_RADIUS_AND_CAPABILITIES.',
-  //     )
-  //   }
-  // })
   it('should exchange type 0 PING/PONG', async () => {
     const pingpong = await network1.sendPing(network2?.enr!.toENR(), 0)
     assert.exists(pingpong, 'should have received a pong')
