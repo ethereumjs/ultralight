@@ -36,6 +36,7 @@ import type {
 import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
 import { type IClientInfo } from '../wire/payloadExtensions.js'
 import { RateLimiter } from '../transports/rateLimiter.js'
+import { ENRCache } from './enrCache.js'
 
 export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   clientInfo: IClientInfo
@@ -49,7 +50,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   metrics: PortalNetworkMetrics | undefined
   logger: Debugger
   ETH: ETH
-  enrCache: Map<string, ENR>
+  enrCache: ENRCache
   shouldRefresh: boolean = true
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
@@ -198,7 +199,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
     // cache signature to ensure ENR can be encoded on startup
     this.discv5.enr.encode()
-    this.enrCache = new Map()
+    this.enrCache = new ENRCache({})
     this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('Portal')
     this.networks = new Map()
     this.bootnodes = opts.bootnodes ?? []
