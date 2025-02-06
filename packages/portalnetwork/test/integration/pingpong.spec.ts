@@ -72,6 +72,8 @@ describe('PING/PONG', async () => {
     assert.equal(dataRadius, network2.nodeRadius)
   })
   it('should receive error response from unsupported capability', async () => {
+    const peer = node1.enrCache.getPeer(node2.discv5.enr.nodeId)
+    peer?.capabilities.add(1)
     const pingpong = await network1.sendPing(network2?.enr!.toENR(), 1)
     assert.exists(pingpong, 'should have received a pong')
     assert.equal(pingpong!.payloadType, PingPongPayloadExtensions.ERROR_RESPONSE)
