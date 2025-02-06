@@ -26,7 +26,7 @@ export class ENRCache {
   }
 
   public getPeerCapabilities(nodeId: NodeId) {
-    return this.peers.get(nodeId)?.capabilities ?? new Set()
+    return this.peers.get(nodeId)?.capabilities ?? new Set([0])
   }
 
   public updateENR(enr: ENR) {
