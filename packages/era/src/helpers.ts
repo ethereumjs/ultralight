@@ -233,7 +233,8 @@ export const decompressBeaconBlock = async (
  * @param eraFile Uint8Array a serialized era file
  * @returns a stream of decompressed SignedBeaconBlocks or undefined if no blocks are present
  */
-export async function* readBlocksFromEra(eraFile: Uint8Array) {
+// export async function* readBlocksFromEra(eraFile: Uint8Array) {
+export async function* readBlocksFromEra(eraFile: Uint8Array): AsyncGenerator<SignedBeaconBlock | undefined> {
   const indices = getEraIndexes(eraFile)
   const maxBlocks = indices.blockSlotIndex?.slotOffsets.length;
   if (maxBlocks === undefined) {

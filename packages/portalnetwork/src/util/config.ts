@@ -35,6 +35,25 @@ export const NetworkStrings: Record<string, NetworkId> = {
   state: NetworkId.StateNetwork,
 }
 
+let execSync: Function
+let readFileSync: Function
+
+if (typeof window === 'undefined') {
+  import('child_process').then(childProcess => {
+    execSync = childProcess.execSync
+  })
+  import('fs').then(fs => {
+    readFileSync = fs.readFileSync
+  })
+} else {
+  execSync = () => {
+    throw new Error('execSync is not supported in the browser or Tauri environment')
+  }
+  readFileSync = () => {
+    throw new Error('readFileSync is not supported in the browser or Tauri environment')
+  }
+}
+
 export const cliConfig = async (args: PortalClientOpts) => {
   const ip =
     args.bindAddress !== undefined

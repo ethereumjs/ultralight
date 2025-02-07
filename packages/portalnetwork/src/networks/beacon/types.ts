@@ -54,7 +54,11 @@ export const HistoricalSummariesKey = new ContainerType({ epoch: new UintBigintT
 
 export const HistoricalSummariesStateProof = new VectorCompositeType(Bytes32Type, 5)
 
-export const HistoricalSummariesWithProof = new ContainerType(
+export const HistoricalSummariesWithProof: ContainerType<{
+  epoch: UintBigintType
+  historicalSummaries: typeof ssz.capella.BeaconState.fields.historicalSummaries
+  proof: VectorCompositeType<typeof Bytes32Type>
+}> = new ContainerType(
   {
     epoch: new UintBigintType(8),
     historicalSummaries: ssz.capella.BeaconState.fields.historicalSummaries,

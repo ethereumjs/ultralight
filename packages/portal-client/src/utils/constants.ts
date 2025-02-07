@@ -1,0 +1,1 @@
+export const MAX_PACKET_SIZE = 1460
