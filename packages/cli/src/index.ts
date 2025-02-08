@@ -24,7 +24,7 @@ const main = async () => {
   let web3: jayson.Client | undefined
 
   const portalConfig = await cliConfig(args)
-
+  log(`portalConfig: ${JSON.stringify(args, null, 2)}`)
   portalConfig.operatingSystemAndCpuArchitecture = args.arch
   portalConfig.shortCommit = args.commit ?? execSync('git rev-parse HEAD').toString().slice(0, 7)
 
@@ -70,13 +70,11 @@ const main = async () => {
           })
         } else {
           log(
-            `Received ${method} with params: ${
-              params !== undefined &&
-              (params as any[]).map((p, idx) => {
-                return `${idx}: ${p.toString().slice(0, 64)}${
-                  p.toString().length > 64 ? '...' : ''
+            `Received ${method} with params: ${params !== undefined &&
+            (params as any[]).map((p, idx) => {
+              return `${idx}: ${p.toString().slice(0, 64)}${p.toString().length > 64 ? '...' : ''
                 }`
-              })
+            })
             }`,
           )
           return this.getMethod(method)
