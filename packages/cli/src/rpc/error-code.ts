@@ -6,3 +6,4 @@ export const METHOD_NOT_FOUND = -32601
 export const INVALID_PARAMS = -32602
 export const INTERNAL_ERROR = -32603
 export const CONTENT_NOT_FOUND = -39002
+export const BEACON_CLIENT_NOT_INITIALIZED = -39003
