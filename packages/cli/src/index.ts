@@ -26,6 +26,7 @@ const main = async () => {
 
   const portalConfig = await cliConfig({
     ...args,
+    bindAddress: args.bindAddress ?? `${ip}:9000`,
     bootnodeList: args.bootnodeList ? readFileSync(args.bootnodeList, 'utf-8').split('\n') : undefined,
   })
   log(`portalConfig: ${JSON.stringify(args, null, 2)}`)
