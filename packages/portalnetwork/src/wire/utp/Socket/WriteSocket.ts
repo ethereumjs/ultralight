@@ -1,7 +1,9 @@
+import { NetworkNames } from '../../../networks/types.js'
 import { ConnectionState, ContentWriter, PacketType, UtpSocketType, randUint16 } from '../index.js'
 
 import { UtpSocket } from './UtpSocket.js'
 
+import type { PortalNetworkMetrics } from '../../../client/types.js'
 import type { ICreateData, UtpSocketOptions } from '../index.js'
 
 export class WriteSocket extends UtpSocket {
@@ -66,6 +68,11 @@ export class WriteSocket extends UtpSocket {
     return false
   }
   close(): void {
+    if (this.utp.client.metrics) {
+      const metric = (NetworkNames[this.networkId] +
+        '_utpWriteStreamsCompleted') as keyof PortalNetworkMetrics
+      this.utp.client.metrics[metric].inc()
+    }
     clearInterval(this.packetManager.congestionControl.timeoutCounter)
     this.packetManager.congestionControl.removeAllListeners()
     this._clearTimeout()

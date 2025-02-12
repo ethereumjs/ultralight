@@ -3,9 +3,11 @@ import type {
   INewRequest,
   INodeAddress,
   PortalNetwork,
+  PortalNetworkMetrics,
 } from '../../../index.js'
 import {
   NetworkId,
+  NetworkNames,
   Packet,
   PacketType,
   RequestCode,
@@ -89,6 +91,23 @@ export class PortalNetworkUTP {
 
   async handleNewRequest(params: INewRequest): Promise<ContentRequestType> {
     const { contentKeys, enr, connectionId, requestCode } = params
+    if (this.client.metrics) {
+      const utpMetric = (NetworkNames[params.networkId] +
+        '_utpStreamsTotal') as keyof PortalNetworkMetrics
+      this.client.metrics[utpMetric].inc()
+      if (
+        requestCode === RequestCode.FOUNDCONTENT_WRITE ||
+        requestCode === RequestCode.OFFER_WRITE
+      ) {
+        const utpWriteMetric = (NetworkNames[params.networkId] +
+          '_utpWriteStreamsOpened') as keyof PortalNetworkMetrics
+        this.client.metrics[utpWriteMetric].inc()
+      } else {
+        const utpReadMetric = (NetworkNames[params.networkId] +
+          '_utpReadStreamsOpened') as keyof PortalNetworkMetrics
+        this.client.metrics[utpReadMetric].inc()
+      }
+    }
     if (this.requestManagers[enr.nodeId] === undefined) {
       this.requestManagers[enr.nodeId] = new RequestManager(enr.nodeId, this.logger)
     }
@@ -162,6 +181,11 @@ export class PortalNetworkUTP {
   async send(enr: ENR | INodeAddress, msg: Uint8Array, networkId: NetworkId) {
     try {
       await this.client.sendPortalNetworkMessage(enr, msg, networkId, true)
+      if (this.client.metrics) {
+        const utpMetric = (NetworkNames[networkId] +
+          '_utpPacketsSent') as keyof PortalNetworkMetrics
+        this.client.metrics[utpMetric].inc()
+      }
     } catch (err) {
       this.logger.extend('error')(`Error sending message to ${enr.nodeId}: ${err}`)
       this.closeAllPeerRequests(enr.nodeId)

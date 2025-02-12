@@ -26,8 +26,9 @@ import type {
   OfferMessage,
   PingMessage,
   PongMessage,
+
   PortalNetwork,
-} from '../index.js'
+  PortalNetworkMetrics} from '../index.js'
 import {
   BasicRadius,
   ClientInfoAndCapabilities,
@@ -37,6 +38,7 @@ import {
   MAX_PACKET_SIZE,
   MessageCodes,
   NetworkId,
+  NetworkNames,
   NodeLookup,
   PingPongErrorCodes,
   PingPongPayloadExtensions,
@@ -49,8 +51,8 @@ import {
   encodeWithVariantPrefix,
   generateRandomNodeIdAtDistance,
   randUint16,
-  shortId,
-} from '../index.js'
+
+  shortId} from '../index.js'
 import { FoundContent } from '../wire/types.js'
 
 import { NetworkDB } from './networkDB.js'
@@ -110,11 +112,6 @@ export abstract class BaseNetwork extends EventEmitter {
       db,
       logger: this.logger,
     })
-    if (this.portal.metrics) {
-      this.portal.metrics.knownHistoryNodes.collect = () => {
-        this.portal.metrics?.knownHistoryNodes.set(this.routingTable.size)
-      }
-    }
     this.gossipManager = new GossipManager(this, gossipCount)
   }
 
@@ -142,6 +139,10 @@ export abstract class BaseNetwork extends EventEmitter {
     networkId: NetworkId,
     utpMessage?: boolean,
   ): Promise<Uint8Array> {
+    if (this.portal.metrics) {
+      const metric = (this.networkName + '_talkReqSent') as keyof PortalNetworkMetrics
+      this.portal.metrics[metric].inc()
+    }
     try {
       const res = await this.portal.sendPortalNetworkMessage(enr, payload, networkId, utpMessage)
       return res
@@ -938,6 +939,14 @@ export abstract class BaseNetwork extends EventEmitter {
     this.logger.extend('bucketRefresh')(
       `Finished bucket refresh with ${newSize} peers (${newSize - size} new peers)`,
     )
+    if (this.portal.metrics !== undefined) {
+      const metric = (NetworkNames[this.networkId] + '_peers') as keyof PortalNetworkMetrics
+      try {
+        (<PromClient.Gauge>this.portal.metrics[metric]).set(this.routingTable.size)
+      } catch (err) {
+        this.logger.extend('bucketRefresh')(`Error updating ${metric}:  ${(err as any).message}`)
+      }
+    }
   }
 
   /**

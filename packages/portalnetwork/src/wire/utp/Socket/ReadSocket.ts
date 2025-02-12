@@ -1,9 +1,11 @@
+import { NetworkNames } from '../../../networks/types.js'
 import { UtpSocketType } from '../Packets/index.js'
 
 import { ContentReader } from './ContentReader.js'
 import { UtpSocket } from './UtpSocket.js'
 import { ConnectionState } from './socketTyping.js'
 
+import type { PortalNetworkMetrics } from '../../../client/types.js'
 import type { Packet, PacketType, UtpSocketOptions } from '../Packets/index.js'
 
 export class ReadSocket extends UtpSocket {
@@ -121,6 +123,11 @@ export class ReadSocket extends UtpSocket {
     if (compile === true) {
       this.logger.extend('CLOSE')(`Running compiler.`)
       return this.compile()
+    }
+    if (this.utp.client.metrics) {
+      const utpReadMetric = (NetworkNames[this.networkId] +
+        '_utpReadStreamsCompleted') as keyof PortalNetworkMetrics
+      this.utp.client.metrics[utpReadMetric].inc()
     }
   }
 }
