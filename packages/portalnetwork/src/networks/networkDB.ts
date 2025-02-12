@@ -1,4 +1,3 @@
-import fs from 'fs'
 import { distance } from '@chainsafe/discv5'
 import { ContainerType, UintBigintType } from '@chainsafe/ssz'
 import { bytesToHex, hexToBytes, padToEven } from '@ethereumjs/util'
@@ -129,30 +128,16 @@ export class NetworkDB {
    * @returns the size of the data directory in bytes
    */
   async size(): Promise<number> {
-    if (this.dataDir === undefined) {
-      const _db = this.db as MemoryLevel<string, string>
-      let size = 0
-      for await (const [key, value] of _db.iterator()) {
-        try {
-          size += hexToBytes('0x' + padToEven(key.slice(2))).length
-          size += hexToBytes(value).length
-        } catch {
-          // ignore
-        }
+    let size = 0
+    for await (const [key, value] of this.db.iterator()) {
+      try {
+        size += hexToBytes('0x' + padToEven(key.slice(2))).length
+        size += hexToBytes(value).length
+      } catch {
+        // ignore
       }
-      return size
     }
-    try {
-      const files = fs.readdirSync(this.dataDir)
-      let size = 0
-      for (const file of files) {
-        const stats = fs.lstatSync(this.dataDir + '/' + file)
-        size += stats.size
-      }
-      return size
-    } catch (err: any) {
-      throw new Error(`Error reading data directory: ${err.toString()}`)
-    }
+    return size
   }
 
   /**
