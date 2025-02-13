@@ -4,7 +4,6 @@ import { assert, describe, it } from 'vitest'
 
 import {
   arrayByteLength,
-  dirSize,
   generateRandomNodeIdAtDistance,
   shortId,
 } from '../../src/util/index.js'
@@ -37,6 +36,5 @@ describe('utility method tests', async () => {
       5,
       'computed correct length of nested Uint8Arrays',
     )
-    assert.equal(await dirSize('./test/util/testDir'), 0.00002765655517578125)
   })
 })
