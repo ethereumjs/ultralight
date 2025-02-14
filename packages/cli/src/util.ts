@@ -1,14 +1,3 @@
-import { BlockHeader } from '@ethereumjs/block'
-import { RLP } from '@ethereumjs/rlp'
-import { TransactionFactory } from '@ethereumjs/tx'
-import { bytesToHex } from '@ethereumjs/util'
-import {
-  BlockBodyContentType,
-  BlockHeaderWithProof,
-  EpochAccumulator,
-  sszReceiptType,
-  sszUnclesType,
-} from 'portalnetwork'
 
 import type { BaseNetwork, NetworkId } from 'portalnetwork'
 import type { Enr } from './rpc/schema/types.js'
@@ -62,52 +51,4 @@ export const addBootNode = async (networkId: NetworkId, baseNetwork: BaseNetwork
     throw new Error(`Error adding bootnode ${enr} to network \
       ${networkId}: ${error.message ?? error}`)
   }
-}
-
-export const toJSON = (contentKey: Uint8Array, res: Uint8Array) => {
-  const contentType = contentKey[0]
-  let content = {}
-  switch (contentType) {
-    case 0: {
-      const blockHeaderWithProof = BlockHeaderWithProof.deserialize(res)
-      const header = BlockHeader.fromRLPSerializedHeader(blockHeaderWithProof.header, {
-        setHardfork: true,
-      }).toJSON()
-      const proof =
-        blockHeaderWithProof.proof.selector === 0
-          ? []
-          : (blockHeaderWithProof.proof.value as Uint8Array[])?.map((p) => bytesToHex(p))
-      content = { header, proof }
-      break
-    }
-    case 1: {
-      const blockBody = BlockBodyContentType.deserialize(res)
-      const transactions = blockBody.allTransactions.map((tx) =>
-        TransactionFactory.fromSerializedData(tx).toJSON(),
-      )
-      const unclesRlp = bytesToHex(sszUnclesType.deserialize(blockBody.sszUncles))
-      content = {
-        transactions,
-        uncles: {
-          rlp: unclesRlp,
-          count: RLP.decode(unclesRlp).length.toString(),
-        },
-      }
-      break
-    }
-    case 2: {
-      const receipt = sszReceiptType.deserialize(res)
-      content = receipt
-      break
-    }
-    case 3: {
-      const epochAccumulator = EpochAccumulator.deserialize(res)
-      content = epochAccumulator
-      break
-    }
-    default: {
-      content = {}
-    }
-  }
-  return JSON.stringify(content)
 }
