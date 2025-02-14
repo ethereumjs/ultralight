@@ -13,6 +13,7 @@ import {
   BlockHeaderWithProof,
   BlockNumberKey,
   CAPELLA_ERA,
+  EphemeralHeaderKey,
   EpochAccumulator,
   HistoryNetworkContentType,
   MERGE_BLOCK,
@@ -57,14 +58,13 @@ export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
  */
 export const getContentKey = (
   contentType: HistoryNetworkContentType,
-  key: Uint8Array | bigint,
+  key: Uint8Array | bigint | { blockHash: Uint8Array; ancestorCount: number },
 ): Uint8Array => {
   let encodedKey
   switch (contentType) {
     case HistoryNetworkContentType.BlockHeader:
     case HistoryNetworkContentType.BlockBody:
-    case HistoryNetworkContentType.Receipt:
-    case HistoryNetworkContentType.HeaderProof: {
+    case HistoryNetworkContentType.Receipt: {
       if (!(key instanceof Uint8Array))
         throw new Error('block hash is required to generate contentId')
       encodedKey = Uint8Array.from([contentType, ...key])
@@ -73,6 +73,18 @@ export const getContentKey = (
     case HistoryNetworkContentType.BlockHeaderByNumber: {
       if (typeof key !== 'bigint') throw new Error('block number is required to generate contentId')
       encodedKey = BlockHeaderByNumberKey(key)
+      break
+    }
+    case HistoryNetworkContentType.EphemeralHeader: {
+      if (typeof key !== 'object' || !('blockHash' in key) || !('ancestorCount' in key))
+        throw new Error('block hash and ancestor count are required to generate contentId')
+      encodedKey = Uint8Array.from([
+        contentType,
+        EphemeralHeaderKey.serialize({
+          blockHash: key.blockHash,
+          ancestorCount: key.ancestorCount,
+        }),
+      ])
       break
     }
     default:
@@ -100,7 +112,7 @@ export const decodeHistoryNetworkContentKey = (
         | HistoryNetworkContentType.BlockHeader
         | HistoryNetworkContentType.BlockBody
         | HistoryNetworkContentType.Receipt
-        | HistoryNetworkContentType.HeaderProof
+        | HistoryNetworkContentType.EphemeralHeader
       keyOpt: Uint8Array
     }
   | {
@@ -108,17 +120,28 @@ export const decodeHistoryNetworkContentKey = (
       keyOpt: bigint
     } => {
   const contentType: HistoryNetworkContentType = contentKey[0]
-  if (contentType === HistoryNetworkContentType.BlockHeaderByNumber) {
-    const blockNumber = BlockNumberKey.deserialize(contentKey.slice(1)).blockNumber
-    return {
-      contentType,
-      keyOpt: blockNumber,
+  switch (contentType) {
+    case HistoryNetworkContentType.BlockHeaderByNumber: {
+      const blockNumber = BlockNumberKey.deserialize(contentKey.slice(1)).blockNumber
+      return {
+        contentType,
+        keyOpt: blockNumber,
+      }
     }
-  }
-  const blockHash = contentKey.slice(1)
-  return {
-    contentType,
-    keyOpt: blockHash,
+    case HistoryNetworkContentType.EphemeralHeader: {
+      const key = EphemeralHeaderKey.deserialize(contentKey.slice(1))
+      return {
+        contentType,
+        keyOpt: key.blockHash,
+      }
+    }
+    default: {
+      const blockHash = contentKey.slice(1)
+      return {
+        contentType,
+        keyOpt: blockHash,
+      }
+    }
   }
 }
 

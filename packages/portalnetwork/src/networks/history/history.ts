@@ -24,6 +24,7 @@ import {
   AccumulatorProofType,
   BlockHeaderWithProof,
   BlockNumberKey,
+  EphemeralHeaderPayload,
   HistoricalRootsBlockProof,
   HistoryNetworkContentType,
   MERGE_BLOCK,
@@ -378,15 +379,65 @@ export class HistoryNetwork extends BaseNetwork {
         }
         break
       }
+
+      // TODO: Keep an in-memory list of current ephemeral headers (by number and hash) and purge ones that are too old
+      case HistoryNetworkContentType.EphemeralHeader: {
+        const payload = EphemeralHeaderPayload.deserialize(value)
+        try {
+          // Verify first header matches requested header
+          const firstHeader = BlockHeader.fromRLPSerializedHeader(payload[0], { setHardfork: true })
+          const requestedHeaderHash = decodeHistoryNetworkContentKey(contentKey)
+            .keyOpt as Uint8Array
+          if (!equalsBytes(firstHeader.hash(), requestedHeaderHash)) {
+            // TODO: Should we ban/mark down the score of peers who send junk payload?
+            const errorMessage = `invalid ephemeral header payload; requested ${bytesToHex(requestedHeaderHash)}, got ${bytesToHex(firstHeader.hash())}`
+            this.logger(errorMessage)
+            throw new Error(errorMessage)
+          }
+          const hashKey = getContentKey(
+            HistoryNetworkContentType.EphemeralHeader,
+            firstHeader.hash(),
+          )
+          await this.put(hashKey, bytesToHex(payload[0]))
+          let prevHeader = firstHeader
+          // Should get maximum of 256 headers
+          // TODO: Should we check this and ban/mark down the score of peers who violate this rule?
+          for (const header of payload.slice(1, 256)) {
+            const ancestorHeader = BlockHeader.fromRLPSerializedHeader(header, {
+              setHardfork: true,
+            })
+            if (equalsBytes(prevHeader.hash(), ancestorHeader.parentHash)) {
+              // Verify that ancestor header matches parent hash of previous header
+              const hashKey = getContentKey(
+                HistoryNetworkContentType.EphemeralHeader,
+                ancestorHeader.hash(),
+              )
+              await this.put(hashKey, bytesToHex(header))
+              prevHeader = ancestorHeader
+            } else {
+              const errorMessage = `invalid ephemeral header payload; expected parent hash ${bytesToHex(ancestorHeader.parentHash)} but got ${bytesToHex(prevHeader.hash())}`
+              this.logger(errorMessage)
+              throw new Error(errorMessage)
+            }
+          }
+          break
+        } catch (err: any) {
+          this.logger(`Error validating ephemeral header: ${err.message}`)
+          return
+        }
+      }
     }
 
     this.emit('ContentAdded', contentKey, value)
     if (this.routingTable.values().length > 0) {
-      // Gossip new content to network
-      this.gossipManager.add(contentKey)
+      if (contentType !== HistoryNetworkContentType.EphemeralHeader) {
+        // Gossip new content to network except for ephemeral headers
+        this.gossipManager.add(contentKey)
+      }
     }
     this.logger(
-      `${HistoryNetworkContentType[contentType]} added for ${keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
+      `${HistoryNetworkContentType[contentType]} added for ${
+        keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
       }`,
     )
   }

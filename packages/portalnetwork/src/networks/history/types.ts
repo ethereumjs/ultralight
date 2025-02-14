@@ -36,7 +36,7 @@ export enum HistoryNetworkContentType {
   BlockBody = 1,
   Receipt = 2,
   BlockHeaderByNumber = 3,
-  HeaderProof = 4,
+  EphemeralHeader = 4,
 }
 export enum HistoryNetworkRetrievalMechanism {
   BlockHeaderByHash = 0,
@@ -221,4 +221,7 @@ export const EphemeralHeaderKey = new ContainerType({
 })
 
 export const MAX_EPHEMERAL_HEADERS_PAYLOAD = 255 // the max number of headers that can be sent in an ephemeral headers payload
-export const EphemeralHeaderPayload = new ListCompositeType(BlockHeader, MAX_EPHEMERAL_HEADERS_PAYLOAD)
+export const EphemeralHeaderPayload = new ListCompositeType(
+  BlockHeader,
+  MAX_EPHEMERAL_HEADERS_PAYLOAD,
+)
