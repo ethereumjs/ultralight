@@ -66,21 +66,22 @@ export const getContentKey = (
     case HistoryNetworkContentType.BlockBody:
     case HistoryNetworkContentType.Receipt: {
       if (!(key instanceof Uint8Array))
-        throw new Error('block hash is required to generate contentId')
+        throw new Error('block hash is required to generate contentKey')
       encodedKey = Uint8Array.from([contentType, ...key])
       break
     }
     case HistoryNetworkContentType.BlockHeaderByNumber: {
-      if (typeof key !== 'bigint') throw new Error('block number is required to generate contentId')
+      if (typeof key !== 'bigint')
+        throw new Error('block number is required to generate contentKey')
       encodedKey = BlockHeaderByNumberKey(key)
       break
     }
     case HistoryNetworkContentType.EphemeralHeader: {
       if (typeof key !== 'object' || !('blockHash' in key) || !('ancestorCount' in key))
-        throw new Error('block hash and ancestor count are required to generate contentId')
+        throw new Error('block hash and ancestor count are required to generate contentKey')
       encodedKey = Uint8Array.from([
         contentType,
-        EphemeralHeaderKey.serialize({
+        ...EphemeralHeaderKey.serialize({
           blockHash: key.blockHash,
           ancestorCount: key.ancestorCount,
         }),
@@ -93,6 +94,14 @@ export const getContentKey = (
   return encodedKey
 }
 
+/**
+ * Generates a database key for an ephemeral header being stored in the DB
+ * @param blockHash hash for ephemeral header being stored
+ * @returns database key for ephemeral header
+ */
+export const getEphemeralHeaderDbKey = (blockHash: Uint8Array) => {
+  return Uint8Array.from([HistoryNetworkContentType.EphemeralHeader, ...blockHash])
+}
 /**
  * Generates the contentId from a serialized History Network Content Key used to calculate the distance between a node ID and the content key
  * @param contentType the type of content (block header, block body, receipt, header_by_number)

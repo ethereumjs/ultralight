@@ -33,6 +33,7 @@ import {
 } from './types.js'
 import {
   getContentKey,
+  getEphemeralHeaderDbKey,
   verifyPostCapellaHeaderProof,
   verifyPreCapellaHeaderProof,
   verifyPreMergeHeaderProof,
@@ -394,10 +395,7 @@ export class HistoryNetwork extends BaseNetwork {
             this.logger(errorMessage)
             throw new Error(errorMessage)
           }
-          const hashKey = getContentKey(
-            HistoryNetworkContentType.EphemeralHeader,
-            firstHeader.hash(),
-          )
+          const hashKey = getEphemeralHeaderDbKey(firstHeader.hash())
           await this.put(hashKey, bytesToHex(payload[0]))
           let prevHeader = firstHeader
           // Should get maximum of 256 headers
@@ -406,12 +404,9 @@ export class HistoryNetwork extends BaseNetwork {
             const ancestorHeader = BlockHeader.fromRLPSerializedHeader(header, {
               setHardfork: true,
             })
-            if (equalsBytes(prevHeader.hash(), ancestorHeader.parentHash)) {
+            if (equalsBytes(prevHeader.parentHash, ancestorHeader.hash())) {
               // Verify that ancestor header matches parent hash of previous header
-              const hashKey = getContentKey(
-                HistoryNetworkContentType.EphemeralHeader,
-                ancestorHeader.hash(),
-              )
+              const hashKey = getEphemeralHeaderDbKey(ancestorHeader.hash())
               await this.put(hashKey, bytesToHex(header))
               prevHeader = ancestorHeader
             } else {
