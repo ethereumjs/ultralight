@@ -9,7 +9,7 @@ import {
   getContentKey,
   getEphemeralHeaderDbKey,
 } from '../../../src/index.js'
-import { hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 describe('ephemeral header handling', () => {
   it('should be able to store a valid ephemeral header payload', async () => {
     const node = await PortalNetwork.create({})
@@ -26,5 +26,9 @@ describe('ephemeral header handling', () => {
     await network?.store(contentKey, headerPayload)
     const storedHeaderPayload = await network?.get(getEphemeralHeaderDbKey(headers[0].hash()))
     assert.deepEqual(hexToBytes(storedHeaderPayload!), headers[0].serialize())
+    assert.equal(
+      network?.ephemeralHeaderIndex.get(headers[1].number),
+      bytesToHex(headers[1].hash()),
+    )
   })
 })

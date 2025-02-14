@@ -48,7 +48,7 @@ export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'
   logger: Debugger
-
+  public ephemeralHeaderIndex: Map<bigint, string> // Map of slot numbers to hashes
   public blockHashIndex: Map<string, string>
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, networkId: NetworkId.HistoryNetwork, db, radius, maxStorage })
@@ -60,6 +60,7 @@ export class HistoryNetwork extends BaseNetwork {
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
     this.routingTable.setLogger(this.logger)
     this.blockHashIndex = new Map()
+    this.ephemeralHeaderIndex = new Map()
   }
 
   public blockNumberToHash(blockNumber: bigint): Uint8Array | undefined {
@@ -266,6 +267,18 @@ export class HistoryNetwork extends BaseNetwork {
    * @returns the value of the FOUNDCONTENT response or undefined
    */
   public sendFindContent = async (enr: ENR, key: Uint8Array) => {
+    if (key[0] === HistoryNetworkContentType.EphemeralHeader) {
+      const beacon = this.portal.network()['0x500c']
+      if (
+        beacon === undefined ||
+        beacon.lightClient?.status === RunStatusCode.uninitialized ||
+        beacon.lightClient?.status === RunStatusCode.stopped
+      ) {
+        const errorMessage = 'Cannot verify ephemeral headers when beacon network is not running'
+        this.logger.extend('FINDCONTENT')(errorMessage)
+        throw new Error(errorMessage)
+      }
+    }
     this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
     const payload = PortalWireMessageType.serialize({
@@ -381,7 +394,6 @@ export class HistoryNetwork extends BaseNetwork {
         break
       }
 
-      // TODO: Keep an in-memory list of current ephemeral headers (by number and hash) and purge ones that are too old
       case HistoryNetworkContentType.EphemeralHeader: {
         const payload = EphemeralHeaderPayload.deserialize(value)
         try {
@@ -397,6 +409,8 @@ export class HistoryNetwork extends BaseNetwork {
           }
           const hashKey = getEphemeralHeaderDbKey(firstHeader.hash())
           await this.put(hashKey, bytesToHex(payload[0]))
+          // Index ephemeral header by block number
+          this.ephemeralHeaderIndex.set(firstHeader.number, bytesToHex(firstHeader.hash()))
           let prevHeader = firstHeader
           // Should get maximum of 256 headers
           // TODO: Should we check this and ban/mark down the score of peers who violate this rule?
@@ -408,6 +422,11 @@ export class HistoryNetwork extends BaseNetwork {
               // Verify that ancestor header matches parent hash of previous header
               const hashKey = getEphemeralHeaderDbKey(ancestorHeader.hash())
               await this.put(hashKey, bytesToHex(header))
+              // Index ephemeral header by block number
+              this.ephemeralHeaderIndex.set(
+                ancestorHeader.number,
+                bytesToHex(ancestorHeader.hash()),
+              )
               prevHeader = ancestorHeader
             } else {
               const errorMessage = `invalid ephemeral header payload; expected parent hash ${bytesToHex(ancestorHeader.parentHash)} but got ${bytesToHex(prevHeader.hash())}`
