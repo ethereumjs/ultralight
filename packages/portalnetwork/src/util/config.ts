@@ -1,5 +1,3 @@
-import { execSync } from 'child_process'
-import { readFileSync } from 'fs'
 import { SignableENR } from '@chainsafe/enr'
 import { hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
@@ -23,7 +21,7 @@ export interface PortalClientOpts {
   pk?: string
   bootnode?: string
   bindAddress?: string
-  bootnodeList?: string
+  bootnodeList?: string[]
   dataDir?: string
   networks: string
   storage: string
@@ -38,11 +36,10 @@ export const NetworkStrings: Record<string, NetworkId> = {
 }
 
 export const cliConfig = async (args: PortalClientOpts) => {
-  const cmd = 'hostname -I'
   const ip =
     args.bindAddress !== undefined
       ? args.bindAddress.split(':')[0]
-      : execSync(cmd).toString().split(' ')[0].trim()
+      : '0.0.0.0'
   const bindPort = args.bindAddress !== undefined ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
   let privateKey: AsyncReturnType<typeof keys.generateKeyPair>
   try {
@@ -100,9 +97,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
     bootnodes.push(args.bootnode)
   }
   if (args.bootnodeList !== undefined) {
-    const bootnodeData = readFileSync(args.bootnodeList, 'utf-8')
-    const bootnodeList = bootnodeData.split('\n')
-    for (const bootnode of bootnodeList) {
+    for (const bootnode of args.bootnodeList) {
       bootnodes.push(bootnode)
     }
   }

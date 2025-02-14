@@ -16,7 +16,7 @@ import {
   SyncStrategy,
 } from '../networks/index.js'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
-import { MEGABYTE, dirSize } from '../util/index.js'
+import { MEGABYTE } from '../util/index.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
 import { DBManager } from './dbManager.js'
@@ -121,9 +121,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         break
       case TransportLayer.NODE:
       default:
-        dbSize = async function () {
-          return dirSize(opts.dataDir ?? './')
-        }
     }
 
     // Configure transport layer

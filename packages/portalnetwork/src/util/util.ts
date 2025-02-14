@@ -1,5 +1,3 @@
-import { promises as fs } from 'fs'
-import * as path from 'path'
 import { digest } from '@chainsafe/as-sha256'
 import { ENR } from '@chainsafe/enr'
 import {
@@ -59,16 +57,6 @@ export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: n
  */
 export const serializedContentKeyToContentId = (contentKey: Uint8Array) => {
   return bytesToUnprefixedHex(digest(contentKey))
-}
-
-export const dirSize = async (directory: string) => {
-  const files = await fs?.readdir(directory)
-  const stats = files.map((file) => fs?.stat(path.join(directory, file)))
-  const bytesSize = (await Promise.all(stats)).reduce(
-    (accumulator, { size }) => accumulator + size,
-    0,
-  )
-  return bytesSize / MEGABYTE
 }
 
 export function arrayByteLength(byteArray: any[]): number {
