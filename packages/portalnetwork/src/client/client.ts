@@ -413,9 +413,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     src: ENR | null,
     message: ITalkReqMessage,
   ) => {
-    if (src) {
-      this.updateENRCache([src])
-    }
     this.metrics?.totalBytesReceived.inc(message.request.length)
     if (bytesToHex(message.protocol) === NetworkId.UTPNetwork) {
       await this.handleUTP(nodeAddress, message, message.request)
