@@ -4,15 +4,19 @@ import debug from 'debug'
 
 import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
 import {
+  BasicRadius,
+  ClientInfoAndCapabilities,
   ContentMessageType,
   FoundContent,
   HistoricalSummariesBlockProof,
+  HistoryRadius,
   MessageCodes,
   PingPongPayloadExtensions,
   PortalWireMessageType,
   RequestCode,
   decodeHistoryNetworkContentKey,
   decodeReceipts,
+  encodeClientInfo,
   reassembleBlock,
   saveReceipts,
   shortId,
@@ -259,6 +263,37 @@ export class HistoryNetwork extends BaseNetwork {
     return header.hash()
   }
 
+  public pingPongPayload(extensionType: number) {
+    let payload: Uint8Array
+    switch (extensionType) {
+      case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
+        payload = ClientInfoAndCapabilities.serialize({
+          ClientInfo: encodeClientInfo(this.portal.clientInfo),
+          DataRadius: this.nodeRadius,
+          Capabilities: this.capabilities,
+        })
+        break
+      }
+      case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
+        payload = BasicRadius.serialize({ dataRadius: this.nodeRadius })
+        break
+      }
+      case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
+        if (this.networkId !== NetworkId.HistoryNetwork) {
+          throw new Error('HISTORY_RADIUS extension not supported on this network')
+        }
+        payload = HistoryRadius.serialize({
+          dataRadius: this.nodeRadius,
+          ephemeralHeadersCount: this.ephemeralHeaderIndex.size,
+        })
+        break
+      }
+      default: {
+        throw new Error(`Unsupported PING extension type: ${extensionType}`)
+      }
+    }
+    return payload
+  }
   /**
    * Send FINDCONTENT request for content corresponding to `key` to peer corresponding to `dstId`
    * @param dstId node id of peer

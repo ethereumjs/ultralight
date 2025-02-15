@@ -22,6 +22,7 @@ import type {
   FindNodesMessage,
   INewRequest,
   INodeAddress,
+  NetworkId,
   NodesMessage,
   OfferMessage,
   PingMessage,
@@ -36,7 +37,6 @@ import {
   HistoryRadius,
   MAX_PACKET_SIZE,
   MessageCodes,
-  NetworkId,
   NodeLookup,
   PingPongErrorCodes,
   PingPongPayloadExtensions,
@@ -82,7 +82,6 @@ export abstract class BaseNetwork extends EventEmitter {
   private lastRefreshTime: number = 0
   private nextRefreshTimeout: ReturnType<typeof setTimeout> | null = null
   private refreshInterval: number = 30000 // Start with 30s
-  public ephemeralHeadersCount: number = 0
 
   constructor({
     client,
@@ -260,16 +259,6 @@ export abstract class BaseNetwork extends EventEmitter {
       }
       case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
         payload = BasicRadius.serialize({ dataRadius: this.nodeRadius })
-        break
-      }
-      case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
-        if (this.networkId !== NetworkId.HistoryNetwork) {
-          throw new Error('HISTORY_RADIUS extension not supported on this network')
-        }
-        payload = HistoryRadius.serialize({
-          dataRadius: this.nodeRadius,
-          ephemeralHeadersCount: this.ephemeralHeadersCount ?? 0,
-        })
         break
       }
       default: {
