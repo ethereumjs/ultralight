@@ -472,9 +472,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     networkId: NetworkId,
     utpMessage?: boolean,
   ): Promise<Uint8Array> => {
-    if (enr instanceof ENR) {
-      this.updateENRCache([enr])
-    }
     const messageNetwork = utpMessage !== undefined ? NetworkId.UTPNetwork : networkId
     const remote =
       enr instanceof ENR
