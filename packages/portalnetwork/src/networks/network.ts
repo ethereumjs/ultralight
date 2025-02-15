@@ -770,7 +770,6 @@ export abstract class BaseNetwork extends EventEmitter {
       )}`,
     )
 
-    await new Promise((resolve) => setTimeout(resolve, 1000))
     const value = await this.findContentLocally(decodedContentMessage.contentKey)
     if (!value) {
       await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
