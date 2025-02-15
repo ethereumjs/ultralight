@@ -431,9 +431,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
   private onTalkResp = (_: INodeAddress, src: ENR | null, message: ITalkRespMessage) => {
     this.metrics?.totalBytesReceived.inc(message.response.length)
-    if (src) {
-      this.updateENRCache([src])
-    }
   }
 
   /**
