@@ -1,8 +1,13 @@
 import { Block, BlockHeader } from '@ethereumjs/block'
-import { bytesToHex, bytesToInt, equalsBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, bytesToInt, concatBytes, equalsBytes, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
-import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
+import type {
+  BaseNetworkConfig,
+  ContentLookupResponse,
+  FindContentMessage,
+  INodeAddress,
+} from '../../index.js'
 import {
   BasicRadius,
   ClientInfoAndCapabilities,
@@ -10,6 +15,7 @@ import {
   FoundContent,
   HistoricalSummariesBlockProof,
   HistoryRadius,
+  MAX_PACKET_SIZE,
   MessageCodes,
   PingPongPayloadExtensions,
   PortalWireMessageType,
@@ -17,6 +23,7 @@ import {
   decodeHistoryNetworkContentKey,
   decodeReceipts,
   encodeClientInfo,
+  randUint16,
   reassembleBlock,
   saveReceipts,
   shortId,
@@ -263,7 +270,7 @@ export class HistoryNetwork extends BaseNetwork {
     return header.hash()
   }
 
-  public pingPongPayload(extensionType: number) {
+  public override pingPongPayload(extensionType: number) {
     let payload: Uint8Array
     switch (extensionType) {
       case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
@@ -375,6 +382,68 @@ export class HistoryNetwork extends BaseNetwork {
       }
     } catch (err: any) {
       this.logger(`Error sending FINDCONTENT to ${shortId(enr.nodeId)} - ${err.message}`)
+    }
+  }
+
+  protected overridehandleFindContent = async (
+    src: INodeAddress,
+    requestId: bigint,
+    decodedContentMessage: FindContentMessage,
+  ) => {
+    this.portal.metrics?.contentMessagesSent.inc()
+
+    this.logger(
+      `Received FindContent request for contentKey: ${bytesToHex(
+        decodedContentMessage.contentKey,
+      )}`,
+    )
+
+    // TODO: Add specific support for retrieving ephemeral headers
+    const value = await this.findContentLocally(decodedContentMessage.contentKey)
+    if (!value) {
+      await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
+    } else if (value instanceof Uint8Array && value.length < MAX_PACKET_SIZE) {
+      this.logger(
+        'Found value for requested content ' +
+          bytesToHex(decodedContentMessage.contentKey) +
+          ' ' +
+          bytesToHex(value.slice(0, 10)) +
+          `...`,
+      )
+      const payload = ContentMessageType.serialize({
+        selector: 1,
+        value,
+      })
+      this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
+      await this.sendResponse(
+        src,
+        requestId,
+        concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
+      )
+    } else {
+      this.logger.extend('FOUNDCONTENT')(
+        'Found value for requested content.  Larger than 1 packet.  uTP stream needed.',
+      )
+      const _id = randUint16()
+      const enr = this.findEnr(src.nodeId) ?? src
+      await this.handleNewRequest({
+        networkId: this.networkId,
+        contentKeys: [decodedContentMessage.contentKey],
+        enr,
+        connectionId: _id,
+        requestCode: RequestCode.FOUNDCONTENT_WRITE,
+        contents: value,
+      })
+
+      const id = new Uint8Array(2)
+      new DataView(id.buffer).setUint16(0, _id, false)
+      this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
+      const payload = ContentMessageType.serialize({ selector: FoundContent.UTP, value: id })
+      await this.sendResponse(
+        src,
+        requestId,
+        concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
+      )
     }
   }
 

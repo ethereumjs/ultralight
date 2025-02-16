@@ -232,7 +232,7 @@ export abstract class BaseNetwork extends EventEmitter {
         break
       case MessageCodes.FINDCONTENT:
         this.portal.metrics?.findContentMessagesReceived.inc()
-        await this.handleFindContent(src, id, network, decoded as FindContentMessage)
+        await this.handleFindContent(src, id, decoded as FindContentMessage)
         break
       case MessageCodes.OFFER:
         this.portal.metrics?.offerMessagesReceived.inc()
@@ -725,7 +725,6 @@ export abstract class BaseNetwork extends EventEmitter {
   protected handleFindContent = async (
     src: INodeAddress,
     requestId: bigint,
-    network: Uint8Array,
     decodedContentMessage: FindContentMessage,
   ) => {
     this.portal.metrics?.contentMessagesSent.inc()
