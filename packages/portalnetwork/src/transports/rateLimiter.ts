@@ -6,7 +6,7 @@ export interface IRateLimiter {
   removeExpectedResponse(ip: IPAddress): void
 }
 
-const DEFAULT_BLACKLIST_DURATION = 1000 * 60 * 60 * 24 // 24 hours
+const DEFAULT_BLACKLIST_DURATION = 1000 * 60 * 10 // 10 minutes
 
 export class RateLimiter implements IRateLimiter {
   private blackListed: Set<IPAddress> = new Set<IPAddress>()
