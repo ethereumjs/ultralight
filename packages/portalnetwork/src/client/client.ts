@@ -440,13 +440,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    * @param packetBuffer uTP packet encoded to Buffer
    */
   private handleUTP = async (src: INodeAddress, msg: ITalkReqMessage, packetBuffer: Uint8Array) => {
-    if (this.uTP.requestManagers[src.nodeId] === undefined) {
-      this.logger.extend('handleUTP').extend('error')(
-        `Received uTP packet from peer with no uTP stream history: ${src.nodeId}.  Blacklisting peer.`,
-      )
-      this.addToBlackList(src.socketAddr)
-      return
-    }
     await this.sendPortalNetworkResponse(src, msg.id, new Uint8Array())
     try {
       await this.uTP.handleUtpPacket(packetBuffer, src)
