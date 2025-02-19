@@ -33,12 +33,15 @@ export class PortalNetworkUTP {
     this.requestManagers = {}
   }
 
-   closeAllPeerRequests(nodeId: string) {
-     this.requestManagers[nodeId].closeAllRequests()
+  closeAllPeerRequests(nodeId: string) {
+    this.requestManagers[nodeId].closeAllRequests()
   }
 
   hasRequests(nodeId: string): boolean {
-    return this.requestManagers[nodeId] !== undefined && Object.keys(this.requestManagers[nodeId].requestMap).length > 0
+    return (
+      this.requestManagers[nodeId] !== undefined &&
+      Object.keys(this.requestManagers[nodeId].requestMap).length > 0
+    )
   }
 
   openRequests(): number {
@@ -115,7 +118,9 @@ export class PortalNetworkUTP {
       contentKeys,
     })
     await this.requestManagers[enr.nodeId].handleNewRequest(connectionId, newRequest)
-    this.logger.extend('utpRequest')(`New ${RequestCode[requestCode]} Request with ${enr.nodeId} -- ConnectionId: ${connectionId}`)
+    this.logger.extend('utpRequest')(
+      `New ${RequestCode[requestCode]} Request with ${enr.nodeId} -- ConnectionId: ${connectionId}`,
+    )
     this.logger.extend('utpRequest')(`Open Requests: ${this.openRequests()}`)
     return newRequest
   }
@@ -137,7 +142,7 @@ export class PortalNetworkUTP {
               pType: PacketType.ST_RESET,
               ackNr: 0,
               extension: 0,
-              version: 0,
+              version: 1,
               timestampMicroseconds: 0,
               timestampDifferenceMicroseconds: 0,
               seqNr: 0,
