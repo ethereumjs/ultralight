@@ -21,7 +21,6 @@ import { assert, describe, it, vi } from 'vitest'
 import { multiaddr } from '@multiformats/multiaddr'
 import { SignableENR } from '@chainsafe/enr'
 import { keys } from '@libp2p/crypto'
-import { BlockHeader } from '@ethereumjs/block'
 
 describe('Block Bridge Data Test', () => {
   it('should store and retrieve block header data', async () => {
