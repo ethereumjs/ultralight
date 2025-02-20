@@ -1,9 +1,10 @@
 import { describe, it } from 'vitest'
 import yaml from 'js-yaml'
-import { readFileSync } from 'fs'
-import { resolve } from 'path'
+import { readFileSync, readdirSync, statSync } from 'fs'
+import { join, resolve } from 'path'
 import { PortalNetwork, decodeHistoryNetworkContentKey, getContentKey } from '../../../src/index.js'
 import { hexToBytes } from '@ethereumjs/util'
+
 describe('Spec Test Runner', () => {
   it('should run the spec tests', async () => {
     const specTests = yaml.load(
@@ -34,6 +35,88 @@ describe('Spec Test Runner', () => {
         console.log(e)
         console.log('couldnt find ', content_key)
       }
+    }
+  })
+})
+
+describe('spec tests', () => {
+  const getAllYamlFiles = (dir: string): string[] => {
+    const files: string[] = []
+    const items = readdirSync(dir)
+
+    for (const item of items) {
+      const fullPath = join(dir, item)
+      if (statSync(fullPath).isDirectory()) {
+        files.push(...getAllYamlFiles(fullPath))
+      } else if (item.endsWith('.yaml') || item.endsWith('.yml')) {
+        files.push(fullPath)
+      }
+    }
+
+    return files
+  }
+
+  it('should find and read all yaml files', () => {
+    const testDir = resolve(__dirname, '../../../../portal-spec-tests/tests')
+    const yamlFiles = getAllYamlFiles(testDir)
+
+    for (const file of yamlFiles) {
+      console.log(`Reading file: ${file}`)
+      try {
+        const content = yaml.load(readFileSync(file, 'utf-8'))
+        console.log(`Content structure:`, JSON.stringify(content, null, 2))
+      } catch (error) {
+        console.error(`Error reading ${file}:`, error)
+      }
+    }
+  })
+})
+
+describe('YAML File Scanner', () => {
+  const getAllYamlFiles = (dir: string): string[] => {
+    const files: string[] = []
+    const items = readdirSync(dir)
+
+    for (const item of items) {
+      const fullPath = join(dir, item)
+      if (statSync(fullPath).isDirectory()) {
+        files.push(...getAllYamlFiles(fullPath))
+      } else if (item.endsWith('.yaml') || item.endsWith('.yml')) {
+        files.push(fullPath)
+      }
+    }
+
+    return files
+  }
+
+  it.only('should organize and read yaml files by network type', () => {
+    const testDir = resolve(__dirname, '../../../../portal-spec-tests/tests')
+    const yamlFiles = getAllYamlFiles(testDir)
+
+    const networkFiles = {
+      history: {},
+      state: {},
+      beacon_chain: {},
+    }
+
+    for (const file of yamlFiles) {
+      try {
+        const content = yaml.load(readFileSync(file, 'utf-8'))
+
+        // Determine which network the file belongs to
+        if (file.includes('/history/')) {
+          networkFiles.history[file] = content
+        } else if (file.includes('/state/')) {
+          networkFiles.state[file] = content
+        } else if (file.includes('/beacon_chain/')) {
+          networkFiles.beacon_chain[file] = content
+        }
+      } catch (error) {
+        console.error(`Error reading ${file}:`, error)
+      }
+    }
+    for (const file of Object.entries(networkFiles.history)) {
+      console.log(file)
     }
   })
 })
