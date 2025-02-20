@@ -71,6 +71,7 @@ describe('gossip test', async () => {
   await node1.start()
   await node2.start()
   const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+  network1.gossipManager.setPulse(10)
   const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   await network1?.sendPing(network2?.enr!.toENR())
   it('has pinged node in routing table', () => {
@@ -380,7 +381,11 @@ describe('Offer/Accept', () => {
     const res = await network1.sendOffer(node2.discv5.enr.toENR(), contentKeys)
     assert.ok(res instanceof BitArray, 'should get a bitarray')
     assert.equal((res as BitArray).bitLen, 2, 'should get matching length accepts')
-    assert.equal((res as BitArray).getTrueBitIndexes().length, 1, 'should only accept one content key')
+    assert.equal(
+      (res as BitArray).getTrueBitIndexes().length,
+      1,
+      'should only accept one content key',
+    )
 
     // Set node radius to 254
     await network2.setRadius(2n ** 254n - 1n)
