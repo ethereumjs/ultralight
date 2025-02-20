@@ -9,6 +9,7 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, it } from 'vitest'
 
 import {
+  AccumulatorProofType,
   BlockHeaderByNumberKey,
   BlockHeaderWithProof,
   HistoryNetworkContentType,
@@ -155,7 +156,7 @@ describe('FindContent', async () => {
     testBlockData[29].rlp,
     testBlockData[29].blockHash,
     network1,
-    witnesses,
+    AccumulatorProofType.serialize(witnesses),
   )
 
   it('should have indexed block', () => {
@@ -266,7 +267,7 @@ describe('eth_getBlockByHash', async () => {
     testBlockData[29].rlp,
     testBlockData[29].blockHash,
     network1,
-    witnesses,
+    AccumulatorProofType.serialize(witnesses),
   )
   await network1.sendPing(network2?.enr!.toENR())
 
