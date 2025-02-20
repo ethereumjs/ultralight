@@ -172,9 +172,6 @@ export class HistoryNetwork extends BaseNetwork {
     const proof = headerProof.proof
 
     if (header.number < MERGE_BLOCK) {
-      if (proof === null) {
-        throw new Error('Received pre-merge block header without proof')
-      }
       let deserializedProof: Uint8Array[]
       try {
         deserializedProof = AccumulatorProofType.deserialize(proof)
@@ -200,10 +197,6 @@ export class HistoryNetwork extends BaseNetwork {
         throw new Error('Unable to validate proof for pre-merge header')
       }
     } else if (header.number < SHANGHAI_BLOCK) {
-      if (proof === null) {
-        this.logger('Received post-merge block without proof')
-        throw new Error('Received post-merge block header without proof')
-      }
       let deserializedProof: ReturnType<typeof HistoricalRootsBlockProof.deserialize>
       try {
         deserializedProof = HistoricalRootsBlockProof.deserialize(proof)
@@ -222,9 +215,7 @@ export class HistoryNetwork extends BaseNetwork {
       }
     } else {
       // TODO: Check proof slot to ensure header is from previous sync period and handle ephemeral headers separately
-      if (proof === null) {
-        this.logger('Received post-merge block without proof')
-      }
+
       let deserializedProof: ReturnType<typeof HistoricalSummariesBlockProof.deserialize>
       try {
         deserializedProof = HistoricalSummariesBlockProof.deserialize(proof)
@@ -386,7 +377,8 @@ export class HistoryNetwork extends BaseNetwork {
       this.gossipManager.add(contentKey)
     }
     this.logger(
-      `${HistoryNetworkContentType[contentType]} added for ${keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
+      `${HistoryNetworkContentType[contentType]} added for ${
+        keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
       }`,
     )
   }
