@@ -140,5 +140,6 @@ describe('should run all spec tests', () => {
     console.log('--------------------------------')
     console.log(results.history)
     console.log('--------------------------------')
+    assert.equal(results.history.passed, 19)
   })
 })
