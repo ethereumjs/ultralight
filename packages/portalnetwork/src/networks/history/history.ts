@@ -204,13 +204,6 @@ export class HistoryNetwork extends BaseNetwork {
         this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
         throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)
       }
-      let deserializedProof: ReturnType<typeof HistoricalRootsBlockProof.deserialize>
-      try {
-        deserializedProof = HistoricalRootsBlockProof.deserialize(proof)
-      } catch (err: any) {
-        this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
-        throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)
-      }
       let validated = false
       try {
         validated = verifyPreCapellaHeaderProof(deserializedProof, header.hash())
@@ -223,13 +216,6 @@ export class HistoryNetwork extends BaseNetwork {
     } else {
       // TODO: Check proof slot to ensure header is from previous sync period and handle ephemeral headers separately
 
-      let deserializedProof: ReturnType<typeof HistoricalSummariesBlockProof.deserialize>
-      try {
-        deserializedProof = HistoricalSummariesBlockProof.deserialize(proof)
-      } catch (err: any) {
-        this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
-        throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)
-      }
       let deserializedProof: ReturnType<typeof HistoricalSummariesBlockProof.deserialize>
       try {
         deserializedProof = HistoricalSummariesBlockProof.deserialize(proof)
