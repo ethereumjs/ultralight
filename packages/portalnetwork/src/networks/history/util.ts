@@ -8,6 +8,7 @@ import { ssz } from '@lodestar/types'
 import { historicalEpochs } from './data/epochHashes.js'
 import { historicalRoots } from './data/historicalRoots.js'
 import {
+  AccumulatorProofType,
   BlockBodyContentType,
   BlockHeaderWithProof,
   BlockNumberKey,
@@ -95,17 +96,17 @@ export const decodeHistoryNetworkContentKey = (
   contentKey: Uint8Array,
 ):
   | {
-    contentType:
-    | HistoryNetworkContentType.BlockHeader
-    | HistoryNetworkContentType.BlockBody
-    | HistoryNetworkContentType.Receipt
-    | HistoryNetworkContentType.HeaderProof
-    keyOpt: Uint8Array
-  }
+      contentType:
+        | HistoryNetworkContentType.BlockHeader
+        | HistoryNetworkContentType.BlockBody
+        | HistoryNetworkContentType.Receipt
+        | HistoryNetworkContentType.HeaderProof
+      keyOpt: Uint8Array
+    }
   | {
-    contentType: HistoryNetworkContentType.BlockHeaderByNumber
-    keyOpt: bigint
-  } => {
+      contentType: HistoryNetworkContentType.BlockHeaderByNumber
+      keyOpt: bigint
+    } => {
   const contentType: HistoryNetworkContentType = contentKey[0]
   if (contentType === HistoryNetworkContentType.BlockHeaderByNumber) {
     const blockNumber = BlockNumberKey.deserialize(contentKey.slice(1)).blockNumber
@@ -208,39 +209,27 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
  * @param rlpHex RLP encoded block as hex string
  * @param blockHash block hash as 0x prefixed hex string
  * @param network a running `PortalNetwork` client
+ * @param proof the header proof anchoring the block to an accumulator
+ * (i.e. pre-merge historical accumulator, historical_roots, or historical summaries)
  */
 export const addRLPSerializedBlock = async (
   rlpHex: string,
   blockHash: string,
   network: HistoryNetwork,
-  witnesses: Witnesses,
+  proof: Uint8Array,
 ) => {
   const block = Block.fromRLPSerializedBlock(hexToBytes(rlpHex), {
     setHardfork: true,
   })
   const header = block.header
   const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
-  if (header.number < MERGE_BLOCK) {
-    const proof: Witnesses = witnesses
-    const headerProof = BlockHeaderWithProof.serialize({
-      header: header.serialize(),
-      proof: { selector: 1, value: proof },
-    })
-    try {
-      await network.validateHeader(headerProof, { blockHash })
-    } catch {
-      network.logger('Header proof failed validation while loading block from RLP')
-    }
-    await network.store(headerKey, headerProof)
-  } else {
-    const headerProof = BlockHeaderWithProof.serialize({
-      header: header.serialize(),
-      proof: { selector: 0, value: null },
-    })
-    await network.indexBlockHash(header.number, bytesToHex(header.hash()))
+  const headerProof = BlockHeaderWithProof.serialize({
+    header: header.serialize(),
+    proof,
+  })
 
-    await network.store(headerKey, headerProof)
-  }
+  await network.store(headerKey, headerProof)
+  await network.indexBlockHash(header.number, bytesToHex(header.hash()))
   const sszBlock = sszEncodeBlockBody(block)
   await network.addBlockBody(sszBlock, header.hash(), header.serialize())
 }
