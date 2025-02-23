@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Links from './Links'
 import MenuBtn from '@/components/ui/MenuBtn'
 import ThemeToggle from '@/components/ui/ThemeToggle'
+import InitializeAppBtn from '@/components/common/InitializeAppBtn'
 
 const Header = () => {
 
@@ -17,6 +18,7 @@ const Header = () => {
         <Links />
       </div>
       <div className="navbar-end">
+        <InitializeAppBtn />
         <ThemeToggle />
         <MenuBtn />
       </div>

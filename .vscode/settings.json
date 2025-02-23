@@ -4,5 +4,13 @@
   },
   "eslint.format.enable": true,
   "eslint.validate": ["javascript", "typescript"],
-  "eslint.workingDirectories": [{ "mode": "auto" }]
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+   "rust-analyzer.rustc.source": "discover",
+  "rust-analyzer.linkedProjects": [
+    "packages/portal-client/src-tauri/Cargo.toml"
+  ],
+  "rust-analyzer.checkOnSave.command": "clippy",
+  "rust-analyzer.cargo.buildScripts.enable": true,
+  "rust-analyzer.procMacro.enable": true,
+  "rust-analyzer.diagnostics.enable": true,
 }

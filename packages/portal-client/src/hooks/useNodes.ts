@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { usePortal } from '../contexts/PortalContext'
+import { formatJsonRpcPayload } from '@/utils/helpers'
 
 interface UseNodesReturn {
   node: any | null
@@ -14,11 +15,11 @@ export const useNodes = (): UseNodesReturn => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const sendRequestHandle = async (method: string, params: any[]) => {
-    console.log('params inside sendrequest handle ', params)
+  const sendRequestHandle = async (method: string, payload: any[]) => {
     try {
       setIsLoading(true)
       setError(null)
+      const params = formatJsonRpcPayload(payload)
       const nodeData = await commands.sendRequest({ method, params })
       setNode(nodeData)
     } catch (err) {

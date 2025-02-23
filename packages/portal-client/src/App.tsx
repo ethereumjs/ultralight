@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { PortalProvider } from '@/contexts/PortalContext'
 import JsonRpc from '@/pages/JsonRpc'
 import Home from '@/pages/Home'
+import Config from '@/pages/Config'
 import PageNotFound from '@/pages/PageNotFound'
 import Header from '@/components/layout/Header'
 
@@ -18,6 +19,7 @@ const App: FC = () => {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/jsonrpc" element={<JsonRpc />} />
+                  <Route path="/config" element={<Config />} />
                   <Route path="*" element={<PageNotFound />} />
                 </Routes>
               </div>

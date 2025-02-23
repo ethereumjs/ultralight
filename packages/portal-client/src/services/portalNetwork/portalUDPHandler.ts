@@ -68,11 +68,7 @@ export class PortalUDPHandler extends EventEmitter {
         try {
           const result = await this.rpcMethodRegistry[request.method](request.params || [])
           response = formatBlockResponse(result, false)
-          // response = {
-          //   jsonrpc: '2.0',
-          //   result,
-          //   id: request.id
-          // }
+
         } catch (err) {
           response = {
             jsonrpc: '2.0',

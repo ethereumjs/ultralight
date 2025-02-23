@@ -11,7 +11,6 @@ export class HTTPTransport implements TransportProvider {
   private readonly portalHost: string
   private readonly portalPort: number
   private readonly timeoutMs: number
-  private initialized: boolean = false
 
   constructor(baseUrl: string, config: PortalNetworkConfig = {}) {
     this.baseUrl = baseUrl
@@ -26,7 +25,7 @@ export class HTTPTransport implements TransportProvider {
         method: 'initialize_portal',
         params: {
           bind_port: 9090,
-          udp_port: 8546,
+          udp_port: 8545,
         },
       })
 
@@ -34,7 +33,6 @@ export class HTTPTransport implements TransportProvider {
         throw new Error(response.error)
       }
 
-      this.initialized = true
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to initialize transport: ${error.message}`)
@@ -44,20 +42,17 @@ export class HTTPTransport implements TransportProvider {
     }
   }
 
-  async bindUdp(): Promise<void> {
+  async shutdownPortal(): Promise<void> {
     try {
       const response = await this.sendCommand({
-        method: 'initialize_udp',
-        params: {
-          udp_port: 8545,
-        },
+        method: 'shutdown_portal',
+        params: {},
       })
 
       if (response.error) {
         throw new Error(response.error)
       }
 
-      this.initialized = true
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to initialize transport: ${error.message}`)
@@ -71,10 +66,6 @@ export class HTTPTransport implements TransportProvider {
     if (!request.method) {
       throw new Error('Method name is required')
     }
-
-    // if (!this.initialized && request.method !== 'initialize_socket') {
-    //   throw new Error('Transport not initialized')
-    // }
 
     try {
       const requestBody = {
@@ -165,6 +156,7 @@ export class HTTPTransport implements TransportProvider {
   }
 
   async portalRequest(method: string, params: any[] = []): Promise<any> {
+    console.log('inside portalRequestt ', params)
     return await this.sendCommand({
       method: 'portal_request',
       params: {

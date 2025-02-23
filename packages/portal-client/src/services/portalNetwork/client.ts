@@ -61,6 +61,7 @@ export class PortalClient {
       this.logger(`Bind Port: ${bindPort}`)
       this.logger('History Network status:', !!this.historyNetwork)
       this.logger('State Network status:', !!this.stateNetwork)
+      this.logger(this.node)
     } catch (error) {
       this.logger('Portal Network initialization failed:', error)
       await this.cleanup()
@@ -70,12 +71,18 @@ export class PortalClient {
 
   private async cleanup(): Promise<void> {
     try {
-      await this.node?.stop()
+      if (this.udpHandler) {
+        await this.udpHandler.stop()
+      }
+      if (this.node) {
+        await this.node.stop()
+      }
     } catch (error) {
       this.logger('Cleanup error:', error)
     }
     this.isInitialized = false
     this.node = undefined
+    this.udpHandler = undefined
   }
 
   async shutdown(): Promise<void> {
@@ -100,10 +107,15 @@ export class PortalClient {
   }
 }
 
+let portalClientInstance: PortalClient | undefined
+
 async function initializePortalNetwork(bindPort: number, udpPort: number): Promise<PortalClient> {
-  const node = new PortalClient()
-  await node.init(bindPort, udpPort)
-  return node
+  if (portalClientInstance) {
+    await portalClientInstance.shutdown()
+  }
+  portalClientInstance = new PortalClient()
+  await portalClientInstance.init(bindPort, udpPort)
+  return portalClientInstance
 }
 
 async function main() {
@@ -115,7 +127,6 @@ async function main() {
     
     node = await initializePortalNetwork(bindPort, udpPort)
     
-    // Proper cleanup on process signals
     const cleanup = async () => {
       if (node) {
         await node.shutdown()
@@ -136,7 +147,6 @@ async function main() {
   }
 }
 
-// Handle top-level errors
 main().catch(async (error) => {
   console.error('Fatal error:', error)
   process.exit(1)
