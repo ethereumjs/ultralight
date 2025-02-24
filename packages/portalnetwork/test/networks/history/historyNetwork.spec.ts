@@ -206,7 +206,7 @@ describe('Header Tests', async () => {
       await network.store(headerKey, fakeProof)
       assert.fail('should have thrown')
     } catch (err: any) {
-      assert.ok(err.message.includes('invalid proof'))
+      assert.ok(err.message.includes('Unable to validate proof'))
     }
   })
 })
