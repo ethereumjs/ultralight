@@ -1,9 +1,17 @@
-import { readFileSync } from 'fs'
+import { SignableENR } from '@chainsafe/enr'
+import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { keys } from '@libp2p/crypto'
+import { createBeaconConfig } from '@lodestar/config'
+import { mainnetChainConfig } from '@lodestar/config/configs'
+import { genesisData } from '@lodestar/config/networks'
+import { computeEpochAtSlot, getChainForkConfigFromNetwork } from '@lodestar/light-client/utils'
 import { ssz } from '@lodestar/types'
-import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
+import { multiaddr } from '@multiformats/multiaddr'
+import { readFileSync } from 'fs'
+import { assert, describe, it, vi } from 'vitest'
 import {
   BeaconLightClientNetworkContentType,
-  BlockHeaderWithProof,
+  HistoricalSummariesBlockProof,
   HistoricalSummariesKey,
   HistoricalSummariesWithProof,
   HistoryNetworkContentType,
@@ -13,14 +21,6 @@ import {
   getBeaconContentKey,
   getContentKey,
 } from '../../src/index.js'
-import { createBeaconConfig } from '@lodestar/config'
-import { mainnetChainConfig } from '@lodestar/config/configs'
-import { genesisData } from '@lodestar/config/networks'
-import { computeEpochAtSlot, getChainForkConfigFromNetwork } from '@lodestar/light-client/utils'
-import { assert, describe, it, vi } from 'vitest'
-import { multiaddr } from '@multiformats/multiaddr'
-import { SignableENR } from '@chainsafe/enr'
-import { keys } from '@libp2p/crypto'
 
 describe('Block Bridge Data Test', () => {
   it('should store and retrieve block header data', async () => {
@@ -108,8 +108,9 @@ describe('Block Bridge Data Test', () => {
     // Store header with proof
     const blockHash = fullBlock.data.message.body.execution_payload.block_hash
 
+    const hhwp = HistoricalSummariesBlockProof.fromJson(headerWithProof)
+    console.log(hhwp)
     const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
-    console.log(bytesToHex(BlockHeaderWithProof.deserialize(hexToBytes(headerWithProof)).header))
     await history?.store(headerKey, hexToBytes(headerWithProof))
 
     // Verify block header can be retrieved

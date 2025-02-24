@@ -176,8 +176,9 @@ export class HistoryNetwork extends BaseNetwork {
       try {
         deserializedProof = AccumulatorProofType.deserialize(proof)
       } catch (err: any) {
-        this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
-        throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)
+        const msg = `invalid proof for block ${header.number} - ${bytesToHex(header.hash())}`
+        this.logger(msg)
+        throw new Error(msg)
       }
       let validated = false
       if ('blockHash' in validation) {
@@ -201,14 +202,17 @@ export class HistoryNetwork extends BaseNetwork {
       try {
         deserializedProof = HistoricalRootsBlockProof.deserialize(proof)
       } catch (err: any) {
-        this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
-        throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)
+        const msg = `invalid proof for block ${header.number} - ${bytesToHex(header.hash())}`
+        this.logger(msg)
+        throw new Error(msg)
       }
       let validated = false
       try {
         validated = verifyPreCapellaHeaderProof(deserializedProof, header.hash())
       } catch (err: any) {
-        this.logger(`Unable to validate proof for post-merge header: ${err.message}`)
+        const msg = `Unable to validate proof for post-merge header: ${err.message}`
+        this.logger(msg)
+        throw new Error(msg)
       }
       if (!validated) {
         throw new Error('Unable to validate proof for post-merge header')
@@ -219,6 +223,7 @@ export class HistoryNetwork extends BaseNetwork {
       let deserializedProof: ReturnType<typeof HistoricalSummariesBlockProof.deserialize>
       try {
         deserializedProof = HistoricalSummariesBlockProof.deserialize(proof)
+        console.log(HistoricalSummariesBlockProof.toJson(deserializedProof))
       } catch (err: any) {
         this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
         throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)
