@@ -108,8 +108,6 @@ describe('Block Bridge Data Test', () => {
     // Store header with proof
     const blockHash = fullBlock.data.message.body.execution_payload.block_hash
 
-    const hhwp = HistoricalSummariesBlockProof.fromJson(headerWithProof)
-    console.log(hhwp)
     const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
     await history?.store(headerKey, hexToBytes(headerWithProof))
 
