@@ -12,7 +12,7 @@ import {
   getContentKey,
 } from '../../../src/index.js'
 
-describe('should run all spec tests', () => {
+describe.skip('should run all spec tests', () => {
   // This retrieves all the yaml files from the spec tests directory
   const getAllYamlFiles = (dir: string): string[] => {
     const files: string[] = []

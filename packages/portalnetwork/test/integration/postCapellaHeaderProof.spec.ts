@@ -11,7 +11,6 @@ import { readFileSync } from 'fs'
 import { assert, describe, it, vi } from 'vitest'
 import {
   BeaconLightClientNetworkContentType,
-  HistoricalSummariesBlockProof,
   HistoricalSummariesKey,
   HistoricalSummariesWithProof,
   HistoryNetworkContentType,
@@ -19,7 +18,7 @@ import {
   NetworkId,
   PortalNetwork,
   getBeaconContentKey,
-  getContentKey,
+  getContentKey
 } from '../../src/index.js'
 
 describe('Block Bridge Data Test', () => {
