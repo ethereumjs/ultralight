@@ -8,7 +8,6 @@ import { ssz } from '@lodestar/types'
 import { historicalEpochs } from './data/epochHashes.js'
 import { historicalRoots } from './data/historicalRoots.js'
 import {
-  AccumulatorProofType,
   BlockBodyContentType,
   BlockHeaderWithProof,
   BlockNumberKey,
@@ -241,39 +240,27 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
  * @param rlpHex RLP encoded block as hex string
  * @param blockHash block hash as 0x prefixed hex string
  * @param network a running `PortalNetwork` client
+ * @param proof the header proof anchoring the block to an accumulator
+ * (i.e. pre-merge historical accumulator, historical_roots, or historical summaries)
  */
 export const addRLPSerializedBlock = async (
   rlpHex: string,
   blockHash: string,
   network: HistoryNetwork,
-  witnesses: Witnesses,
+  proof: Uint8Array,
 ) => {
   const block = Block.fromRLPSerializedBlock(hexToBytes(rlpHex), {
     setHardfork: true,
   })
   const header = block.header
   const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
-  const proof = AccumulatorProofType.serialize(witnesses)
-  if (header.number < MERGE_BLOCK) {
-    const headerProof = BlockHeaderWithProof.serialize({
-      header: header.serialize(),
-      proof,
-    })
-    try {
-      await network.validateHeader(headerProof, { blockHash })
-    } catch {
-      network.logger('Header proof failed validation while loading block from RLP')
-    }
-    await network.store(headerKey, headerProof)
-  } else {
-    const headerProof = BlockHeaderWithProof.serialize({
-      header: header.serialize(),
-      proof,
-    })
-    await network.indexBlockHash(header.number, bytesToHex(header.hash()))
+  const headerProof = BlockHeaderWithProof.serialize({
+    header: header.serialize(),
+    proof,
+  })
 
-    await network.store(headerKey, headerProof)
-  }
+  await network.store(headerKey, headerProof)
+  await network.indexBlockHash(header.number, bytesToHex(header.hash()))
   const sszBlock = sszEncodeBlockBody(block)
   await network.addBlockBody(sszBlock, header.hash(), header.serialize())
 }

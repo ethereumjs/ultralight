@@ -189,28 +189,28 @@ export const BlockNumberKey = new ContainerType({
 
 /** Post-merge pre-Capella block header proof types */
 export const SlotType = new UintBigintType(8)
-export const BeaconBlockProof = new ListCompositeType(Bytes32Type, 12)
-export const HistoricalRootsProof = new VectorCompositeType(Bytes32Type, 14)
+export const BeaconBlockProofHistoricalRoots = new VectorCompositeType(Bytes32Type, 14)
+export const PostMergeExecutionBlockProof = new VectorCompositeType(Bytes32Type, 11)
 
 export const HistoricalRootsBlockProof = new ContainerType({
-  beaconBlockProof: BeaconBlockProof,
+  historicalRootsProof: BeaconBlockProofHistoricalRoots,
   beaconBlockRoot: Bytes32Type,
-  historicalRootsProof: HistoricalRootsProof,
+  beaconBlockProof: PostMergeExecutionBlockProof,
   slot: SlotType,
 })
 
 /** Post-Capella block header proof types */
-export const HistoricalSummariesProof = new VectorCompositeType(Bytes32Type, 13)
-
+export const PostCapellaExecutionBlockProof = new ListCompositeType(Bytes32Type, 12)
+export const BeaconBlockProofHistoricalSummaries = new VectorCompositeType(Bytes32Type, 13)
 export const HistoricalSummariesBlockProof = new ContainerType({
-  beaconBlockProof: BeaconBlockProof,
+  historicalSummariesProof: BeaconBlockProofHistoricalSummaries,
   beaconBlockRoot: Bytes32Type,
-  historicalSummariesProof: HistoricalSummariesProof,
+  beaconBlockProof: PostCapellaExecutionBlockProof,
   slot: SlotType,
 })
 
 export const BlockHeaderWithProof = new ContainerType({
-  header: BlockHeader,
+  header: new ByteListType(MAX_HEADER_LENGTH),
   proof: new ByteListType(MAX_HEADER_PROOF_LENGTH),
 })
 

@@ -1,12 +1,15 @@
 import { SignableENR } from '@chainsafe/enr'
-import { hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, beforeAll, describe, it } from 'vitest'
 import { PortalNetwork } from '../../src/client/client.js'
 import { TransportLayer } from '../../src/client/types.js'
 import { getContentKey } from '../../src/index.js'
-import { HistoryNetworkContentType } from '../../src/networks/history/types.js'
+import {
+  BlockHeaderWithProof,
+  HistoryNetworkContentType,
+} from '../../src/networks/history/types.js'
 import { NetworkId } from '../../src/networks/types.js'
 import testdata from '../networks/history/testData/headerWithProof.json'
 describe('gossip tests', () => {
@@ -65,6 +68,7 @@ describe('gossip tests', () => {
       HistoryNetworkContentType.BlockHeader,
       hexToBytes(testdata[1000002].hash),
     )
+
     await network1.store(contentKey100001, HWP1000001)
     await network1.store(contentKey100002, HWP1000002)
 

@@ -15,7 +15,6 @@ import type {
 const methods = [
   'ultralight_methods',
   'ultralight_addContentToDB',
-  'ultralight_addBlockToHistory',
   'ultralight_indexBlock',
   'ultralight_setNetworkRadius',
   'ultralight_getNetworkRadius',
@@ -41,10 +40,6 @@ export class ultralight {
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.addContentToDB = middleware(this.addContentToDB.bind(this), 2, [
       [validators.hex],
-      [validators.hex],
-    ])
-    this.addBlockToHistory = middleware(this.addBlockToHistory.bind(this), 2, [
-      [validators.blockHash],
       [validators.hex],
     ])
     this.indexBlock = middleware(this.indexBlock.bind(this), 2, [
@@ -73,19 +68,7 @@ export class ultralight {
   async methods() {
     return methods
   }
-  async addBlockToHistory(params: [string, string]) {
-    this.logger(`ultralight_addBlockToHistory request received`)
 
-    const [blockHash, rlpHex] = params
-    try {
-      await addRLPSerializedBlock(rlpHex, blockHash, this._history!, [])
-      this.logger(`Block ${blockHash} added to content DB`)
-      return `Block ${blockHash} added to content DB`
-    } catch (err: any) {
-      this.logger(`Error trying to load block to DB. ${err.message.toString()}`)
-      return `internal error`
-    }
-  }
   async addContentToDB(params: [string, string]) {
     const [contentKey, value] = params
 
