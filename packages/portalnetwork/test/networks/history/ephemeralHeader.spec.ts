@@ -1,5 +1,5 @@
 import { assert, beforeAll, describe, it } from 'vitest'
-import { blockHeaderFromRpc } from '@ethereumjs/block/header-from-rpc'
+import { Block } from '@ethereumjs/block'
 import type { BlockHeader, JsonRpcBlock } from '@ethereumjs/block'
 import latestBlocks from './testData/latest3Blocks.json'
 import {
@@ -18,9 +18,9 @@ describe('ephemeral header handling', () => {
   let contentKey: Uint8Array
   beforeAll(() => {
     headers = []
-    headers.push(blockHeaderFromRpc(latestBlocks[0] as JsonRpcBlock, { setHardfork: true }))
-    headers.push(blockHeaderFromRpc(latestBlocks[1] as JsonRpcBlock, { setHardfork: true }))
-    headers.push(blockHeaderFromRpc(latestBlocks[2] as JsonRpcBlock, { setHardfork: true }))
+    headers.push(Block.fromRPC(latestBlocks[0] as JsonRpcBlock, [], { setHardfork: true }).header)
+    headers.push(Block.fromRPC(latestBlocks[1] as JsonRpcBlock, [], { setHardfork: true }).header)
+    headers.push(Block.fromRPC(latestBlocks[2] as JsonRpcBlock, [], { setHardfork: true }).header)
     headerPayload = EphemeralHeaderPayload.serialize(headers.map((h) => h.serialize()))
     contentKey = getContentKey(HistoryNetworkContentType.EphemeralHeader, {
       blockHash: headers[0].hash(),
