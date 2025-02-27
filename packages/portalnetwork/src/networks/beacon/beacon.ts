@@ -51,7 +51,7 @@ import type { Debugger } from 'debug'
 import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
 import type { ContentLookupResponse } from '../types.js'
 import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
-import type { INodeAddress } from '../../index.js';
+import type { INodeAddress } from '../../index.js'
 
 export class BeaconLightClientNetwork extends BaseNetwork {
   networkId: NetworkId.BeaconChainNetwork
@@ -561,7 +561,6 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   protected override handleFindContent = async (
     src: INodeAddress,
     requestId: bigint,
-    network: Uint8Array,
     decodedContentMessage: FindContentMessage,
   ) => {
     this.portal.metrics?.contentMessagesSent.inc()
@@ -853,7 +852,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             return msg.contentKeys
           }
         } catch (err: any) {
-            this.logger(`Error sending to ${shortId(enr.nodeId)} - ${err.message}`)
+          this.logger(`Error sending to ${shortId(enr.nodeId)} - ${err.message}`)
         }
       }
     }
