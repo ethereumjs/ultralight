@@ -1,0 +1,88 @@
+name: PortalClient
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+env:
+  cwd: ${{github.workspace}}/packages/portal-client
+defaults:
+  run:
+    working-directory: packages/portal-client
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  test-react-portal-client:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - run: npm i -g @mapbox/node-pre-gyp
+      - run: npm ci
+        working-directory: ${{ github.workspace }}
+      - run: npm run biome
+        working-directory: ${{ github.workspace }}
+      - run: npm run test
+
+  test-tauri-portal-client:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "packages/portal-client/src-tauri -> target"
+
+      - name: Install Tauri dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev \
+            build-essential \
+            curl \
+            wget \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+      
+      - run: npm ci
+        working-directory: ${{ github.workspace }}
+
+      - name: Rust lint
+        run: cd src-tauri && cargo clippy -- -D warnings
+      
+      - name: Rust format check
+        run: cd src-tauri && cargo fmt --check
+
+      - name: Run Tauri unit tests
+        run: cd src-tauri && cargo test --lib --bins
+
+      - name: Run Tauri integration tests
+        run: cd src-tauri && cargo test --test '*'
