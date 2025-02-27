@@ -1,4 +1,4 @@
-import { SignableENR as M } from "@chainsafe/enr";
+import { SignableENR as b } from "@chainsafe/enr";
 import { keys as O } from "@libp2p/crypto";
 import { multiaddr as D } from "@multiformats/multiaddr";
 import { formatBlockResponse as Y, PortalNetwork as A, TransportLayer as H, NetworkId as C } from "portalnetwork";
@@ -29,92 +29,92 @@ function K(d) {
 var I = { exports: {} }, v;
 function R() {
   return v || (v = 1, function(d) {
-    var t = Object.prototype.hasOwnProperty, e = "~";
-    function r() {
+    var e = Object.prototype.hasOwnProperty, t = "~";
+    function n() {
     }
-    Object.create && (r.prototype = /* @__PURE__ */ Object.create(null), new r().__proto__ || (e = !1));
+    Object.create && (n.prototype = /* @__PURE__ */ Object.create(null), new n().__proto__ || (t = !1));
     function u(c, o, s) {
       this.fn = c, this.context = o, this.once = s || !1;
     }
-    function m(c, o, s, i, p) {
+    function y(c, o, s, i, p) {
       if (typeof s != "function")
         throw new TypeError("The listener must be a function");
-      var f = new u(s, i || c, p), l = e ? e + o : o;
+      var f = new u(s, i || c, p), l = t ? t + o : o;
       return c._events[l] ? c._events[l].fn ? c._events[l] = [c._events[l], f] : c._events[l].push(f) : (c._events[l] = f, c._eventsCount++), c;
     }
     function g(c, o) {
-      --c._eventsCount === 0 ? c._events = new r() : delete c._events[o];
+      --c._eventsCount === 0 ? c._events = new n() : delete c._events[o];
     }
     function a() {
-      this._events = new r(), this._eventsCount = 0;
+      this._events = new n(), this._eventsCount = 0;
     }
     a.prototype.eventNames = function() {
       var o = [], s, i;
       if (this._eventsCount === 0) return o;
       for (i in s = this._events)
-        t.call(s, i) && o.push(e ? i.slice(1) : i);
+        e.call(s, i) && o.push(t ? i.slice(1) : i);
       return Object.getOwnPropertySymbols ? o.concat(Object.getOwnPropertySymbols(s)) : o;
     }, a.prototype.listeners = function(o) {
-      var s = e ? e + o : o, i = this._events[s];
+      var s = t ? t + o : o, i = this._events[s];
       if (!i) return [];
       if (i.fn) return [i.fn];
       for (var p = 0, f = i.length, l = new Array(f); p < f; p++)
         l[p] = i[p].fn;
       return l;
     }, a.prototype.listenerCount = function(o) {
-      var s = e ? e + o : o, i = this._events[s];
+      var s = t ? t + o : o, i = this._events[s];
       return i ? i.fn ? 1 : i.length : 0;
     }, a.prototype.emit = function(o, s, i, p, f, l) {
-      var w = e ? e + o : o;
+      var w = t ? t + o : o;
       if (!this._events[w]) return !1;
-      var n = this._events[w], y = arguments.length, k, h;
-      if (n.fn) {
-        switch (n.once && this.removeListener(o, n.fn, void 0, !0), y) {
+      var r = this._events[w], m = arguments.length, k, h;
+      if (r.fn) {
+        switch (r.once && this.removeListener(o, r.fn, void 0, !0), m) {
           case 1:
-            return n.fn.call(n.context), !0;
+            return r.fn.call(r.context), !0;
           case 2:
-            return n.fn.call(n.context, s), !0;
+            return r.fn.call(r.context, s), !0;
           case 3:
-            return n.fn.call(n.context, s, i), !0;
+            return r.fn.call(r.context, s, i), !0;
           case 4:
-            return n.fn.call(n.context, s, i, p), !0;
+            return r.fn.call(r.context, s, i, p), !0;
           case 5:
-            return n.fn.call(n.context, s, i, p, f), !0;
+            return r.fn.call(r.context, s, i, p, f), !0;
           case 6:
-            return n.fn.call(n.context, s, i, p, f, l), !0;
+            return r.fn.call(r.context, s, i, p, f, l), !0;
         }
-        for (h = 1, k = new Array(y - 1); h < y; h++)
+        for (h = 1, k = new Array(m - 1); h < m; h++)
           k[h - 1] = arguments[h];
-        n.fn.apply(n.context, k);
+        r.fn.apply(r.context, k);
       } else {
-        var b = n.length, E;
-        for (h = 0; h < b; h++)
-          switch (n[h].once && this.removeListener(o, n[h].fn, void 0, !0), y) {
+        var M = r.length, E;
+        for (h = 0; h < M; h++)
+          switch (r[h].once && this.removeListener(o, r[h].fn, void 0, !0), m) {
             case 1:
-              n[h].fn.call(n[h].context);
+              r[h].fn.call(r[h].context);
               break;
             case 2:
-              n[h].fn.call(n[h].context, s);
+              r[h].fn.call(r[h].context, s);
               break;
             case 3:
-              n[h].fn.call(n[h].context, s, i);
+              r[h].fn.call(r[h].context, s, i);
               break;
             case 4:
-              n[h].fn.call(n[h].context, s, i, p);
+              r[h].fn.call(r[h].context, s, i, p);
               break;
             default:
-              if (!k) for (E = 1, k = new Array(y - 1); E < y; E++)
+              if (!k) for (E = 1, k = new Array(m - 1); E < m; E++)
                 k[E - 1] = arguments[E];
-              n[h].fn.apply(n[h].context, k);
+              r[h].fn.apply(r[h].context, k);
           }
       }
       return !0;
     }, a.prototype.on = function(o, s, i) {
-      return m(this, o, s, i, !1);
+      return y(this, o, s, i, !1);
     }, a.prototype.once = function(o, s, i) {
-      return m(this, o, s, i, !0);
+      return y(this, o, s, i, !0);
     }, a.prototype.removeListener = function(o, s, i, p) {
-      var f = e ? e + o : o;
+      var f = t ? t + o : o;
       if (!this._events[f]) return this;
       if (!s)
         return g(this, f), this;
@@ -122,22 +122,22 @@ function R() {
       if (l.fn)
         l.fn === s && (!p || l.once) && (!i || l.context === i) && g(this, f);
       else {
-        for (var w = 0, n = [], y = l.length; w < y; w++)
-          (l[w].fn !== s || p && !l[w].once || i && l[w].context !== i) && n.push(l[w]);
-        n.length ? this._events[f] = n.length === 1 ? n[0] : n : g(this, f);
+        for (var w = 0, r = [], m = l.length; w < m; w++)
+          (l[w].fn !== s || p && !l[w].once || i && l[w].context !== i) && r.push(l[w]);
+        r.length ? this._events[f] = r.length === 1 ? r[0] : r : g(this, f);
       }
       return this;
     }, a.prototype.removeAllListeners = function(o) {
       var s;
-      return o ? (s = e ? e + o : o, this._events[s] && g(this, s)) : (this._events = new r(), this._eventsCount = 0), this;
-    }, a.prototype.off = a.prototype.removeListener, a.prototype.addListener = a.prototype.on, a.prefixed = e, a.EventEmitter = a, d.exports = a;
+      return o ? (s = t ? t + o : o, this._events[s] && g(this, s)) : (this._events = new n(), this._eventsCount = 0), this;
+    }, a.prototype.off = a.prototype.removeListener, a.prototype.addListener = a.prototype.on, a.prefixed = t, a.EventEmitter = a, d.exports = a;
   }(I)), I.exports;
 }
-var S = R();
-const L = /* @__PURE__ */ K(S), x = 1460;
-class B extends L {
-  emit(t, ...e) {
-    return super.emit(t, ...e);
+var L = R();
+const S = /* @__PURE__ */ K(L), x = 1460;
+class B extends S {
+  emit(e, ...t) {
+    return super.emit(e, ...t);
   }
   socket;
   portal;
@@ -145,8 +145,8 @@ class B extends L {
   udpPort;
   rpcMethodRegistry = {};
   isRunning = !1;
-  constructor(t, e, r) {
-    super(), this.portal = t, this.bindAddress = e, this.udpPort = r, this.socket = Q({
+  constructor(e, t, n) {
+    super(), this.portal = e, this.bindAddress = t, this.udpPort = n, this.socket = Q({
       recvBufferSize: 16 * x,
       sendBufferSize: x,
       type: "udp4"
@@ -162,21 +162,21 @@ class B extends L {
     };
   }
   async start() {
-    return new Promise((t, e) => {
+    return new Promise((e, t) => {
       this.socket.bind(this.udpPort, this.bindAddress, () => {
-        this.isRunning = !0, console.log(`UDP Server listening on ${this.bindAddress}:${this.udpPort}`), t();
-      }), this.socket.on("error", e);
+        this.isRunning = !0, console.log(`UDP Server listening on ${this.bindAddress}:${this.udpPort}`), e();
+      }), this.socket.on("error", t);
     });
   }
-  async handleMessage(t, e) {
+  async handleMessage(e, t) {
     try {
-      const r = JSON.parse(t.toString());
-      if (console.log(`Received request from ${e.address}:${e.port}:`, r), !r.method)
+      const n = JSON.parse(e.toString());
+      if (console.log(`Received request from ${t.address}:${t.port}:`, n), !n.method)
         throw new Error("Invalid request format - missing method");
       let u;
-      if (this.rpcMethodRegistry[r.method])
+      if (this.rpcMethodRegistry[n.method])
         try {
-          const g = await this.rpcMethodRegistry[r.method](r.params || []);
+          const g = await this.rpcMethodRegistry[n.method](n.params || []);
           u = Y(g, !1);
         } catch (g) {
           u = {
@@ -185,7 +185,7 @@ class B extends L {
               code: -32e3,
               message: g instanceof Error ? g.message : "Unknown error"
             },
-            id: r.id
+            id: n.id
           };
         }
       else
@@ -193,90 +193,69 @@ class B extends L {
           jsonrpc: "2.0",
           error: {
             code: -32601,
-            message: `Method not found: ${r.method}`
+            message: `Method not found: ${n.method}`
           },
-          id: r.id
+          id: n.id
         };
       console.log("Response (before serialization):", u);
-      const m = JSON.stringify(u, (g, a) => typeof a == "bigint" ? a.toString() : a);
-      console.log("serialized response ", m), this.socket.send(m, e.port, e.address, (g) => {
+      const y = JSON.stringify(u, (g, a) => typeof a == "bigint" ? a.toString() : a);
+      console.log("serialized response ", y), this.socket.send(y, t.port, t.address, (g) => {
         g && console.error("Error sending response:", g);
       });
-    } catch (r) {
-      console.error("Error handling message:", r);
+    } catch (n) {
+      console.error("Error handling message:", n);
       const u = {
-        error: r instanceof Error ? r.message : "Unknown error",
+        error: n instanceof Error ? n.message : "Unknown error",
         id: null
-      }, m = JSON.stringify(u, (g, a) => typeof a == "bigint" ? a.toString() : a);
-      this.socket.send(m, e.port, e.address);
+      }, y = JSON.stringify(u, (g, a) => typeof a == "bigint" ? a.toString() : a);
+      this.socket.send(y, t.port, t.address);
     }
   }
-  async handleFindNodes(t) {
-    if (!t || !t[0])
+  async handleFindNodes(e) {
+    if (!e || !e[0])
       throw new Error("Missing nodeId parameter");
     if (!this.portal)
       throw new Error("Node not initialized");
-    return (await this.portal.discv5.findNode(t[0])).map((r) => {
+    return (await this.portal.discv5.findNode(e[0])).map((n) => {
       var u;
-      return console.log(r), {
-        nodeId: r.nodeId,
-        multiaddr: (u = r.getLocationMultiaddr("udp")) == null ? void 0 : u.toString()
+      return console.log(n), {
+        nodeId: n.nodeId,
+        multiaddr: (u = n.getLocationMultiaddr("udp")) == null ? void 0 : u.toString()
       };
     });
   }
-  async handleEthGetBlockByHash(t) {
-    if (console.log("here inside handler ..."), !t || !t[0])
+  async handleEthGetBlockByHash(e) {
+    if (console.log("here inside handler ..."), !e || !e[0])
       throw new Error("Missing Block Hash parameter");
     if (!this.portal)
       throw new Error("Node not initialized");
-    return await this.portal.ETH.getBlockByHash(t[0], !1);
+    return await this.portal.ETH.getBlockByHash(e[0], !1);
   }
-  async handleEthGetBlockByNumber(t) {
-    if (console.log("here inside handler ...", t), !t || !t[0])
+  async handleEthGetBlockByNumber(e) {
+    if (console.log("here inside handler ...", e), !e || !e[0])
       throw new Error("Missing Block Number parameter");
     if (!this.portal)
       throw new Error("Node not initialized");
-    let e = t[0];
-    if (typeof e == "string" && !e.startsWith("0x"))
-      try {
-        e = "0x" + parseInt(e, 10).toString(16);
-      } catch {
-        throw new Error("Invalid block number format");
-      }
-    else typeof e == "number" && (e = "0x" + e.toString(16));
-    const r = t.length > 1 ? !!t[1] : !1;
-    return console.log(`Calling getBlockByNumber with: ${e}, ${r}`), await this.portal.ETH.getBlockByNumber(e, r);
+    return await this.portal.ETH.getBlockByNumber(e[0], !1);
   }
-  // private async handleEthGetBlockByNumber(params: any[]): Promise<any> {
-  //   console.log('here inside handler ...', params)
-  //   if (!params || !params[0]) {
-  //     throw new Error('Missing Block Number parameter')
-  //   }
-  //   if (!this.portal) {
-  //     throw new Error('Node not initialized')
-  //   }
-  //   const nodes = await this.portal.ETH.getBlockByNumber("0x54543", false)
-  //   // const nodes = await this.portal.ETH.getBlockByNumber(params[0], false)
-  //   return nodes
-  // }
   async stop() {
-    return new Promise((t) => {
-      if (!this.isRunning) {
-        t();
-        return;
-      }
-      const e = () => {
-        this.isRunning = !1, t();
-      };
+    return new Promise((e) => {
       if (!this.isRunning) {
         e();
         return;
       }
-      this.socket.once("close", e);
+      const t = () => {
+        this.isRunning = !1, e();
+      };
+      if (!this.isRunning) {
+        t();
+        return;
+      }
+      this.socket.once("close", t);
       try {
         this.socket.close(), this.socket.unref();
-      } catch (r) {
-        console.warn("Error while closing UDP socket:", r), e();
+      } catch (n) {
+        console.warn("Error while closing UDP socket:", n), t();
       }
     });
   }
@@ -290,14 +269,14 @@ class J {
   udpHandler;
   logger = P(_);
   isInitialized = !1;
-  async init(t = 9090, e = 8545) {
+  async init(e = 9090, t = 8545) {
     this.isInitialized && await this.shutdown();
     try {
-      if (t <= 0)
+      if (e <= 0)
         throw new Error("Invalid bind port number");
-      const r = await O.generateKeyPair("secp256k1");
-      this.enr = M.createFromPrivateKey(r);
-      const u = D(`/ip4/0.0.0.0/udp/${t}`);
+      const n = await O.generateKeyPair("secp256k1");
+      this.enr = b.createFromPrivateKey(n);
+      const u = D(`/ip4/0.0.0.0/udp/${e}`);
       this.enr.setLocationMultiaddr(u), this.node = await A.create({
         transport: H.NODE,
         supportedNetworks: [
@@ -307,19 +286,19 @@ class J {
         config: {
           enr: this.enr,
           bindAddrs: { ip4: u },
-          privateKey: r
+          privateKey: n
         },
         bootnodes: z.mainnet
-      }), this.historyNetwork = this.node.network()["0x500b"], this.stateNetwork = this.node.network()["0x500a"], this.udpHandler = new B(this.node, "127.0.0.1", e), await this.node.start(), await this.udpHandler.start(), this.node.enableLog(_), this.isInitialized = !0, this.logger("Portal Network initialized successfully"), this.logger(`Bind Port: ${t}`), this.logger("History Network status:", !!this.historyNetwork), this.logger("State Network status:", !!this.stateNetwork), this.logger(this.node);
-    } catch (r) {
-      throw this.logger("Portal Network initialization failed:", r), await this.cleanup(), r;
+      }), this.historyNetwork = this.node.network()["0x500b"], this.stateNetwork = this.node.network()["0x500a"], this.udpHandler = new B(this.node, "127.0.0.1", t), await this.node.start(), await this.udpHandler.start(), this.node.enableLog(_), this.isInitialized = !0, this.logger("Portal Network initialized successfully"), this.logger(`Bind Port: ${e}`), this.logger("History Network status:", !!this.historyNetwork), this.logger("State Network status:", !!this.stateNetwork), this.logger(this.node);
+    } catch (n) {
+      throw this.logger("Portal Network initialization failed:", n), await this.cleanup(), n;
     }
   }
   async cleanup() {
     try {
       this.udpHandler && await this.udpHandler.stop(), this.node && await this.node.stop();
-    } catch (t) {
-      this.logger("Cleanup error:", t);
+    } catch (e) {
+      this.logger("Cleanup error:", e);
     }
     this.isInitialized = !1, this.node = void 0, this.udpHandler = void 0;
   }
@@ -336,28 +315,28 @@ class J {
     return this.node;
   }
   async bootstrap() {
-    var t;
-    await ((t = this.node) == null ? void 0 : t.bootstrap());
+    var e;
+    await ((e = this.node) == null ? void 0 : e.bootstrap());
   }
 }
 let N;
-async function q(d, t) {
-  return N && await N.shutdown(), N = new J(), await N.init(d, t), N;
+async function q(d, e) {
+  return N && await N.shutdown(), N = new J(), await N.init(d, e), N;
 }
-async function T() {
+async function Z() {
   let d;
   try {
-    const t = parseInt(process.env.BIND_PORT || "9090"), e = parseInt(process.env.UDP_PORT || "8545");
-    d = await q(t, e);
-    const r = async () => {
+    const e = parseInt(process.env.BIND_PORT || "9090"), t = parseInt(process.env.UDP_PORT || "8545");
+    d = await q(e, t);
+    const n = async () => {
       d && await d.shutdown(), process.exit(0);
     };
-    process.on("SIGINT", r), process.on("SIGTERM", r), console.log(`Portal Network started on bind port: ${t}`);
-  } catch (t) {
-    console.error("Error initializing Portal Network:", t), d && await d.shutdown(), process.exit(1);
+    process.on("SIGINT", n), process.on("SIGTERM", n), console.log(`Portal Network started on bind port: ${e}`);
+  } catch (e) {
+    console.error("Error initializing Portal Network:", e), d && await d.shutdown(), process.exit(1);
   }
 }
-T().catch(async (d) => {
+Z().catch(async (d) => {
   console.error("Fatal error:", d), process.exit(1);
 });
 export {

@@ -3,14 +3,15 @@ import PowerOffIcon from '@/components/icons/PowerOffIcon'
 import useInitializeApp from '@/hooks/useInitializeApp'
 
 const InitializeAppBtn = () => {
- const { handleInitialize } = useInitializeApp()
+ const { isInitialized, handleInitialize } = useInitializeApp()
 
   return (
-    <label onClick={handleInitialize} className="toggle text-base-content">
-      <input type="checkbox" className="toggle-primary" />
-      <PowerOffIcon />
-      <PowerOnIcon />
-    </label>
+    <div onClick={handleInitialize} className="cursor-pointer">
+      {/* <input type="checkbox" className="toggle-primary" /> */}
+      {isInitialized ? 'On' : 'Off'}
+      {/* <PowerOffIcon />
+      <PowerOnIcon /> */}
+    </div>
   )
 }
 

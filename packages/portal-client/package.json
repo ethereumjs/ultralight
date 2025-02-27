@@ -12,7 +12,9 @@
     "tauri": "tauri",
     "tauri:build": "npm run build && tauri build",
     "format": "npx prettier . --write",
-    "format:check": "npx prettier . --check"
+    "format:check": "npx prettier . --check",
+    "test": "npm run test:backend",
+    "test:backend": "cargo test --manifest-path=src-tauri/Cargo.toml"
   },
   "dependencies": {
     "@chainsafe/enr": "^5.0.0",
