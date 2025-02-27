@@ -1,5 +1,5 @@
-import PowerOnIcon from '@/components/icons/PowerOnIcon'
-import PowerOffIcon from '@/components/icons/PowerOffIcon'
+// import PowerOnIcon from '@/components/icons/PowerOnIcon'
+// import PowerOffIcon from '@/components/icons/PowerOffIcon'
 import useInitializeApp from '@/hooks/useInitializeApp'
 
 const InitializeAppBtn = () => {
@@ -8,7 +8,7 @@ const InitializeAppBtn = () => {
   return (
     <div onClick={handleInitialize} className="cursor-pointer">
       {/* <input type="checkbox" className="toggle-primary" /> */}
-      {isInitialized ? 'On' : 'Off'}
+      {isInitialized ? 'Off' : 'On'}
       {/* <PowerOffIcon />
       <PowerOnIcon /> */}
     </div>
