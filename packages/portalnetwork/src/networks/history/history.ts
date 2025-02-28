@@ -381,7 +381,7 @@ export class HistoryNetwork extends BaseNetwork {
     }
   }
 
-  protected overridehandleFindContent = async (
+  protected override handleFindContent = async (
     src: INodeAddress,
     requestId: bigint,
     decodedContentMessage: FindContentMessage,
