@@ -4,6 +4,7 @@ import {
   ContainerType,
   ListCompositeType,
   UintBigintType,
+  UintNumberType,
   VectorCompositeType,
 } from '@chainsafe/ssz'
 import { MAX_WITHDRAWALS_PER_PAYLOAD } from '@lodestar/params'
@@ -35,7 +36,7 @@ export enum HistoryNetworkContentType {
   BlockBody = 1,
   Receipt = 2,
   BlockHeaderByNumber = 3,
-  HeaderProof = 4,
+  EphemeralHeader = 4,
 }
 export enum HistoryNetworkRetrievalMechanism {
   BlockHeaderByHash = 0,
@@ -98,6 +99,9 @@ export type SszProof = {
   leaf: HashRoot
   witnesses: Witnesses
 }
+
+export const BlockHeader = new ByteListType(MAX_HEADER_LENGTH)
+
 export type HeaderRecord = {
   blockHash: HashRoot
   totalDifficulty: TotalDifficulty
@@ -209,3 +213,15 @@ export const BlockHeaderWithProof = new ContainerType({
   header: new ByteListType(MAX_HEADER_LENGTH),
   proof: new ByteListType(MAX_HEADER_PROOF_LENGTH),
 })
+
+/** Ephemeral header types */
+export const EphemeralHeaderKey = new ContainerType({
+  blockHash: Bytes32Type,
+  ancestorCount: new UintNumberType(1),
+})
+
+export const MAX_EPHEMERAL_HEADERS_PAYLOAD = 255 // the max number of headers that can be sent in an ephemeral headers payload
+export const EphemeralHeaderPayload = new ListCompositeType(
+  BlockHeader,
+  MAX_EPHEMERAL_HEADERS_PAYLOAD,
+)

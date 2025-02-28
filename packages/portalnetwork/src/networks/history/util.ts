@@ -8,11 +8,11 @@ import { ssz } from '@lodestar/types'
 import { historicalEpochs } from './data/epochHashes.js'
 import { historicalRoots } from './data/historicalRoots.js'
 import {
-  AccumulatorProofType,
   BlockBodyContentType,
   BlockHeaderWithProof,
   BlockNumberKey,
   CAPELLA_ERA,
+  EphemeralHeaderKey,
   EpochAccumulator,
   HistoryNetworkContentType,
   MERGE_BLOCK,
@@ -57,22 +57,34 @@ export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
  */
 export const getContentKey = (
   contentType: HistoryNetworkContentType,
-  key: Uint8Array | bigint,
+  key: Uint8Array | bigint | { blockHash: Uint8Array; ancestorCount: number },
 ): Uint8Array => {
   let encodedKey
   switch (contentType) {
     case HistoryNetworkContentType.BlockHeader:
     case HistoryNetworkContentType.BlockBody:
-    case HistoryNetworkContentType.Receipt:
-    case HistoryNetworkContentType.HeaderProof: {
+    case HistoryNetworkContentType.Receipt: {
       if (!(key instanceof Uint8Array))
-        throw new Error('block hash is required to generate contentId')
+        throw new Error('block hash is required to generate contentKey')
       encodedKey = Uint8Array.from([contentType, ...key])
       break
     }
     case HistoryNetworkContentType.BlockHeaderByNumber: {
-      if (typeof key !== 'bigint') throw new Error('block number is required to generate contentId')
+      if (typeof key !== 'bigint')
+        throw new Error('block number is required to generate contentKey')
       encodedKey = BlockHeaderByNumberKey(key)
+      break
+    }
+    case HistoryNetworkContentType.EphemeralHeader: {
+      if (typeof key !== 'object' || !('blockHash' in key) || !('ancestorCount' in key))
+        throw new Error('block hash and ancestor count are required to generate contentKey')
+      encodedKey = Uint8Array.from([
+        contentType,
+        ...EphemeralHeaderKey.serialize({
+          blockHash: key.blockHash,
+          ancestorCount: key.ancestorCount,
+        }),
+      ])
       break
     }
     default:
@@ -81,6 +93,14 @@ export const getContentKey = (
   return encodedKey
 }
 
+/**
+ * Generates a database key for an ephemeral header being stored in the DB
+ * @param blockHash hash for ephemeral header being stored
+ * @returns database key for ephemeral header
+ */
+export const getEphemeralHeaderDbKey = (blockHash: Uint8Array) => {
+  return Uint8Array.from([HistoryNetworkContentType.EphemeralHeader, ...blockHash])
+}
 /**
  * Generates the contentId from a serialized History Network Content Key used to calculate the distance between a node ID and the content key
  * @param contentType the type of content (block header, block body, receipt, header_by_number)
@@ -100,7 +120,7 @@ export const decodeHistoryNetworkContentKey = (
         | HistoryNetworkContentType.BlockHeader
         | HistoryNetworkContentType.BlockBody
         | HistoryNetworkContentType.Receipt
-        | HistoryNetworkContentType.HeaderProof
+        | HistoryNetworkContentType.EphemeralHeader
       keyOpt: Uint8Array
     }
   | {
@@ -108,17 +128,28 @@ export const decodeHistoryNetworkContentKey = (
       keyOpt: bigint
     } => {
   const contentType: HistoryNetworkContentType = contentKey[0]
-  if (contentType === HistoryNetworkContentType.BlockHeaderByNumber) {
-    const blockNumber = BlockNumberKey.deserialize(contentKey.slice(1)).blockNumber
-    return {
-      contentType,
-      keyOpt: blockNumber,
+  switch (contentType) {
+    case HistoryNetworkContentType.BlockHeaderByNumber: {
+      const blockNumber = BlockNumberKey.deserialize(contentKey.slice(1)).blockNumber
+      return {
+        contentType,
+        keyOpt: blockNumber,
+      }
     }
-  }
-  const blockHash = contentKey.slice(1)
-  return {
-    contentType,
-    keyOpt: blockHash,
+    case HistoryNetworkContentType.EphemeralHeader: {
+      const key = EphemeralHeaderKey.deserialize(contentKey.slice(1))
+      return {
+        contentType,
+        keyOpt: key.blockHash,
+      }
+    }
+    default: {
+      const blockHash = contentKey.slice(1)
+      return {
+        contentType,
+        keyOpt: blockHash,
+      }
+    }
   }
 }
 
