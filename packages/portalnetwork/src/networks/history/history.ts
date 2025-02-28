@@ -411,6 +411,7 @@ export class HistoryNetwork extends BaseNetwork {
       // Retrieve the starting header from the FINDCONTENT request
       const headerKey = getEphemeralHeaderDbKey(contentKey.keyOpt.blockHash)
       const firstHeader = await this.findContentLocally(headerKey)
+
       if (firstHeader === undefined) {
         // If we don't have the requested header, send an empty payload
         // We never send an ENRs response for ephemeral headers
@@ -423,7 +424,12 @@ export class HistoryNetwork extends BaseNetwork {
         this.logger.extend('FOUNDCONTENT')(
           `Header not found for ${bytesToHex(contentKey.keyOpt.blockHash)}, sending empty ephemeral headers response to ${shortId(src.nodeId)}`,
         )
-        await this.sendResponse(src, requestId, messagePayload)
+        await this.sendResponse(
+          src,
+          requestId,
+          concatBytes(Uint8Array.from([MessageCodes.CONTENT]), messagePayload),
+        )
+        return
       } else {
         this.logger.extend('FOUNDCONTENT')(
           `Header found for ${bytesToHex(contentKey.keyOpt.blockHash)}, assembling ephemeral headers response to ${shortId(src.nodeId)}`,
@@ -433,7 +439,7 @@ export class HistoryNetwork extends BaseNetwork {
         const firstHeaderNumber = this.ephemeralHeaderIndex.getByValue(
           bytesToHex(contentKey.keyOpt.blockHash),
         )
-        for (let x = 1; x <= contentKey.keyOpt.ancestorCount; x++) {
+        for (let x = 1; x < contentKey.keyOpt.ancestorCount; x++) {
           // Determine if we have the ancestor header at block number `firstHeaderNumber - x`
           const ancestorNumber = firstHeaderNumber! - BigInt(x)
           const ancestorHash = this.ephemeralHeaderIndex.getByKey(ancestorNumber)

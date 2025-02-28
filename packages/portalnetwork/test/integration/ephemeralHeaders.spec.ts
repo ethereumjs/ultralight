@@ -1,7 +1,7 @@
 import { SignableENR } from '@chainsafe/enr'
 import type { BlockHeader, JsonRpcBlock } from '@ethereumjs/block'
 import { Block } from '@ethereumjs/block'
-import { hexToBytes } from '@ethereumjs/util'
+import { hexToBytes, randomBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, beforeAll, describe, it } from 'vitest'
@@ -86,5 +86,35 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     } else {
       assert.fail('Expected content in response')
     }
-  })
+
+    const contentKeyForOneAncestor = getContentKey(HistoryNetworkContentType.EphemeralHeader, {
+      blockHash: headers[0].hash(),
+      ancestorCount: 1,
+    })
+
+    const res2 = await network2!.sendFindContent(node1.discv5.enr.toENR(), contentKeyForOneAncestor)
+    assert.exists(res2)
+    if ('content' in res2!) {
+      const payload = EphemeralHeaderPayload.deserialize(res2.content)
+      assert.equal(payload.length, 1, 'should only get a single ancestor')
+    } else {
+      assert.fail('Expected content in response')
+    }
+
+    // Verify that we get an empty ephemeral headers payload for a random blockhash
+    const res3 = await network2!.sendFindContent(
+      node1.discv5.enr.toENR(),
+      getContentKey(HistoryNetworkContentType.EphemeralHeader, {
+        blockHash: randomBytes(32),
+        ancestorCount: 255,
+      }),
+    )
+    assert.exists(res3)
+    if ('content' in res3!) {
+      const payload = EphemeralHeaderPayload.deserialize(res3.content)
+      assert.equal(payload.length, 0, 'should not get any headers for a random blockhash')
+    } else {
+      assert.fail('Expected content in response')
+    }
+  }, 10000)
 })
