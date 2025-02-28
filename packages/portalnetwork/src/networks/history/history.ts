@@ -61,7 +61,7 @@ export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'
   logger: Debugger
-  public ephemeralHeaderIndex: BiMap<bigint, string> // Map of slot numbers to hashes
+  public ephemeralHeaderIndex: BiMap<bigint, string> // Map of block number to block hashes
   public blockHashIndex: Map<string, string>
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, networkId: NetworkId.HistoryNetwork, db, radius, maxStorage })
@@ -398,15 +398,67 @@ export class HistoryNetwork extends BaseNetwork {
     const contentKey = decodeHistoryNetworkContentKey(decodedContentMessage.contentKey)
     let value: Uint8Array | undefined
     if (contentKey.contentType === HistoryNetworkContentType.EphemeralHeader) {
-      const headerKey = getContentKey(HistoryNetworkContentType.EphemeralHeader, contentKey.keyOpt)
-      value = await this.findContentLocally(headerKey)
+      if (contentKey.keyOpt.ancestorCount < 0 || contentKey.keyOpt.ancestorCount > 255) {
+        const errorMessage = `received invalid ephemeral headers request with invalid ancestorCount: expected 0 <= 255, got ${contentKey.keyOpt.ancestorCount}`
+        this.logger.extend('FOUNDCONTENT')(errorMessage)
+        throw new Error(errorMessage)
+      }
+      this.logger.extend('FOUNDCONTENT')(
+        `Received ephemeral headers request for block ${bytesToHex(contentKey.keyOpt.blockHash)} with ancestorCount ${contentKey.keyOpt.ancestorCount}`,
+      )
+      // Retrieve the starting header from the FINDCONTENT request
+      const headerKey = getEphemeralHeaderDbKey(contentKey.keyOpt.blockHash)
+      const firstHeader = await this.findContentLocally(headerKey)
+      if (firstHeader === undefined) {
+        // If we don't have the requested header, send an empty payload
+        // We never send an ENRs response for ephemeral headers
+        value = undefined
+        const emptyHeaderPayload = EphemeralHeaderPayload.serialize([])
+        const messagePayload = ContentMessageType.serialize({
+          selector: FoundContent.CONTENT,
+          value: emptyHeaderPayload,
+        })
+        this.logger.extend('FOUNDCONTENT')(
+          `Header not found for ${bytesToHex(contentKey.keyOpt.blockHash)}, sending empty ephemeral headers response to ${shortId(src.nodeId)}`,
+        )
+        await this.sendResponse(src, requestId, messagePayload)
+      } else {
+        this.logger.extend('FOUNDCONTENT')(
+          `Header found for ${bytesToHex(contentKey.keyOpt.blockHash)}, assembling ephemeral headers response to ${shortId(src.nodeId)}`,
+        )
+        // We have the requested header so begin assembling the payload
+        const headersList = [firstHeader]
+        const firstHeaderNumber = this.ephemeralHeaderIndex.getByValue(
+          bytesToHex(contentKey.keyOpt.blockHash),
+        )
+        for (let x = 1; x <= contentKey.keyOpt.ancestorCount; x++) {
+          // Determine if we have the ancestor header at block number `firstHeaderNumber - x`
+          const ancestorNumber = firstHeaderNumber! - BigInt(x)
+          const ancestorHash = this.ephemeralHeaderIndex.getByKey(ancestorNumber)
+          if (ancestorHash === undefined)
+            break // Stop looking for more ancestors if we don't have the current one in the index
+          else {
+            const ancestorKey = getEphemeralHeaderDbKey(hexToBytes(ancestorHash))
+            const ancestorHeader = await this.findContentLocally(ancestorKey)
+            if (ancestorHeader === undefined) {
+              // This would only happen if our index gets out of sync with the DB
+              // Stop looking for more ancestors if we don't have the current one in the DB
+              this.ephemeralHeaderIndex.delete(ancestorNumber)
+              break
+            } else {
+              headersList.push(ancestorHeader)
+            }
+          }
+        }
+        value = EphemeralHeaderPayload.serialize(headersList)
+      }
     } else {
       value = await this.findContentLocally(decodedContentMessage.contentKey)
     }
     if (!value) {
       await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
     } else if (value instanceof Uint8Array && value.length < MAX_PACKET_SIZE) {
-      this.logger(
+      this.logger.extend('FOUNDCONTENT')(
         'Found value for requested content ' +
           bytesToHex(decodedContentMessage.contentKey) +
           ' ' +
@@ -414,7 +466,7 @@ export class HistoryNetwork extends BaseNetwork {
           `...`,
       )
       const payload = ContentMessageType.serialize({
-        selector: 1,
+        selector: FoundContent.CONTENT,
         value,
       })
       this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
