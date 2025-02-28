@@ -54,7 +54,11 @@ export const HistoricalSummariesKey = new ContainerType({ epoch: new UintBigintT
 
 export const HistoricalSummariesStateProof = new VectorCompositeType(Bytes32Type, 5)
 
-export const HistoricalSummariesWithProof = new ContainerType(
+export const HistoricalSummariesWithProof = new ContainerType<{
+  epoch: UintBigintType
+  historicalSummaries: typeof ssz.capella.BeaconState.fields.historicalSummaries
+  proof: typeof HistoricalSummariesStateProof
+}>(
   {
     epoch: new UintBigintType(8),
     historicalSummaries: ssz.capella.BeaconState.fields.historicalSummaries,
@@ -72,3 +76,8 @@ export type HistoricalSummaries = Array<{
   blockSummaryRoot: Uint8Array
   stateSummaryRoot: Uint8Array
 }>
+
+export type EphemeralHeaderKeyValues = {
+  blockHash: Uint8Array
+  ancestorCount: number
+}

@@ -35,7 +35,7 @@ describe('ephemeral header handling', () => {
     const storedHeaderPayload = await network?.get(getEphemeralHeaderDbKey(headers[0].hash()))
     assert.deepEqual(hexToBytes(storedHeaderPayload!), headers[0].serialize())
     assert.equal(
-      network?.ephemeralHeaderIndex.get(headers[1].number),
+      network?.ephemeralHeaderIndex.getByKey(headers[1].number),
       bytesToHex(headers[1].hash()),
     )
   })

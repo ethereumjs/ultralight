@@ -5,11 +5,13 @@ import debug from 'debug'
 import type {
   BaseNetworkConfig,
   ContentLookupResponse,
+  EphemeralHeaderKeyValues,
   FindContentMessage,
   INodeAddress,
 } from '../../index.js'
 import {
   BasicRadius,
+  BiMap,
   ClientInfoAndCapabilities,
   ContentMessageType,
   FoundContent,
@@ -59,7 +61,7 @@ export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'
   logger: Debugger
-  public ephemeralHeaderIndex: Map<bigint, string> // Map of slot numbers to hashes
+  public ephemeralHeaderIndex: BiMap<bigint, string> // Map of slot numbers to hashes
   public blockHashIndex: Map<string, string>
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, networkId: NetworkId.HistoryNetwork, db, radius, maxStorage })
@@ -71,7 +73,7 @@ export class HistoryNetwork extends BaseNetwork {
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
     this.routingTable.setLogger(this.logger)
     this.blockHashIndex = new Map()
-    this.ephemeralHeaderIndex = new Map()
+    this.ephemeralHeaderIndex = new BiMap()
   }
 
   public blockNumberToHash(blockNumber: bigint): Uint8Array | undefined {
@@ -237,7 +239,6 @@ export class HistoryNetwork extends BaseNetwork {
       let deserializedProof: ReturnType<typeof HistoricalSummariesBlockProof.deserialize>
       try {
         deserializedProof = HistoricalSummariesBlockProof.deserialize(proof)
-        console.log(HistoricalSummariesBlockProof.toJson(deserializedProof))
       } catch (err: any) {
         this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
         throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)
@@ -394,8 +395,14 @@ export class HistoryNetwork extends BaseNetwork {
       )}`,
     )
 
-    // TODO: Add specific support for retrieving ephemeral headers
-    const value = await this.findContentLocally(decodedContentMessage.contentKey)
+    const contentKey = decodeHistoryNetworkContentKey(decodedContentMessage.contentKey)
+    let value: Uint8Array | undefined
+    if (contentKey.contentType === HistoryNetworkContentType.EphemeralHeader) {
+      const headerKey = getContentKey(HistoryNetworkContentType.EphemeralHeader, contentKey.keyOpt)
+      value = await this.findContentLocally(headerKey)
+    } else {
+      value = await this.findContentLocally(decodedContentMessage.contentKey)
+    }
     if (!value) {
       await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
     } else if (value instanceof Uint8Array && value.length < MAX_PACKET_SIZE) {
@@ -500,10 +507,10 @@ export class HistoryNetwork extends BaseNetwork {
           // Verify first header matches requested header
           const firstHeader = BlockHeader.fromRLPSerializedHeader(payload[0], { setHardfork: true })
           const requestedHeaderHash = decodeHistoryNetworkContentKey(contentKey)
-            .keyOpt as Uint8Array
-          if (!equalsBytes(firstHeader.hash(), requestedHeaderHash)) {
+            .keyOpt as EphemeralHeaderKeyValues
+          if (!equalsBytes(firstHeader.hash(), requestedHeaderHash.blockHash)) {
             // TODO: Should we ban/mark down the score of peers who send junk payload?
-            const errorMessage = `invalid ephemeral header payload; requested ${bytesToHex(requestedHeaderHash)}, got ${bytesToHex(firstHeader.hash())}`
+            const errorMessage = `invalid ephemeral header payload; requested ${bytesToHex(requestedHeaderHash.blockHash)}, got ${bytesToHex(firstHeader.hash())}`
             this.logger(errorMessage)
             throw new Error(errorMessage)
           }

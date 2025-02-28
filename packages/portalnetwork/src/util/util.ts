@@ -78,3 +78,76 @@ export const getENR = (routingTable: RoutingTable, enrOrId: string) => {
       : routingTable.getWithPending(enrOrId.slice(2))?.value
   return enr
 }
+
+/**
+ * Bidirectional map that maintains a one-to-one correspondence between keys and values.
+ * When a key-value pair is added, any existing pairs with the same key or value are removed.
+ * @template T The type of the keys
+ * @template U The type of the values
+ * @note Build by robots with oversight by acolytec3
+ */
+export class BiMap<T, U> {
+  #forward = new Map<T, U>()
+  #reverse = new Map<U, T>()
+
+  /**
+   * Sets a key-value pair in the map. If either the key or value already exists,
+   * the old mapping is removed before the new one is added.
+   * @param key The key to set
+   * @param value The value to set
+   */
+  set(key: T, value: U): void {
+    const oldValue = this.#forward.get(key)
+    if (oldValue !== undefined) {
+      this.#reverse.delete(oldValue)
+    }
+
+    const oldKey = this.#reverse.get(value)
+    if (oldKey !== undefined) {
+      this.#forward.delete(oldKey)
+    }
+
+    this.#forward.set(key, value)
+    this.#reverse.set(value, key)
+  }
+
+  /**
+   * Gets a value by its key
+   * @param key The key to look up
+   * @returns The associated value, or undefined if the key doesn't exist
+   */
+  getByKey(key: T): U | undefined {
+    return this.#forward.get(key)
+  }
+
+  /**
+   * Gets a key by its value
+   * @param value The value to look up
+   * @returns The associated key, or undefined if the value doesn't exist
+   */
+  getByValue(value: U): T | undefined {
+    return this.#reverse.get(value)
+  }
+
+  /**
+   * Removes a key-value pair from the map
+   * @param key The key to remove
+   * @returns true if a pair was removed, false if the key didn't exist
+   */
+  delete(key: T): boolean {
+    const value = this.#forward.get(key)
+    if (value === undefined) return false
+
+    this.#forward.delete(key)
+    this.#reverse.delete(value)
+    return true
+  }
+
+  /**
+   * Gets the size of the map
+   * @returns the size of the map
+   */
+  get size(): number {
+    return this.#forward.size
+  }
+}
