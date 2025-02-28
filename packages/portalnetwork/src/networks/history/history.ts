@@ -313,6 +313,8 @@ export class HistoryNetwork extends BaseNetwork {
         beacon.lightClient?.status === RunStatusCode.uninitialized ||
         beacon.lightClient?.status === RunStatusCode.stopped
       ) {
+        // TODO: Decide whether to keep this or not.  It's not technically correct according to the spec
+        // since you can track the HEAD of the chan however you want.
         const errorMessage = 'Cannot verify ephemeral headers when beacon network is not running'
         this.logger.extend('FINDCONTENT')(errorMessage)
         throw new Error(errorMessage)
@@ -450,6 +452,9 @@ export class HistoryNetwork extends BaseNetwork {
             }
           }
         }
+        this.logger.extend('FOUNDCONTENT')(
+          `found ${headersList.length} ancestor headers for ${bytesToHex(contentKey.keyOpt.blockHash)}`,
+        )
         value = EphemeralHeaderPayload.serialize(headersList)
       }
     } else {

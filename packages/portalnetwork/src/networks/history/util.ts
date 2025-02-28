@@ -41,7 +41,7 @@ import type { WithdrawalBytes } from '@ethereumjs/util'
 import type { ForkConfig } from '@lodestar/config'
 import type { HistoryNetwork } from './history.js'
 import type { BlockBodyContent, Witnesses } from './types.js'
-import type { EphemeralHeaderKeyValues } from '../beacon/types.js'
+import type { EphemeralHeaderKeyValues } from '../history/types.js'
 
 export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
   return Uint8Array.from([

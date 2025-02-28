@@ -76,8 +76,3 @@ export type HistoricalSummaries = Array<{
   blockSummaryRoot: Uint8Array
   stateSummaryRoot: Uint8Array
 }>
-
-export type EphemeralHeaderKeyValues = {
-  blockHash: Uint8Array
-  ancestorCount: number
-}

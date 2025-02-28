@@ -1,6 +1,6 @@
 import type { BlockHeader, JsonRpcBlock } from '@ethereumjs/block'
 import { Block } from '@ethereumjs/block'
-import { hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { assert, beforeAll, describe, it } from 'vitest'
 import {
   EphemeralHeaderPayload,
@@ -35,7 +35,10 @@ describe('ephemeral header handling', () => {
     await network!.store(contentKey, headerPayload)
     const storedHeaderPayload = await network?.get(getEphemeralHeaderDbKey(headers[0].hash()))
     assert.deepEqual(hexToBytes(storedHeaderPayload!), headers[0].serialize())
-    assert.deepEqual(network!.ephemeralHeaderIndex.getByKey(headers[1].number), headers[1].hash())
+    assert.deepEqual(
+      network!.ephemeralHeaderIndex.getByKey(headers[1].number),
+      bytesToHex(headers[1].hash()),
+    )
   })
   it('should produce the correct HISTORY_RADIUS ping payload', async () => {
     const node = await PortalNetwork.create({})
