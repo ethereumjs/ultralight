@@ -97,7 +97,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     assert.exists(res2)
     if ('content' in res2!) {
       const payload = EphemeralHeaderPayload.deserialize(res2.content)
-      assert.equal(payload.length, 1, 'should only get a single ancestor')
+      assert.equal(payload.length, 2, 'should only get a single ancestor')
     } else {
       assert.fail('Expected content in response')
     }

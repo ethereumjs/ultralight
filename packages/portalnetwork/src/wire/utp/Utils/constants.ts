@@ -24,7 +24,7 @@ export const AUTO_ACK_SMALLER_THAN_ACK_NUMBER: boolean = true
 export const MINIMUM_DIFFERENCE_TIMESTAMP_MICROSEC: number = 120000000
 
 export const DEFAULT_PACKET_SIZE = 512
-export const MAX_PACKET_SIZE: number = 1225
+export const MAX_UDP_PACKET_SIZE: number = 1280
 export const MIN_PACKET_SIZE: number = 150
 export const MINIMUM_MTU: number = 576
 export const SEND_IN_BURST: boolean = true
@@ -34,7 +34,7 @@ export const MICROSECOND_WAIT_BETWEEN_BURSTS: number = 28000
 export const TIME_WAIT_AFTER_LAST_PACKET: number = 3000000
 export const ONLY_POSITIVE_GAIN: boolean = false
 export const DEBUG: boolean = false
-export const MAX_UTP_PACKET_LENGTH = MAX_PACKET_SIZE
+export const MAX_UTP_PACKET_LENGTH = MAX_UDP_PACKET_SIZE
 export const MAX_UDP_HEADER_LENGTH = 48
 export const DEF_HEADER_LENGTH = 20
 

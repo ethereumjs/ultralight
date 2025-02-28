@@ -35,7 +35,7 @@ import {
   ContentMessageType,
   ErrorPayload,
   HistoryRadius,
-  MAX_PACKET_SIZE,
+  MAX_UDP_PACKET_SIZE,
   MessageCodes,
   NodeLookup,
   PingPongErrorCodes,
@@ -48,6 +48,7 @@ import {
   encodeClientInfo,
   encodeWithVariantPrefix,
   generateRandomNodeIdAtDistance,
+  getTalkReqOverhead,
   randUint16,
   shortId,
 } from '../index.js'
@@ -762,7 +763,10 @@ export abstract class BaseNetwork extends EventEmitter {
     const value = await this.findContentLocally(decodedContentMessage.contentKey)
     if (!value) {
       await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
-    } else if (value instanceof Uint8Array && value.length < MAX_PACKET_SIZE) {
+    } else if (
+      value instanceof Uint8Array &&
+      value.length < MAX_UDP_PACKET_SIZE - getTalkReqOverhead(hexToBytes(this.networkId).byteLength)
+    ) {
       this.logger(
         'Found value for requested content ' +
           bytesToHex(decodedContentMessage.contentKey) +
@@ -818,7 +822,11 @@ export abstract class BaseNetwork extends EventEmitter {
     if (encodedEnrs.length > 0) {
       this.logger.extend('FINDCONTENT')(`Found ${encodedEnrs.length} closer to content`)
       // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
-      while (encodedEnrs.length > 0 && arrayByteLength(encodedEnrs) > MAX_PACKET_SIZE) {
+      while (
+        encodedEnrs.length > 0 &&
+        arrayByteLength(encodedEnrs) >
+          MAX_UDP_PACKET_SIZE - getTalkReqOverhead(hexToBytes(this.networkId).byteLength)
+      ) {
         // Remove ENRs until total ENRs less than 1200 bytes
         encodedEnrs.pop()
       }

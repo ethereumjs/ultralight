@@ -17,7 +17,7 @@ import {
   FoundContent,
   HistoricalSummariesBlockProof,
   HistoryRadius,
-  MAX_PACKET_SIZE,
+  MAX_UDP_PACKET_SIZE,
   MessageCodes,
   PingPongPayloadExtensions,
   PortalWireMessageType,
@@ -25,6 +25,7 @@ import {
   decodeHistoryNetworkContentKey,
   decodeReceipts,
   encodeClientInfo,
+  getTalkReqOverhead,
   randUint16,
   reassembleBlock,
   saveReceipts,
@@ -439,7 +440,7 @@ export class HistoryNetwork extends BaseNetwork {
         const firstHeaderNumber = this.ephemeralHeaderIndex.getByValue(
           bytesToHex(contentKey.keyOpt.blockHash),
         )
-        for (let x = 1; x < contentKey.keyOpt.ancestorCount; x++) {
+        for (let x = 1; x <= contentKey.keyOpt.ancestorCount; x++) {
           // Determine if we have the ancestor header at block number `firstHeaderNumber - x`
           const ancestorNumber = firstHeaderNumber! - BigInt(x)
           const ancestorHash = this.ephemeralHeaderIndex.getByKey(ancestorNumber)
@@ -459,7 +460,7 @@ export class HistoryNetwork extends BaseNetwork {
           }
         }
         this.logger.extend('FOUNDCONTENT')(
-          `found ${headersList.length} ancestor headers for ${bytesToHex(contentKey.keyOpt.blockHash)}`,
+          `found ${headersList.length - 1} ancestor headers for ${bytesToHex(contentKey.keyOpt.blockHash)}`,
         )
         value = EphemeralHeaderPayload.serialize(headersList)
       }
@@ -468,7 +469,10 @@ export class HistoryNetwork extends BaseNetwork {
     }
     if (!value) {
       await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
-    } else if (value instanceof Uint8Array && value.length < MAX_PACKET_SIZE) {
+    } else if (
+      value instanceof Uint8Array &&
+      value.length < MAX_UDP_PACKET_SIZE - getTalkReqOverhead(hexToBytes(this.networkId).byteLength)
+    ) {
       this.logger.extend('FOUNDCONTENT')(
         'Found value for requested content ' +
           bytesToHex(decodedContentMessage.contentKey) +
