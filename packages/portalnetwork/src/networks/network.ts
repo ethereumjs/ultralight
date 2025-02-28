@@ -211,7 +211,6 @@ export abstract class BaseNetwork extends EventEmitter {
 
   public async handle(message: ITalkReqMessage, src: INodeAddress) {
     const id = message.id
-    const network = message.protocol
     const request = message.request
     const deserialized = PortalWireMessageType.deserialize(request)
     const decoded = deserialized.value
@@ -378,7 +377,9 @@ export abstract class BaseNetwork extends EventEmitter {
     if (this.capabilities.includes(pingMessage.payloadType)) {
       switch (pingMessage.payloadType) {
         case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
-          const { DataRadius, Capabilities, ClientInfo } = ClientInfoAndCapabilities.deserialize(pingMessage.customPayload)
+          const { DataRadius, Capabilities, ClientInfo } = ClientInfoAndCapabilities.deserialize(
+            pingMessage.customPayload,
+          )
           this.routingTable.updateRadius(src.nodeId, DataRadius)
           this.portal.enrCache.updateNodeFromPing(src, this.networkId, {
             capabilities: Capabilities,
