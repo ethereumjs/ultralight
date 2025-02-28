@@ -566,6 +566,10 @@ export class HistoryNetwork extends BaseNetwork {
 
       case HistoryNetworkContentType.EphemeralHeader: {
         const payload = EphemeralHeaderPayload.deserialize(value)
+        if (payload.length === 0) {
+          this.logger.extend('STORE')('Received empty ephemeral header payload')
+          return
+        }
         try {
           // Verify first header matches requested header
           const firstHeader = BlockHeader.fromRLPSerializedHeader(payload[0], { setHardfork: true })

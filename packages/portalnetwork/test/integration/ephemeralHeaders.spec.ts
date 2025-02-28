@@ -87,6 +87,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
       assert.fail('Expected content in response')
     }
 
+    // Verify that we get a single ancestor for a content key with an ancestor count of 1
     const contentKeyForOneAncestor = getContentKey(HistoryNetworkContentType.EphemeralHeader, {
       blockHash: headers[0].hash(),
       ancestorCount: 1,
@@ -116,5 +117,5 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     } else {
       assert.fail('Expected content in response')
     }
-  }, 10000)
+  })
 })
