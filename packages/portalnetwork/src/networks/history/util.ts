@@ -58,7 +58,7 @@ export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
  */
 export const getContentKey = (
   contentType: HistoryNetworkContentType,
-  key: Uint8Array | bigint | { blockHash: Uint8Array; ancestorCount: number },
+  key: Uint8Array | bigint | EphemeralHeaderKeyValues,
 ): Uint8Array => {
   let encodedKey
   switch (contentType) {
