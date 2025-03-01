@@ -307,20 +307,6 @@ export class HistoryNetwork extends BaseNetwork {
    * @returns the value of the FOUNDCONTENT response or undefined
    */
   public sendFindContent = async (enr: ENR, key: Uint8Array) => {
-    if (key[0] === HistoryNetworkContentType.EphemeralHeader) {
-      const beacon = this.portal.network()['0x500c']
-      if (
-        beacon === undefined ||
-        beacon.lightClient?.status === RunStatusCode.uninitialized ||
-        beacon.lightClient?.status === RunStatusCode.stopped
-      ) {
-        // TODO: Decide whether to keep this or not.  It's not technically correct according to the spec
-        // since you can track the HEAD of the chan however you want.
-        const errorMessage = 'Cannot verify ephemeral headers when beacon network is not running'
-        this.logger.extend('FINDCONTENT')(errorMessage)
-        throw new Error(errorMessage)
-      }
-    }
     this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
     const payload = PortalWireMessageType.serialize({

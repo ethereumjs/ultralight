@@ -84,7 +84,7 @@ export const getENR = (routingTable: RoutingTable, enrOrId: string) => {
  * When a key-value pair is added, any existing pairs with the same key or value are removed.
  * @template T The type of the keys
  * @template U The type of the values
- * @note Build by robots with oversight by acolytec3
+ * @note Built by robots with oversight by acolytec3
  */
 export class BiMap<T, U> {
   #forward = new Map<T, U>()
