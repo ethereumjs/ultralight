@@ -15,7 +15,7 @@ export default defineConfig({
     rollupOptions: {
       external: [
          ...builtinModules,
-        'dgram',
+        // 'dgram',
         '@chainsafe/enr',
         '@libp2p/crypto',
         '@multiformats/multiaddr',

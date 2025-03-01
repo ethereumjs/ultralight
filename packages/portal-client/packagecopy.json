@@ -4,10 +4,17 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "prebuild": "cd ../portalnetwork && npm run build",
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build:portal": "vite build --config vite.portal-client.config.ts",
+    "build": "tsc && vite build && npm run build:portal",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "tauri:build": "npm run build && tauri build",
+    "format": "npx prettier . --write",
+    "format:check": "npx prettier . --check",
+    "test": "npm run test:backend",
+    "test:backend": "cargo test --manifest-path=src-tauri/Cargo.toml"
   },
   "dependencies": {
     "@chainsafe/discv5": "^11.0.0",

@@ -11,6 +11,7 @@ use portal_process::setup_portal_process;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_udp::init())
         .setup(|app| {
             tauri::async_runtime::block_on(async {
                 setup_portal_process(app).await
