@@ -85,6 +85,7 @@ export const getENR = (routingTable: RoutingTable, enrOrId: string) => {
  * @template T The type of the keys
  * @template U The type of the values
  * @note Built by robots with oversight by acolytec3
+ * @note Uint8Arrays can not be used as keys or values in this class since bytes are not directly comparable
  */
 export class BiMap<T, U> {
   #forward = new Map<T, U>()
