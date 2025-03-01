@@ -225,3 +225,8 @@ export const EphemeralHeaderPayload = new ListCompositeType(
   BlockHeader,
   MAX_EPHEMERAL_HEADERS_PAYLOAD,
 )
+
+export type EphemeralHeaderKeyValues = {
+  blockHash: Uint8Array
+  ancestorCount: number
+}
