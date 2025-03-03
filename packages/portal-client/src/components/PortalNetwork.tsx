@@ -4,6 +4,7 @@ import { createPortalClient } from '../services/portalNetwork/client'
 function App() {
   const [portalClient, setPortalClient] = useState<any | null>(null)
 
+
   useEffect(() => {
     async function initialize() {
       try {

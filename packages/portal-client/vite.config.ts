@@ -31,6 +31,8 @@ export default defineConfig(async () => ({
       fs: resolve(__dirname, 'src/utils/polyfills/fsBrowser.ts'),
       child_process: resolve(__dirname, 'src/utils/polyfills/childProcessBrowser.ts'),
       process: resolve(__dirname, 'src/utils/polyfills/processBrowser.ts'),
+      'bls-eth-wasm': resolve(__dirname, 'src/utils/polyfills/blsPatch.ts'),
+      '@chainsafe/bls-keygen': resolve(__dirname, 'src/utils/polyfills/blsKeyGen.ts'),
       // '@': resolve(__dirname, './src'),
 
       // portalnetwork: resolve(__dirname, '/ultralight/packages/portalnetwork/src'),
@@ -48,11 +50,14 @@ export default defineConfig(async () => ({
   optimizeDeps: {
     esbuildOptions: {
       target: 'es2022',
+      // preserveEntrySignatures: 'strict',
       define: {
         global: 'globalThis',
       },
     },
-    exclude: ['@chainsafe/blst', 'herumi-*'],
+    exclude: ['@chainsafe/bls', 'herumi-*'],
+    include: ['@chainsafe/bls/switchable', 'bls-eth-wasm'],
+    // include: ['bls-eth-wasm'],
   },
   assetsInclude: ['**/*.wasm'],
   build: {
@@ -66,11 +71,7 @@ export default defineConfig(async () => ({
         'fs', 
         'child_process',
       ], // Automatically exclude built-in Node.js modules
-      // output: {
-      //   manualChunks: {
-      //     vendor: ["@chainsafe/discv5", "@chainsafe/enr"],
-      //   },
-      // },
+
     },
     output: {
       manualChunks: {

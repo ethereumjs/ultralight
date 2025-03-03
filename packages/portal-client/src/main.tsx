@@ -1,4 +1,6 @@
-
+  <script>
+      alert('window.global and window.process.env are set in main')
+    </script>
 import './utils/polyfills/polyfills'
 import './utils/polyfills/processBrowser'
 import React from 'react'
@@ -11,3 +13,4 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <App />
   </React.StrictMode>,
 )
+console.log('bottom of main')

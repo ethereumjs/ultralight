@@ -8,7 +8,7 @@ function UdpComponent() {
 
   return (
     <div>
-      <h1>UDP Communication</h1>
+      <h1>SUDP Communication</h1>
       <div>
         <label>
           Remote Address:

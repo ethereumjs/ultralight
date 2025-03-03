@@ -74,7 +74,7 @@ pub async fn start_http_server<R: Runtime>(app_handle: AppHandle<R>) {
         .layer(cors)
         .with_state(state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 8081));
     println!("Starting HTTP server on {}", addr);
     
     axum::serve(

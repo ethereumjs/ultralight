@@ -30,6 +30,6 @@
   },
   "include": ["./src"],
   "exclude": ["./dist"],
-  "references": [{ "path": "../portalnetwork/tsconfig.json" }],
+  "references": [{ "path": "../portalnetwork/tsconfig.json" }]
   // "references": [{ "path": "./tsconfig.node.json" }],
 }

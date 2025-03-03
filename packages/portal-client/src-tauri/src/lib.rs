@@ -1,12 +1,12 @@
-mod state;
 mod handlers;
 mod network;
-mod types;
 mod portal_process;
+mod state;
+mod types;
 
-pub use state::PortalState;
 pub use handlers::*;
 use portal_process::setup_portal_process;
+pub use state::PortalState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

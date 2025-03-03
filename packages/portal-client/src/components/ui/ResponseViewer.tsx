@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 
 interface ResponseViewerProps {
   data: any
@@ -52,5 +52,4 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({ data }) => {
       </div>
     </div>
   )
-
 }

@@ -1,5 +1,3 @@
-import React from 'react'
-
 interface MethodInputProps {
   value: string
   onChange: (value: string) => void

@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Edit, Save } from 'lucide-react'
 
 interface ConfigCardProps {
-  title: string;
-  defaultValue: string;
-  description: string;
-  storageKey: string;
+  title: string
+  defaultValue: string
+  description: string
+  storageKey: string
 }
 
-const ConfigCard: React.FC<ConfigCardProps> = ({ title, defaultValue, description, storageKey }) => {
-
+const ConfigCard: React.FC<ConfigCardProps> = ({
+  title,
+  defaultValue,
+  description,
+  storageKey,
+}) => {
   const [isEditing, setIsEditing] = useState(false)
   const [value, setValue] = useState(defaultValue)
   const [displayValue, setDisplayValue] = useState(defaultValue)

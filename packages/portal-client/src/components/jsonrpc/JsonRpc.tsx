@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNodes } from '@/hooks/useNodes'
 import { hexToBytes, toHex } from 'viem'
 
@@ -16,7 +16,6 @@ const BlockExplorer: React.FC = () => {
     sendRequestHandle('eth_getBlockByHash', [hexToBytes(blockHash)])
   }
   const handleGetBlockByNumber = () => {
-
     sendRequestHandle('eth_getBlockByNumber', [blockNumber])
   }
 

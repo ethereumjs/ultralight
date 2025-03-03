@@ -1,5 +1,6 @@
 import { createPortalClient } from "@/services/portalNetwork/client";
 import { useEffect, useState } from "react";
+import { event } from '@tauri-apps/api'
 
 export function usePortalClient() {
   const [client, setClient] = useState<any | null>(null);
@@ -8,10 +9,19 @@ export function usePortalClient() {
 
   useEffect(() => {
     let mounted = true;
-
+let newClient: ReturnType<typeof createPortalClient> | null = null;
     async function initializeClient() {
       try {
-        const newClient = await createPortalClient();
+        // const newClient = await createPortalClient();
+        event.once('tauri://created', () => {
+  // Initialize your application here
+  createPortalClient().then(client => {
+
+    console.log('Portal client created successfully', client);
+  }).catch(error => {
+    console.error('Failed to create portal client:', error);
+  });
+});
         
         if (mounted) {
           setClient(newClient);

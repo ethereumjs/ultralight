@@ -10,6 +10,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@chainsafe/bls": "^8.1.0",
     "@chainsafe/discv5": "^11.0.0",
     "@chainsafe/enr": "^5.0.0",
     "@ethereumjs/common": "^4.4.0",

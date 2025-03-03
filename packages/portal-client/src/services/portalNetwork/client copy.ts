@@ -2,8 +2,8 @@ console.log('before any import import in client');
 import { SignableENR } from '@chainsafe/enr'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
-import { NetworkId, PortalNetwork, TransportLayer } from 'portalnetwork'
-// import { DEFAULT_BOOTNODES } from 'portalnetwork/dist/util/bootnodes'
+import { PortalNetwork, NetworkId, TransportLayer } from 'portalnetwork'
+import { DEFAULT_BOOTNODES } from 'portalnetwork/dist/util/bootnodes'
 import { TauriUDPTransportService } from './transportService'
 console.log('before wasm import in client');
 import bls, { init as blsInit } from "@chainsafe/bls/switchable"
@@ -40,10 +40,10 @@ export async function createPortalClient(port = 9090) {
   enr.setLocationMultiaddr(nodeAddr)
 
   const udpTransport = new TauriUDPTransportService(nodeAddr, enr.nodeId)
-  adaptTransport(udpTransport)
+  const transport = adaptTransport(udpTransport)
 
- await PortalNetwork.create({
-    // transport,
+  const node = await PortalNetwork.create({
+    transport,
     supportedNetworks: [
       { networkId: NetworkId.HistoryNetwork },
       { networkId: NetworkId.StateNetwork },
@@ -53,10 +53,10 @@ export async function createPortalClient(port = 9090) {
       bindAddrs: { ip4: nodeAddr },
       privateKey,
     },
-    // bootnodes: DEFAULT_BOOTNODES.mainnet,
+    bootnodes: DEFAULT_BOOTNODES.mainnet,
   })
 
-  console.log('before create node');
-return 'hello'
-  // return node
+  await node.start()
+
+  return node
 }

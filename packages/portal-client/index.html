@@ -14,5 +14,13 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded - direct script');
+        window.onTauriInit = () => {
+          console.log('Tauri initialized - direct script');
+        };
+      });
+    </script>
   </body>
 </html>
