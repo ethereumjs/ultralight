@@ -685,10 +685,10 @@ export abstract class BaseNetwork extends EventEmitter {
         await (this.portal.metrics.offerMessagesReceived as PromClient.Counter).get()
       ).values[0]
       this.logger.extend('METRICS')({ totalOffers })
-      if (totalOffers.value % 50 === 0) {
+      if (totalOffers.value % 500 === 0) {
         void this.prune()
       }
-    } else if (Math.random() * 50 <= 1) {
+    } else if (Math.random() * 500 <= 1) {
       const size = await this.db.size()
       if (size > this.maxStorage) {
         void this.prune()
