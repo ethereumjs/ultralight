@@ -15,7 +15,7 @@ import {
   StateNetwork,
   SyncStrategy,
 } from '../networks/index.js'
-import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
+import { TauriUDPTransportService, WebSocketTransportService } from '../transports/index.js'
 import { MEGABYTE } from '../util/index.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
@@ -137,7 +137,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         break
       }
       case TransportLayer.MOBILE:
-        config.transport = new CapacitorUDPTransportService(ma, config.enr.nodeId)
+        config.transport = new TauriUDPTransportService(ma, config.enr.nodeId)
         break
       case TransportLayer.NODE:
         config.transport = new UDPTransportService({
@@ -192,6 +192,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture ?? '',
       programmingLanguageAndVersion: `typescript${packageJson.devDependencies.typescript}`,
     }
+    console.log('[portalclient] constructor')
     this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
     // cache signature to ensure ENR can be encoded on startup
@@ -207,6 +208,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     for (const network of opts.supportedNetworks) {
       switch (network.networkId) {
         case NetworkId.HistoryNetwork:
+          console.log('[portalclient] Creating HistoryNetwork', network)
           this.networks.set(
             network.networkId,
             new HistoryNetwork({
@@ -293,6 +295,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    * Starts the portal network client
    */
   public start = async () => {
+    console.log('[portalclient]Starting portal network client')
     await this.discv5.start()
     await this.db.open()
     const storedIndex = await this.db.getBlockIndex()
@@ -300,16 +303,21 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     for (const network of this.networks.values()) {
       try {
         // Check for stored radius in db
+        console.log('Checking for stored radius in db', network)
         const storedRadius = await network.db.db.get('radius')
+        console.log('Stored radius:', storedRadius)
         await network.setRadius(BigInt(storedRadius))
-      } catch {
+      } catch (err) {
+        console.log('Error set radius:', err)
         // No action
       }
       if (network instanceof HistoryNetwork) {
+        console.log('Setting block hash index:', storedIndex)
         network.blockHashIndex = storedIndex
       }
       this.shouldRefresh && network.startRefresh()
-      await network.prune()
+      const res = await network.prune()
+      console.log('Prune result:', res)
     }
     void this.bootstrap()
   }

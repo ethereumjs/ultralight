@@ -1,7 +1,11 @@
-// bls-patch.js
-import * as blsEthWasm from 'bls-eth-wasm';
+import * as blsWasm from 'bls-eth-wasm'
 
-// Create a synthetic default export
-const syntheticDefault = { ...blsEthWasm };
-export default syntheticDefault;
-export * from 'bls-eth-wasm';
+export default {
+  ...blsWasm,
+  init: async (curve: any) => {
+    if (typeof blsWasm.init === 'function') {
+      await blsWasm.init(curve)
+    }
+    return blsWasm
+  }
+}

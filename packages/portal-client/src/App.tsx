@@ -1,6 +1,6 @@
 import { FC } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { PortalProvider } from '@/contexts/PortalContext'
+import { PortalNetworkProvider } from '@/contexts/PortalNetworkContext'
 import JsonRpc from '@/pages/JsonRpc'
 import Home from '@/pages/Home'
 import Config from '@/pages/Config'
@@ -9,8 +9,8 @@ import Header from '@/components/layout/Header'
 
 const App: FC = () => {
   return (
-    <Router>
-      <PortalProvider>
+    <PortalNetworkProvider>
+      <Router>
         <div className="grid grid-rows-[auto_1fr] h-screen">
           <Header />
           <main className="overflow-auto">
@@ -26,8 +26,8 @@ const App: FC = () => {
             </div>
           </main>
         </div>
-      </PortalProvider>
-    </Router>
+      </Router>
+    </PortalNetworkProvider>
   )
 }
 

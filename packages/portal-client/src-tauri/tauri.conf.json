@@ -23,6 +23,13 @@
       "csp": null
     }
   },
+  "plugins": {
+     "udp": {
+        "enable-broadcast": true,
+        "global-access": true,
+        "allowed-hosts": ["*:*"]
+      }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

@@ -1,24 +1,21 @@
-import mockDgram from '@/utils/polyfills/dgram'
+import dgramMock from './dgramMock'
 import { EventEmitter } from 'events'
 import { ITransportService } from '@chainsafe/discv5'
 import { listen } from '@tauri-apps/api/event'
 import { multiaddr as ma } from '@multiformats/multiaddr'
 import { decodePacket, encodePacket } from '@chainsafe/discv5/packet'
 import { getSocketAddressOnENR } from '@chainsafe/discv5'
-// import { bind, send } from '@kuyoonjo/tauri-plugin-udp'
+import { MAX_PACKET_SIZE } from '../wire'
 
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { IPacket } from '@chainsafe/discv5/packet'
 import type { IPMode, IRemoteInfo, TransportEventEmitter, SocketAddress } from '@chainsafe/discv5'
 import type { ENR } from '@chainsafe/enr'
-import { MAX_PACKET_SIZE } from 'portalnetwork'
-
-// Removed the line that caused the error
 export class TauriUDPTransportService 
   extends (EventEmitter as { new (): TransportEventEmitter })
   implements ITransportService
 {
-  private socket: ReturnType<typeof mockDgram.createSocket> | null = null
+  private socket: ReturnType<typeof dgramMock.createSocket> | null = null
   private isListening = false
   private unlisten: (() => void) | null = null
 
@@ -47,19 +44,16 @@ export class TauriUDPTransportService
     const address = opts.host || '0.0.0.0'
 
     try {
-      // Create a socket using our mockDgram implementation
-      this.socket = mockDgram.createSocket({
+      this.socket = dgramMock.createSocket({
         type: 'udp4',
-        recvBufferSize: 16 * MAX_PACKET_SIZE, // Typical buffer size
+        recvBufferSize: 16 * MAX_PACKET_SIZE,
         sendBufferSize: MAX_PACKET_SIZE
       })
-
-      // Set up message event handler
+      console.log('Socket created', this.socket)
       this.socket.on('message', (msg: Buffer, rinfo: IRemoteInfo) => {
         console.log(`Received message from ${rinfo.address}:${rinfo.port}`)
         this.handleIncoming(new Uint8Array(msg), rinfo)
       })
-
 
       await new Promise<void>((resolve, reject) => {
         this.socket!.bind(port, address, (error?: Error) => {
@@ -73,8 +67,8 @@ export class TauriUDPTransportService
         })
       })
 
-      // Set up Tauri UDP plugin listener
       this.unlisten = await listen('plugin://udp', (event) => {
+        console.log('Received UDP event:', event)
         const payload = event.payload as {
           id: string
           remoteAddress: string

@@ -13,7 +13,7 @@ export type MethodType = typeof APPROVED_METHODS[number];
 interface MethodConfig {
   name: string;
   paramPlaceholder: string;
-  handler: (value: string, sendRequest: Function) => void;
+  handler: (value: string, sendRequest: (method: string, params?: any[]) => Promise<any>) => void | Promise<any>;
 }
 
 export const methodRegistry: Record<MethodType, MethodConfig> = {
@@ -27,9 +27,13 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
   'eth_getBlockByNumber': {
     name: 'Get Block By Number',
     paramPlaceholder: 'Enter Block Number',
-    handler: (number: string, sendRequest: Function) => {
-      sendRequest('eth_getBlockByNumber', [number]);
+    handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
+      const [blockNumber, includeFullTx = false] = input.split(',')
+      return sendRequestHandle('eth_getBlockByNumber', [blockNumber, includeFullTx])
     }
+    // handler: (number: string, sendRequest: Function) => {
+    //   sendRequest('eth_getBlockByNumber', [number]);
+    // }
   },
   'portal_findNodes': {
     name: 'Find Nodes',
