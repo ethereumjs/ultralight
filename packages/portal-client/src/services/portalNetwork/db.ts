@@ -1,8 +1,4 @@
-
 import { BrowserLevel } from 'browser-level'
-import { AbstractLevel } from 'abstract-level'
-
-type PortalNetworkLevelType = AbstractLevel<string | Uint8Array, string, string>
 
 export function createDatabase(
   name: string,
@@ -12,12 +8,16 @@ export function createDatabase(
     keyEncoding?: string,
     valueEncoding?: string
   } = {}
-): PortalNetworkLevelType {
-
+) {
   const browserDb = new BrowserLevel(name, {
     prefix: options.prefix || '',
     version: options.version || 1,
+    keyEncoding: 'utf8',
+    valueEncoding: 'utf8'
   })
   
-  return browserDb as unknown as PortalNetworkLevelType
+  const enhancedDb = browserDb as any
+  enhancedDb.nextTick = (fn: Function) => setTimeout(fn, 0)
+  
+  return enhancedDb
 }

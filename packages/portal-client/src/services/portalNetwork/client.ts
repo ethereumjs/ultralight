@@ -21,7 +21,7 @@ export const createPortalClient = async (port = 9090) => {
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.StateNetwork },
       ],
-      db: db as any,
+      db,
       dataDir: './portalclient_history',
       config: {
         enr,
