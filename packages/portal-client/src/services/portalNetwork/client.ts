@@ -4,19 +4,23 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { NetworkId, PortalNetwork, TransportLayer } from 'portalnetwork'
 import { DEFAULT_BOOTNODES } from 'portalnetwork/dist/util/bootnodes'
 import { createDatabase } from './db'
-// import { AbstractLevel } from 'abstract-level'
+
+const isBrowser = () => {
+  return typeof window !== 'undefined' && typeof window.navigator !== 'undefined';
+}
 
 const db = createDatabase('portalHistory', { version: 1} )
 console.log('Database:', db)
-export const createPortalClient = async (port = 9090) => {
+export const createPortalClient = async (port = 5050) => {
   try {
     const privateKey = await keys.generateKeyPair('secp256k1')
     const enr = SignableENR.createFromPrivateKey(privateKey)
     const nodeAddr = multiaddr(`/ip4/0.0.0.0/udp/${port}`)
     enr.setLocationMultiaddr(nodeAddr)
-    
+    console.log(typeof window)
     const client = await PortalNetwork.create({
-      transport: TransportLayer.MOBILE,
+      transport: isBrowser() ? 
+        TransportLayer.WEB : TransportLayer.MOBILE,
       supportedNetworks: [
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.StateNetwork },

@@ -142,7 +142,10 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       }
       case TransportLayer.MOBILE:
         console.log('Creating TauriUDPTransportService')
-        config.transport = new TauriUDPTransportService(ma, config.enr.nodeId)
+        config.transport = new TauriUDPTransportService(
+          ma, 
+          config.enr.nodeId,
+        )
         break
       case TransportLayer.NODE:
         config.transport = new UDPTransportService({

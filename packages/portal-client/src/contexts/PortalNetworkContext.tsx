@@ -1,8 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode, FC } from 'react'
 import { createPortalClient } from '@/services/portalNetwork/client'
-// import { createDatabase } from '@/services/portalNetwork/db'
-// import { TauriPortalProvider } from '@/services/portalNetwork/portalProvider'
-// import { DBManager } from 'portalnetwork'
 
 type PortalNetworkContextType = {
   client: any | null
@@ -31,7 +28,7 @@ type PortalNetworkProviderProps = {
 
 export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   children,
-  port = 9090,
+  port = 5050,
   autoInitialize = false,
   networkReadyTimeout = 600000,
 }) => {
@@ -65,7 +62,6 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
        }
      }
 
-     // Timeout reached
      console.warn('Network readiness timeout reached')
      return false
    }
@@ -85,8 +81,6 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
           console.error('Error while waiting for network:', err)
         })
         .finally(() => {
-          // We set loading to false even if network isn't ready yet
-          // This allows using the client before the network is fully ready if needed
           setIsLoading(false)
         })
     } catch (err) {
@@ -117,7 +111,6 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     }
   }
 
-  // Auto-initialize if enabled
   useEffect(() => {
     if (autoInitialize) {
       initialize().catch((err) => {
