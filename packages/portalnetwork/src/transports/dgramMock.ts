@@ -1,367 +1,202 @@
-import { EventEmitter } from 'events'
-import { bind, send } from '@kuyoonjo/tauri-plugin-udp'
-import { listen } from '@tauri-apps/api/event'
 
-type SocketOptions = {
-  type: string
-  recvBufferSize?: number
-  sendBufferSize?: number
-  reuseAddr?: boolean
+import { listen, emit } from '@tauri-apps/api/event';
+import { EventEmitter } from 'events';
+import { invoke } from '@tauri-apps/api/core';
+
+interface SocketOptions {
+  type: 'udp4' | 'udp6';
+  reuseAddr?: boolean;
+  recvBufferSize?: number;
+  sendBufferSize?: number;
 }
 
-type RemoteInfo = {
-  address: string
-  family: string
-  port: number
-  size: number
+interface RemoteInfo {
+  address: string;
+  family: 'IPv4' | 'IPv6';
+  port: number;
+  size: number;
 }
 
-class MockDgramSocket extends EventEmitter {
-  private socketId: string
-  private isListening = false
-  private unlisten: (() => void) | null = null
-  private isClosed = false
+class UDPSocket extends EventEmitter {
+  private socketId: string;
+  private isClosed: boolean = false;
+  private boundAddress: string | null = null;
+  private boundPort: number | null = null;
+  private unlistenFn: (() => void) | null = null;
 
-  constructor(typeOrOptions: string | SocketOptions) {
-    super()
-    this.socketId = `portal-client-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
-    console.log('Created MockDgramSocket with ID:', this.socketId)
+  constructor(options: SocketOptions) {
+    super();
+    this.socketId = `udp-socket-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    console.log(`Created UDP socket with ID: ${this.socketId}`, options);
   }
 
-  private async setupListener() {
-    if (this.unlisten || this.isClosed) return
-    
+  async bind(port: number, address: string = '0.0.0.0', callback?: (error?: Error) => void): Promise<void> {
     try {
-      this.unlisten = await listen('plugin://udp', (event) => {
-        if (this.isClosed) return
-        
+      console.log(`Binding socket ${this.socketId} to ${address}:${port}`);
+      
+      // Use the bindAt parameter as required by your custom plugin
+      await invoke('plugin:udp|bind', {
+        id: this.socketId,
+        bindAt: `${address}:${port}`,
+        broadcast: true
+      });
+
+      this.boundAddress = address;
+      this.boundPort = port;
+      
+      // Set up the event listener for incoming messages
+      this.unlistenFn = await listen('plugin://udp', async (event) => {
         const payload = event.payload as {
-          id: string
-          remoteAddress: string
-          remotePort: number
-          buffer: string | Uint8Array
-        }
+          id: string;
+          remoteAddress: string;
+          remotePort: number;
+          buffer: string;
+        };
         
         if (payload.id === this.socketId) {
-          const { remoteAddress, remotePort, buffer } = payload
-          
-          let data: Buffer
-          if (typeof buffer === 'string') {
-            data = Buffer.from(this.base64ToUint8Array(buffer))
-          } else {
-            data = Buffer.from(buffer)
+          try {
+            // Convert Base64 to Uint8Array
+            const buffer = this.base64ToBuffer(payload.buffer);
+            
+            const remoteInfo: RemoteInfo = {
+              address: payload.remoteAddress,
+              family: payload.remoteAddress.includes(':') ? 'IPv6' : 'IPv4',
+              port: payload.remotePort,
+              size: buffer.length,
+            };
+            
+            // Emit the message event
+            this.emit('message', buffer, remoteInfo);
+          } catch (err) {
+            console.error('Error processing incoming UDP message:', err);
+            this.emit('error', err);
           }
-          
-          const rinfo: RemoteInfo = {
-            address: remoteAddress,
-            family: 'IPv4',
-            port: remotePort,
-            size: data.length,
-          }
-          
-          this.emit('message', data, rinfo)
         }
-      })
-    } catch (err) {
-      console.error('Error setting up UDP listener:', err)
-      this.emit('error', err)
+      });
+      
+      if (callback) callback();
+    } catch (error) {
+      console.error('Failed to bind UDP socket:', error);
+      if (callback) callback(error as Error);
+      else throw error;
     }
-  }
-
-  bind(port: number, address: string = '0.0.0.0', callback?: (error?: Error) => void) {
-    if (this.isClosed) {
-      const error = new Error('Socket is closed')
-      if (callback) callback(error)
-      return
-    }
-    
-    // Setup listener if not already set up
-    this.setupListener().catch(err => {
-      console.error('Failed to set up listener:', err)
-      if (callback) callback(err instanceof Error ? err : new Error(String(err)))
-    })
-    
-    console.log(`Binding socket to ${address}:${port}`)
-    
-    bind(this.socketId, `${address}:${port}`)
-      .then(() => {
-        if (this.isClosed) return
-        
-        this.isListening = true
-        console.log(`Socket bound to ${address}:${port}`)
-        this.emit('listening')
-        
-        if (callback) callback()
-      })
-      .catch((error) => {
-        console.error('Bind error:', error)
-        this.emit('error', error)
-        
-        if (callback) callback(error instanceof Error ? error : new Error(String(error)))
-      })
   }
 
   send(
-    buffer: Buffer | Uint8Array,
+    msg: Buffer | Uint8Array | string,
     offset: number,
     length: number,
     port: number,
     address: string,
     callback?: (error?: Error) => void
-  ) {
+  ): void {
     if (this.isClosed) {
-      const error = new Error('Socket is closed')
-      if (callback) callback(error)
-      return
+      const error = new Error('Socket is closed');
+      if (callback) callback(error);
+      else this.emit('error', error);
+      return;
     }
-    
-    if (!this.isListening) {
-      const error = new Error('Socket is not bound')
-      if (callback) callback(error)
-      return
-    }
-    
-    console.log(`Sending ${length} bytes to ${address}:${port}`)
-    
-    try {
-      const data = buffer.slice(offset, offset + length)
-      const base64Data = this.uint8ArrayToBase64(new Uint8Array(data))
-      
-      send(this.socketId, `${address}:${port}`, base64Data)
-        .then(() => {
-          console.log(`Sent ${length} bytes to ${address}:${port}`)
-          if (callback) callback()
-        })
-        .catch((error) => {
-          console.error('Send error:', error)
-          if (callback) callback(error instanceof Error ? error : new Error(String(error)))
-        })
-    } catch (error) {
-      console.error('Unexpected send error:', error)
-      if (callback) callback(error instanceof Error ? error : new Error(String(error)))
-    }
+
+    (async () => {
+      try {
+        let buffer: Uint8Array;
+        
+        if (typeof msg === 'string') {
+          const encoder = new TextEncoder();
+          buffer = encoder.encode(msg).slice(offset, offset + length);
+        } else if (msg instanceof Buffer) {
+          buffer = new Uint8Array(msg.buffer, msg.byteOffset + offset, length);
+        } else {
+          buffer = msg.slice(offset, offset + length);
+        }
+
+        // Convert to Base64 for transmission
+        const base64Data = this.bufferToBase64(buffer);
+        
+        // Send packet to the target address:port
+        await invoke('plugin:udp|send', {
+          id: this.socketId,
+          target: `${address}:${port}`,  // Using sendTo instead of separate address and port
+          message: base64Data
+        });
+        
+        if (callback) callback();
+      } catch (error) {
+        console.error('Failed to send UDP packet:', error);
+        if (callback) callback(error as Error);
+        else this.emit('error', error);
+      }
+    })();
   }
 
-  close(callback?: (error?: Error) => void) {
+  close(callback?: () => void): void {
     if (this.isClosed) {
-      if (callback) callback()
-      return
+      if (callback) callback();
+      return;
     }
-    
-    console.log('Closing socket')
-    this.isClosed = true
-    
-    try {
-      if (this.unlisten) {
-        this.unlisten()
-        this.unlisten = null
+
+    (async () => {
+      try {
+        if (this.unlistenFn) {
+          await this.unlistenFn();
+          this.unlistenFn = null;
+        }
+
+        await invoke('plugin:udp|close', {
+          id: this.socketId
+        });
+
+        this.isClosed = true;
+        this.emit('close');
+        if (callback) callback();
+      } catch (error) {
+        console.error('Failed to close UDP socket:', error);
+        this.emit('error', error);
       }
-      
-      this.isListening = false
-      this.emit('close')
-      
-      if (callback) callback()
-    } catch (error) {
-      console.error('Error closing socket:', error)
-      if (callback) callback(error instanceof Error ? error : new Error(String(error)))
-    }
+    })();
   }
 
   address() {
-    // This method should return bound address info
-    // This is often expected by socket libraries
-    if (!this.isListening) {
-      throw new Error('Socket is not bound')
+    if (this.isClosed || !this.boundAddress || !this.boundPort) {
+      throw new Error('Socket is not bound');
     }
     
     return {
-      address: '0.0.0.0', // You might want to store the actual address in bind()
-      family: 'IPv4',
-      port: 0 // You might want to store the actual port in bind()
+      address: this.boundAddress,
+      family: this.boundAddress.includes(':') ? 'IPv6' : 'IPv4',
+      port: this.boundPort
+    };
+  }
+
+  // Helper methods for Base64 conversion
+  private base64ToBuffer(base64: string): Buffer {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
+    return Buffer.from(bytes);
   }
 
-  private uint8ArrayToBase64(array: Uint8Array): string {
-    return btoa(
-      Array.from(array)
-        .map((val) => String.fromCharCode(val))
-        .join('')
-    )
-  }
-
-  private base64ToUint8Array(base64: string): Uint8Array {
-    const binaryString = atob(base64)
-    return new Uint8Array(Array.from(binaryString).map((char) => char.charCodeAt(0)))
+  private bufferToBase64(buffer: Uint8Array): string {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
   }
 }
 
-const mockDgram = {
-  createSocket: (typeOrOptions: string | SocketOptions) => {
-    console.log('[Dgram] Creating socket with:', typeOrOptions)
-    return new MockDgramSocket(typeOrOptions)
+// Create a polyfill for the dgram module
+const dgramPolyfill = {
+  createSocket(options: SocketOptions | string): UDPSocket {
+    if (typeof options === 'string') {
+      options = { type: options as 'udp4' | 'udp6' };
+    }
+    return new UDPSocket(options);
   }
-}
+};
 
-// Apply polyfill globally
-if (typeof window !== 'undefined') {
-  // @ts-ignore
-  window.dgram = mockDgram
-  console.log('dgram polyfill applied to window')
-}
-
-if (typeof global !== 'undefined') {
-  // @ts-ignore
-  global.dgram = mockDgram
-  console.log('dgram polyfill applied globally')
-}
-
-export default mockDgram
-
-// class MockDgramSocket extends EventEmitter {
-//   private socketId: string
-//   //@ts-ignore
-//   private isListening = false
-//   private unlisten: (() => void) | null = null
-
-//   //@ts-ignore
-//   constructor(typeOrOptions: string | SocketOptions) {
-//     super()
-//     this.socketId = `portal-client-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
-//     console.log('Created MockDgramSocket with ID:', this.socketId)
-    
-//     // Set up Tauri UDP plugin listener
-//     this.setupListener().catch(err => {
-//       console.error('Failed to set up listener:', err)
-//     })
-//   }
-
-//   private async setupListener() {
-//     try {
-//       this.unlisten = await listen('plugin://udp', (event) => {
-//         const payload = event.payload as {
-//           id: string
-//           remoteAddress: string
-//           remotePort: number
-//           buffer: string | Uint8Array
-//         }
-        
-//         if (payload.id === this.socketId) {
-//           const { remoteAddress, remotePort, buffer } = payload
-          
-//           let data: Buffer
-//           if (typeof buffer === 'string') {
-//             data = Buffer.from(this.base64ToUint8Array(buffer))
-//           } else {
-//             data = Buffer.from(buffer)
-//           }
-          
-//           const rinfo: RemoteInfo = {
-//             address: remoteAddress,
-//             family: 'IPv4',
-//             port: remotePort,
-//             size: data.length,
-//           }
-          
-//           this.emit('message', data, rinfo)
-//         }
-//       })
-//     } catch (err) {
-//       console.error('Error setting up UDP listener:', err)
-//     }
-//   }
-
-//   bind(port: number, address: string, callback?: (error?: Error) => void) {
-//     try {
-//       console.log(`Binding socket to ${address}:${port}`)
-//       bind(this.socketId, `${address}:${port}`).then(() => {
-//         this.isListening = true
-//         console.log(`Socket bound to ${address}:${port}`)
-//         if (callback) callback()
-//       }).catch((error) => {
-//         console.error('Bind error:', error)
-//         if (callback) callback(error)
-//       })
-//     } catch (error) {
-//       console.error('Unexpected bind error:', error)
-//       if (callback) callback(error as Error)
-//     }
-//   }
-
-//   send(
-//     buffer: Buffer | Uint8Array,
-//     offset: number,
-//     length: number,
-//     port: number,
-//     address: string,
-//     callback?: (error?: Error) => void
-//   ) {
-//     try {
-//       console.log(`Sending ${length} bytes to ${address}:${port}`)
-//       const data = buffer.slice(offset, offset + length)
-//       const base64Data = this.uint8ArrayToBase64(new Uint8Array(data))
-      
-//       send(this.socketId, `${address}:${port}`, base64Data)
-//         .then(() => {
-//           console.log(`Sent ${length} bytes to ${address}:${port}`)
-//           if (callback) callback()
-//         })
-//         .catch((error) => {
-//           console.error('Send error:', error)
-//           if (callback) callback(error)
-//         })
-//     } catch (error) {
-//       console.error('Unexpected send error:', error)
-//       if (callback) callback(error as Error)
-//     }
-//   }
-
-//   close(callback?: (error?: Error) => void) {
-//     try {
-//       console.log('Closing socket')
-//       if (this.unlisten) {
-//         this.unlisten()
-//         this.unlisten = null
-//       }
-//       this.isListening = false
-//       if (callback) callback()
-//     } catch (error) {
-//       console.error('Error closing socket:', error)
-//       if (callback) callback(error as Error)
-//     }
-//   }
-
-//   private uint8ArrayToBase64(array: Uint8Array): string {
-//     return btoa(
-//       Array.from(array)
-//         .map((val) => String.fromCharCode(val))
-//         .join('')
-//     )
-//   }
-
-//   private base64ToUint8Array(base64: string): Uint8Array {
-//     const binaryString = atob(base64)
-//     return new Uint8Array(Array.from(binaryString).map((char) => char.charCodeAt(0)))
-//   }
-// }
-
-// const mockDgram = {
-//   createSocket: (typeOrOptions: string | SocketOptions) => {
-//     console.log('[Dgram] Creating socket with:', typeOrOptions)
-//     return new MockDgramSocket(typeOrOptions)
-//   }
-// }
-
-// // Apply polyfill globally
-// if (typeof window !== 'undefined') {
-//   // @ts-ignore
-//   window.dgram = mockDgram
-//   console.log('dgram polyfill applied to window')
-// }
-
-// if (typeof global !== 'undefined') {
-//   // @ts-ignore
-//   global.dgram = mockDgram
-//   console.log('dgram polyfill applied globally')
-// }
-
-// export default mockDgram
+export default dgramPolyfill;

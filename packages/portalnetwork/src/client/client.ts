@@ -54,6 +54,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   shouldRefresh: boolean = true
 
   public static create = async (opts: Partial<PortalNetworkOpts>) => {
+    console.log('[portalclient] Creating portal network client', opts)
     const defaultConfig: IDiscv5CreateOptions = {
       enr: opts.config?.enr ?? ({} as SignableENRInput),
       privateKey: opts.config?.privateKey ?? (await keys.generateKeyPair('secp256k1')),
@@ -109,6 +110,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       ma = opts.config.bindAddrs.ip4
     }
 
+    console.log('About db size calculation')
     // Configure db size calculation
     let dbSize
     switch (opts.transport) {
@@ -116,7 +118,9 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       case TransportLayer.MOBILE:
         dbSize = async function () {
           // eslint-disable-next-line no-undef
+          console.log('Storage estimating...')
           const sizeEstimate = await window.navigator.storage.estimate()
+          console.log('Storage estimate:', sizeEstimate)
           return sizeEstimate.usage !== undefined ? sizeEstimate.usage / MEGABYTE : 0
         }
         break
@@ -137,6 +141,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         break
       }
       case TransportLayer.MOBILE:
+        console.log('Creating TauriUDPTransportService')
         config.transport = new TauriUDPTransportService(ma, config.enr.nodeId)
         break
       case TransportLayer.NODE:
@@ -192,7 +197,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture ?? '',
       programmingLanguageAndVersion: `typescript${packageJson.devDependencies.typescript}`,
     }
-    console.log('[portalclient] constructor')
     this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
     // cache signature to ensure ENR can be encoded on startup
@@ -316,8 +320,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         network.blockHashIndex = storedIndex
       }
       this.shouldRefresh && network.startRefresh()
-      const res = await network.prune()
-      console.log('Prune result:', res)
+      await network.prune()
     }
     void this.bootstrap()
   }

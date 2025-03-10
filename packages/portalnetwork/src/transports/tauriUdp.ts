@@ -1,7 +1,6 @@
-import dgramMock from './dgramMock'
+import dgramPolyfill from './dgramMock'
 import { EventEmitter } from 'events'
 import { ITransportService } from '@chainsafe/discv5'
-import { listen } from '@tauri-apps/api/event'
 import { multiaddr as ma } from '@multiformats/multiaddr'
 import { decodePacket, encodePacket } from '@chainsafe/discv5/packet'
 import { getSocketAddressOnENR } from '@chainsafe/discv5'
@@ -11,13 +10,13 @@ import type { Multiaddr } from '@multiformats/multiaddr'
 import type { IPacket } from '@chainsafe/discv5/packet'
 import type { IPMode, IRemoteInfo, TransportEventEmitter, SocketAddress } from '@chainsafe/discv5'
 import type { ENR } from '@chainsafe/enr'
+
 export class TauriUDPTransportService 
   extends (EventEmitter as { new (): TransportEventEmitter })
   implements ITransportService
 {
-  private socket: ReturnType<typeof dgramMock.createSocket> | null = null
+  private socket: ReturnType<typeof dgramPolyfill.createSocket> | null = null
   private isListening = false
-  private unlisten: (() => void) | null = null
 
   bindAddrs: Multiaddr[] = []
   ipMode: IPMode = {
@@ -26,13 +25,11 @@ export class TauriUDPTransportService
   }
 
   private srcId: string
-  private socketId: string
 
   constructor(multiaddr: Multiaddr, srcId: string) {
     super()
     this.bindAddrs = [multiaddr]
     this.srcId = srcId
-    this.socketId = `portal-client-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
   }
 
   public async start(): Promise<void> {
@@ -44,55 +41,35 @@ export class TauriUDPTransportService
     const address = opts.host || '0.0.0.0'
 
     try {
-      this.socket = dgramMock.createSocket({
+      this.socket = dgramPolyfill.createSocket({
         type: 'udp4',
         recvBufferSize: 16 * MAX_PACKET_SIZE,
         sendBufferSize: MAX_PACKET_SIZE
       })
+      
       console.log('Socket created', this.socket)
+      
       this.socket.on('message', (msg: Buffer, rinfo: IRemoteInfo) => {
-        console.log(`Received message from ${rinfo.address}:${rinfo.port}`)
+        console.log(`Received message from ${rinfo.address}:${rinfo.port}, size: ${rinfo.size}`)
         this.handleIncoming(new Uint8Array(msg), rinfo)
+      })
+      
+      this.socket.on('error', (error) => {
+        console.error('Socket error:', error)
       })
 
       await new Promise<void>((resolve, reject) => {
         this.socket!.bind(port, address, (error?: Error) => {
+          console.log('Socket bind callback', port, address)
           if (error) {
             console.error('Failed to bind socket:', error)
             reject(error)
             return
           }
-          console.log(`UDP Transport bound to ${address}:${port}`)
+          const addr = this.socket!.address()
+          console.log(`UDP Transport bound to ${addr.address}:${addr.port}`)
           resolve()
         })
-      })
-
-      this.unlisten = await listen('plugin://udp', (event) => {
-        console.log('Received UDP event:', event)
-        const payload = event.payload as {
-          id: string
-          remoteAddress: string
-          remotePort: number
-          buffer: string | Uint8Array
-        }
-        
-        if (payload.id === this.socketId) {
-          const { remoteAddress, remotePort, buffer } = payload
-
-          let data: Uint8Array
-          if (typeof buffer === 'string') {
-            data = this.base64ToUint8Array(buffer)
-          } else {
-            data = new Uint8Array(buffer)
-          }
-
-          this.handleIncoming(data, {
-            family: 'IPv4',
-            address: remoteAddress,
-            port: remotePort,
-            size: data.length,
-          })
-        }
       })
 
       this.isListening = true
@@ -112,11 +89,6 @@ export class TauriUDPTransportService
         this.socket = null
       }
       
-      if (this.unlisten) {
-        this.unlisten()
-        this.unlisten = null
-      }
-      
       this.isListening = false
       console.log('UDP Transport stopped')
     } catch (error) {
@@ -134,7 +106,7 @@ export class TauriUDPTransportService
     const encodedPacket = encodePacket(toId, packet)
 
     try {
-      console.log(`Sending packet to ${nodeAddr.host}:${nodeAddr.port}`)
+      console.log(`Sending packet to ${nodeAddr.host}:${nodeAddr.port}, size: ${encodedPacket.length}`)
       
       return new Promise<void>((resolve, reject) => {
         this.socket!.send(
@@ -149,6 +121,7 @@ export class TauriUDPTransportService
               reject(error)
               return
             }
+            console.log(`Successfully sent packet to ${nodeAddr.host}:${nodeAddr.port}`)
             resolve()
           }
         )
@@ -160,27 +133,23 @@ export class TauriUDPTransportService
   }
 
   private handleIncoming = (data: Uint8Array, rinfo: IRemoteInfo): void => {
-    console.log('Received packet from', rinfo)
+    console.log(`Processing packet from ${rinfo.address}:${rinfo.port}, size: ${data.length}`)
     const multiaddr = ma(
       `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`,
     )
 
     try {
       const packet = decodePacket(this.srcId, data)
-      console.log('Decoded packet type:', packet.message)
+      console.log(`Decoded packet type: ${packet.message}`)
+      
       this.emit('packet', multiaddr, packet)
     } catch (e) {
-      console.error('Failed to decode packet:', e      )
+      console.error('Failed to decode packet:', e)
       this.emit('decodeError', e as any, multiaddr)
     }
   }
 
   public getContactableAddr(enr: ENR): SocketAddress | undefined {
     return getSocketAddressOnENR(enr, this.ipMode)
-  }
-
-  private base64ToUint8Array(base64: string): Uint8Array {
-    const binaryString = atob(base64)
-    return new Uint8Array(Array.from(binaryString).map((char) => char.charCodeAt(0)))
   }
 }

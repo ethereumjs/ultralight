@@ -4,8 +4,9 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { NetworkId, PortalNetwork, TransportLayer } from 'portalnetwork'
 import { DEFAULT_BOOTNODES } from 'portalnetwork/dist/util/bootnodes'
 import { createDatabase } from './db'
+// import { AbstractLevel } from 'abstract-level'
 
-const db = createDatabase('portalclient_history_db', { version: 1 })
+const db = createDatabase('portalHistory', { version: 1} )
 console.log('Database:', db)
 export const createPortalClient = async (port = 9090) => {
   try {
