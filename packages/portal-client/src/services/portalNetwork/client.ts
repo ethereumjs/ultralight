@@ -20,7 +20,7 @@ export const createPortalClient = async (port = 5050) => {
     console.log(typeof window)
     const client = await PortalNetwork.create({
       transport: isBrowser() ? 
-        TransportLayer.WEB : TransportLayer.MOBILE,
+        TransportLayer.MOBILE : TransportLayer.MOBILE, // Use Mobile for now
       supportedNetworks: [
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.StateNetwork },
