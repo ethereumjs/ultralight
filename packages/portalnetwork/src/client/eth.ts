@@ -18,7 +18,7 @@ import type { Block } from '@ethereumjs/block'
 import type { capella } from '@lodestar/types'
 import type { Debugger } from 'debug'
 import type {
-  BeaconLightClientNetwork,
+  BeaconNetwork,
   ContentLookupResponse,
   HistoryNetwork,
   StateNetwork,
@@ -29,7 +29,7 @@ import type { RpcTx } from './types.js'
 export class ETH {
   history?: HistoryNetwork
   state?: StateNetwork
-  beacon?: BeaconLightClientNetwork
+  beacon?: BeaconNetwork
   activeNetworks: NetworkId[]
   logger: Debugger
   constructor(portal: PortalNetwork) {
@@ -211,8 +211,9 @@ export class ETH {
     for (const network of networks) {
       if (this.activeNetworks.findIndex((el) => el === network) === -1)
         throw new Error(
-          `${Object.entries(NetworkId).find((el) => el[1] === network)?.[0] ??
-          'Unsupported network ' + network
+          `${
+            Object.entries(NetworkId).find((el) => el[1] === network)?.[0] ??
+            'Unsupported network ' + network
           } required for this call`,
         )
     }

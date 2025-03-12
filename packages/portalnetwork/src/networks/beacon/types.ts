@@ -21,7 +21,7 @@ export const MAX_REQUEST_LIGHT_CLIENT_UPDATES = 128
 
 export const MIN_BOOTSTRAP_VOTES = 5
 
-export enum BeaconLightClientNetworkContentType {
+export enum BeaconNetworkContentType {
   LightClientBootstrap = 0x10,
   LightClientUpdatesByRange = 0x11,
   LightClientFinalityUpdate = 0x12,
