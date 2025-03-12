@@ -5,12 +5,7 @@ import { INTERNAL_ERROR } from '../error-code.js'
 import { middleware, validators } from '../validators.js'
 
 import type { Debugger } from 'debug'
-import type {
-  BeaconLightClientNetwork,
-  HistoryNetwork,
-  PortalNetwork,
-  StateNetwork,
-} from 'portalnetwork'
+import type { BeaconNetwork, HistoryNetwork, PortalNetwork, StateNetwork } from 'portalnetwork'
 
 const methods = [
   'ultralight_methods',
@@ -28,7 +23,7 @@ export class ultralight {
   private _client: PortalNetwork
   private _history?: HistoryNetwork
   private _state?: StateNetwork
-  private _beacon?: BeaconLightClientNetwork
+  private _beacon?: BeaconNetwork
   private logger: Debugger
 
   constructor(client: PortalNetwork, logger: Debugger) {

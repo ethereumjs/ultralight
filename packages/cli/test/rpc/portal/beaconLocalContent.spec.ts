@@ -1,6 +1,6 @@
 import { bytesToHex } from '@ethereumjs/util'
 import {
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   LightClientOptimisticUpdateKey,
   getBeaconContentKey,
 } from 'portalnetwork'
@@ -13,9 +13,7 @@ describe(`${method} tests`, () => {
     const { ultralight, rpc } = await startRpc()
     const key = LightClientOptimisticUpdateKey.serialize({ signatureSlot: 7807053n })
     const res = await rpc.request(method, [
-      bytesToHex(
-        getBeaconContentKey(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate, key),
-      ),
+      bytesToHex(getBeaconContentKey(BeaconNetworkContentType.LightClientOptimisticUpdate, key)),
     ])
     assert.equal(res.error.code, -32009)
     ultralight.kill(9)

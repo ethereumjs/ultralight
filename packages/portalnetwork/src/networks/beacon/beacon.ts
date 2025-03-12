@@ -32,7 +32,7 @@ import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
 import {
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   HistoricalSummariesKey,
   HistoricalSummariesWithProof,
   LightClientBootstrapKey,
@@ -54,10 +54,10 @@ import type { ContentLookupResponse } from '../types.js'
 import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
 import type { INodeAddress } from '../../index.js'
 
-export class BeaconLightClientNetwork extends BaseNetwork {
+export class BeaconNetwork extends BaseNetwork {
   networkId: NetworkId.BeaconChainNetwork
   beaconConfig: BeaconConfig
-  networkName = 'BeaconLightClientNetwork'
+  networkName = 'BeaconNetwork'
   logger: Debugger
   lightClient: Lightclient | undefined
   bootstrapFinder: Map<NodeId, string[] | {}>
@@ -82,13 +82,11 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     this.beaconConfig = createBeaconConfig(defaultChainConfig, genesisRoot)
 
     this.networkId = NetworkId.BeaconChainNetwork
-    this.logger = debug(this.enr.nodeId.slice(0, 5))
-      .extend('Portal')
-      .extend('BeaconLightClientNetwork')
+    this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('BeaconNetwork')
     this.routingTable.setLogger(this.logger)
     this.forkDigest = Uint8Array.from([0, 0, 0, 0])
     this.on('ContentAdded', async (contentKey: Uint8Array) => {
-      if (contentKey[0] === BeaconLightClientNetworkContentType.LightClientUpdate) {
+      if (contentKey[0] === BeaconNetworkContentType.LightClientUpdate) {
         // don't gossip individual LightClientUpdates since they aren't officially supported
         return
       }
@@ -123,7 +121,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
   /**
    * This is the private method employed by the sync strategy whereby we try to find
    * the `LightClientBootstrap` corresponding to the `trustedBlockRoot` provided when the
-   * BeaconLightClientNetwork was instantiated
+   * BeaconNetwork was instantiated
    * @param nodeId NodeId for a peer that was just discovered by the Portal Network `client`
    * @param network the network ID for the node just discovered
    */
@@ -135,7 +133,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     const decoded = await this.sendFindContent(
       enr,
       concatBytes(
-        new Uint8Array([BeaconLightClientNetworkContentType.LightClientBootstrap]),
+        new Uint8Array([BeaconNetworkContentType.LightClientBootstrap]),
         LightClientBootstrapKey.serialize({ blockHash: hexToBytes(this.trustedBlockRoot!) }),
       ),
     )
@@ -181,7 +179,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
 
         // Request the range of Light Client Updates extending back 4 sync periods
         const rangeKey = getBeaconContentKey(
-          BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+          BeaconNetworkContentType.LightClientUpdatesByRange,
           LightClientUpdatesByRangeKey.serialize({ startPeriod: currentPeriod - 3n, count: 4n }),
         )
         this.logger.extend('BOOTSTRAP')(
@@ -233,7 +231,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
             // vote by the polled nodes, stop looking and clear out votes.
             if (results[x][1] < Math.floor(MIN_BOOTSTRAP_VOTES / 2 + 1)) break
             const bootstrapKey = getBeaconContentKey(
-              BeaconLightClientNetworkContentType.LightClientBootstrap,
+              BeaconNetworkContentType.LightClientBootstrap,
               LightClientBootstrapKey.serialize({ blockHash: hexToBytes(results[x][0]) }),
             )
             this.logger.extend('BOOTSTRAP')(
@@ -329,7 +327,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     let key
 
     switch (contentKey[0]) {
-      case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
+      case BeaconNetworkContentType.LightClientUpdatesByRange:
         try {
           value = await this.constructLightClientRange(contentKey.slice(1))
         } catch {
@@ -337,7 +335,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           // in which case we shouldn't return any content
         }
         break
-      case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
+      case BeaconNetworkContentType.LightClientOptimisticUpdate:
         key = LightClientOptimisticUpdateKey.deserialize(contentKey.slice(1))
         this.logger.extend('FINDLOCALLY')(
           `looking for optimistic update for slot ${key.signatureSlot}`,
@@ -351,12 +349,12 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           // We only store the most recent optimistic update so only retrieve the optimistic update if the slot
           // in the key matches the current head known to our light client
           value = await this.retrieve(
-            hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)),
+            hexToBytes(intToHex(BeaconNetworkContentType.LightClientOptimisticUpdate)),
           )
         } else if (this.lightClient === undefined) {
           // If the light client isn't initialized, we just blindly store and retrieve the optimistic update we have
           value = await this.retrieve(
-            hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)),
+            hexToBytes(intToHex(BeaconNetworkContentType.LightClientOptimisticUpdate)),
           )
           this.logger.extend('FINDLOCALLY')(
             `light client is not running, retrieving whatever we have - ${
@@ -367,7 +365,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           this.logger.extend('FINDLOCALLY')('tried to retrieve an optimistic update we do not have')
         }
         break
-      case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
+      case BeaconNetworkContentType.LightClientFinalityUpdate:
         key = LightClientFinalityUpdateKey.deserialize(contentKey.slice(1))
         this.logger.extend('FINDLOCALLY')(
           `looking for finality update for slot - ${
@@ -383,12 +381,12 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           // We only store the most recent finality update so only retrieve the finality update if the slot
           // in the key is less than or equal to the current finalized slot known to our light client
           value = await this.retrieve(
-            hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate)),
+            hexToBytes(intToHex(BeaconNetworkContentType.LightClientFinalityUpdate)),
           )
         } else if (this.lightClient === undefined) {
           // If the light client isn't initialized, we just blindly store and retrieve the finality update we have
           value = await this.retrieve(
-            hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate)),
+            hexToBytes(intToHex(BeaconNetworkContentType.LightClientFinalityUpdate)),
           )
           if (value !== undefined) {
             const decoded = hexToBytes(value)
@@ -404,7 +402,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
           }
         }
         break
-      case BeaconLightClientNetworkContentType.HistoricalSummaries: {
+      case BeaconNetworkContentType.HistoricalSummaries: {
         const key = HistoricalSummariesKey.deserialize(contentKey.slice(1))
         this.logger.extend('FINDLOCALLY')(
           `looking for Historical Summaries for epoch ${key.epoch.toString(10)} `,
@@ -482,7 +480,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                 forkhash,
               ) as LightClientForkName
               switch (key[0]) {
-                case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
+                case BeaconNetworkContentType.LightClientOptimisticUpdate:
                   try {
                     ssz[forkname].LightClientOptimisticUpdate.deserialize(
                       (decoded.value as Uint8Array).slice(4),
@@ -496,7 +494,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                   )
                   await this.store(key, decoded.value as Uint8Array)
                   break
-                case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
+                case BeaconNetworkContentType.LightClientFinalityUpdate:
                   try {
                     ssz[forkname].LightClientFinalityUpdate.deserialize(
                       (decoded.value as Uint8Array).slice(4),
@@ -510,7 +508,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                   )
                   await this.store(key, decoded.value as Uint8Array)
                   break
-                case BeaconLightClientNetworkContentType.LightClientBootstrap:
+                case BeaconNetworkContentType.LightClientBootstrap:
                   try {
                     ssz[forkname].LightClientBootstrap.deserialize(
                       (decoded.value as Uint8Array).slice(4),
@@ -524,7 +522,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                   )
                   await this.store(key, decoded.value as Uint8Array)
                   break
-                case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
+                case BeaconNetworkContentType.LightClientUpdatesByRange:
                   try {
                     LightClientUpdatesByRange.deserialize((decoded.value as Uint8Array).slice(4))
                   } catch (err) {
@@ -624,35 +622,35 @@ export class BeaconLightClientNetwork extends BaseNetwork {
 
   /**
    * The generalized `store` method used to put data into the DB
-   * @param contentType the content type being stored (defined in @link { BeaconLightClientNetworkContentType })
+   * @param contentType the content type being stored (defined in @link { BeaconNetworkContentType })
    * @param contentKey the network level content key formatted as a prefixed hex string
    * @param value the Uint8Array corresponding to the SSZ serialized value being stored
    */
   public store = async (contentKey: Uint8Array, value: Uint8Array): Promise<void> => {
     const contentType = contentKey[0]
     switch (contentType) {
-      case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
+      case BeaconNetworkContentType.LightClientUpdatesByRange:
         // We need to call `storeUpdateRange` to ensure we store each individual
         // light client update separately so we can construct any range
         await this.storeUpdateRange(value)
         break
-      case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
+      case BeaconNetworkContentType.LightClientOptimisticUpdate:
         // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
         // optimistic update and this ensures we don't accidentally store multiple
         await this.put(
-          hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)),
+          hexToBytes(intToHex(BeaconNetworkContentType.LightClientOptimisticUpdate)),
           bytesToHex(value),
         )
         break
-      case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
+      case BeaconNetworkContentType.LightClientFinalityUpdate:
         // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
         // finality update and this ensures we don't accidentally store multiple
         await this.put(
-          hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientFinalityUpdate)),
+          hexToBytes(intToHex(BeaconNetworkContentType.LightClientFinalityUpdate)),
           bytesToHex(value),
         )
         break
-      case BeaconLightClientNetworkContentType.HistoricalSummaries: {
+      case BeaconNetworkContentType.HistoricalSummaries: {
         const summaries = HistoricalSummariesWithProof.deserialize(value.slice(4))
 
         // Retrieve Finality Update from lightclient to verify HistoricalSummaries proof is current
@@ -689,7 +687,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         }
         // We store the HistoricalSummaries object by content type since we should only ever have one (most up to date)
         await this.put(
-          hexToBytes(intToHex(BeaconLightClientNetworkContentType.HistoricalSummaries)),
+          hexToBytes(intToHex(BeaconNetworkContentType.HistoricalSummaries)),
           bytesToHex(value),
         )
 
@@ -705,7 +703,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     }
 
     this.logger(
-      `storing ${BeaconLightClientNetworkContentType[contentType]} content corresponding to ${bytesToHex(contentKey)}`,
+      `storing ${BeaconNetworkContentType[contentType]} content corresponding to ${bytesToHex(contentKey)}`,
     )
     this.emit('ContentAdded', contentKey, value)
   }
@@ -744,7 +742,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
     }
     return hexToBytes(
       '0x' +
-        BeaconLightClientNetworkContentType.LightClientUpdate.toString(16) +
+        BeaconNetworkContentType.LightClientUpdate.toString(16) +
         padToEven(period.toString(16)),
     )
   }
@@ -884,7 +882,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
         for (let x = 0; x < msg.contentKeys.length; x++) {
           const key = msg.contentKeys[x]
           switch (key[0]) {
-            case BeaconLightClientNetworkContentType.LightClientBootstrap: {
+            case BeaconNetworkContentType.LightClientBootstrap: {
               try {
                 // TODO: Verify the offered bootstrap isn't too old before accepting
                 await this.get(key)
@@ -898,7 +896,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
               }
               break
             }
-            case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
+            case BeaconNetworkContentType.LightClientFinalityUpdate:
               {
                 const slot = LightClientFinalityUpdateKey.deserialize(key.slice(1)).finalitySlot
                 if (
@@ -916,7 +914,7 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                 }
               }
               break
-            case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
+            case BeaconNetworkContentType.LightClientOptimisticUpdate:
               {
                 const slot = LightClientOptimisticUpdateKey.deserialize(key.slice(1)).signatureSlot
                 if (
@@ -935,11 +933,11 @@ export class BeaconLightClientNetwork extends BaseNetwork {
                 }
               }
               break
-            case BeaconLightClientNetworkContentType.LightClientUpdatesByRange: {
+            case BeaconNetworkContentType.LightClientUpdatesByRange: {
               // TODO: See if any of the updates in the range are missing and either ACCEPT or send FINDCONTENT for the missing range
               break
             }
-            case BeaconLightClientNetworkContentType.HistoricalSummaries: {
+            case BeaconNetworkContentType.HistoricalSummaries: {
               const epoch = HistoricalSummariesKey.deserialize(key.slice(1)).epoch
               // Only accept if offered HistoricalSummaries epoch corresponds to our current finalityUpdate epoch (otherwise we can't verify)
               this.logger.extend('OFFER')(

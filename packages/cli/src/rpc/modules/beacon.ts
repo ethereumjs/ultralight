@@ -2,8 +2,8 @@ import { hexToBytes } from '@ethereumjs/util'
 import { RunStatusCode } from '@lodestar/light-client'
 import { ssz } from '@lodestar/types'
 import {
-  type BeaconLightClientNetwork,
-  BeaconLightClientNetworkContentType,
+  type BeaconNetwork,
+  BeaconNetworkContentType,
   ContentLookup,
   LightClientUpdatesByRangeKey,
   NetworkId,
@@ -24,14 +24,14 @@ const methods = ['beacon_getHead', 'beacon_getFinalized', 'beacon_getLightClient
  * @memberof module:rpc/modules
  */
 export class beacon {
-  private _beacon: BeaconLightClientNetwork
+  private _beacon: BeaconNetwork
   private logger: Debugger
   /**
    * Create beacon_* RPC module
    * @param rpcManager RPC client to which the module binds
    */
   constructor(client: PortalNetwork, logger: Debugger) {
-    this._beacon = client.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    this._beacon = client.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     this.logger = logger.extend('beacon')
 
     this.methods = middleware(this.methods.bind(this), 0, [])
@@ -89,7 +89,7 @@ export class beacon {
   async getLightClientUpdate(params: [string]) {
     const period = Number(BigInt(params[0]))
     const rangeKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.LightClientUpdate,
+      BeaconNetworkContentType.LightClientUpdate,
       hexToBytes(computeLightClientKeyFromPeriod(period)),
     )
     const update = await this._beacon.retrieve(rangeKey)
@@ -101,7 +101,7 @@ export class beacon {
     const lookup = new ContentLookup(
       this._beacon,
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+        BeaconNetworkContentType.LightClientUpdatesByRange,
         LightClientUpdatesByRangeKey.serialize({ startPeriod: BigInt(params[0]), count: 1n }),
       ),
     )

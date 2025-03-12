@@ -2,7 +2,7 @@ import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
 import { ssz } from '@lodestar/types'
 import {
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   computeLightClientKeyFromPeriod,
   getBeaconContentKey,
 } from 'portalnetwork'
@@ -15,7 +15,7 @@ describe(`${method} tests`, () => {
     const { ultralight, rpc } = await startRpc()
     const rangeJson = require('./range.json')[0]
     const rangeKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.LightClientUpdate,
+      BeaconNetworkContentType.LightClientUpdate,
       hexToBytes(
         computeLightClientKeyFromPeriod(
           computeSyncPeriodAtSlot(Number(rangeJson.data.attested_header.beacon.slot)),

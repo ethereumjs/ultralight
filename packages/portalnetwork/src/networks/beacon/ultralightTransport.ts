@@ -6,7 +6,7 @@ import { ssz } from '@lodestar/types'
 import { ContentLookup } from '../contentLookup.js'
 
 import {
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
@@ -23,13 +23,13 @@ import type {
   LightClientUpdate,
 } from '@lodestar/types'
 import type { Debugger } from 'debug'
-import type { BeaconLightClientNetwork } from './beacon.js'
+import type { BeaconNetwork } from './beacon.js'
 import type { LightClientForkName } from './types.js'
 
 export class UltralightTransport implements LightClientTransport {
-  network: BeaconLightClientNetwork
+  network: BeaconNetwork
   logger: Debugger
-  constructor(network: BeaconLightClientNetwork) {
+  constructor(network: BeaconNetwork) {
     this.network = network
     this.logger = network.logger.extend('LightClientTransport')
   }
@@ -43,7 +43,7 @@ export class UltralightTransport implements LightClientTransport {
     )
     while (range.length === 0) {
       const rangeKey = getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+        BeaconNetworkContentType.LightClientUpdatesByRange,
         LightClientUpdatesByRangeKey.serialize({
           startPeriod: BigInt(startPeriod),
           count: BigInt(count),
@@ -89,7 +89,7 @@ export class UltralightTransport implements LightClientTransport {
     // Try to get optimistic update locally
     const localUpdate = await this.network.findContentLocally(
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+        BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({
           signatureSlot: currentSlot,
         }),
@@ -111,7 +111,7 @@ export class UltralightTransport implements LightClientTransport {
     const decoded = await this.network.sendFindContent(
       this.network.routingTable.random()!,
       concatBytes(
-        new Uint8Array([BeaconLightClientNetworkContentType.LightClientOptimisticUpdate]),
+        new Uint8Array([BeaconNetworkContentType.LightClientOptimisticUpdate]),
         LightClientOptimisticUpdateKey.serialize({
           signatureSlot: currentSlot,
         }),
@@ -157,7 +157,7 @@ export class UltralightTransport implements LightClientTransport {
     // Try retrieving finality update locally
     const localUpdate = await this.network.findContentLocally(
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
+        BeaconNetworkContentType.LightClientFinalityUpdate,
         LightClientFinalityUpdateKey.serialize({
           finalitySlot: nextFinalitySlot,
         }),
@@ -178,7 +178,7 @@ export class UltralightTransport implements LightClientTransport {
     const decoded = await this.network.sendFindContent(
       this.network.routingTable.random()!,
       concatBytes(
-        new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
+        new Uint8Array([BeaconNetworkContentType.LightClientFinalityUpdate]),
         LightClientFinalityUpdateKey.serialize({ finalitySlot: nextFinalitySlot }),
       ),
     )
@@ -206,10 +206,7 @@ export class UltralightTransport implements LightClientTransport {
     // Try to get bootstrap from Portal Network
     const lookup = new ContentLookup(
       this.network,
-      getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientBootstrap,
-        hexToBytes(blockRoot),
-      ),
+      getBeaconContentKey(BeaconNetworkContentType.LightClientBootstrap, hexToBytes(blockRoot)),
     )
     const res = await lookup.startLookup()
     if (res !== undefined && 'content' in res) {
@@ -231,7 +228,7 @@ export class UltralightTransport implements LightClientTransport {
   onOptimisticUpdate(handler: (optimisticUpdate: LightClientOptimisticUpdate) => void): void {
     this.network.on('ContentAdded', (contentKey: Uint8Array, content: Uint8Array) => {
       const contentType = contentKey[0]
-      if (contentType === BeaconLightClientNetworkContentType.LightClientOptimisticUpdate) {
+      if (contentType === BeaconNetworkContentType.LightClientOptimisticUpdate) {
         const forkhash = content.slice(0, 4)
         const forkname = this.network.beaconConfig.forkDigest2ForkName(
           forkhash,
@@ -248,7 +245,7 @@ export class UltralightTransport implements LightClientTransport {
   onFinalityUpdate(handler: (finalityUpdate: LightClientFinalityUpdate) => void): void {
     this.network.on('ContentAdded', (contentKey: Uint8Array, content: Uint8Array) => {
       const contentType = contentKey[0]
-      if (contentType === BeaconLightClientNetworkContentType.LightClientFinalityUpdate) {
+      if (contentType === BeaconNetworkContentType.LightClientFinalityUpdate) {
         const forkhash = content.slice(0, 4)
         const forkname = this.network.beaconConfig.forkDigest2ForkName(
           forkhash,
