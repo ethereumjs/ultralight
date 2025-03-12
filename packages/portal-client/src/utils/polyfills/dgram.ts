@@ -169,16 +169,14 @@ class MockDgramSocket extends EventEmitter {
   }
 
   address() {
-    // This method should return bound address info
-    // This is often expected by socket libraries
     if (!this.isListening) {
       throw new Error('Socket is not bound')
     }
     
     return {
-      address: '0.0.0.0', // You might want to store the actual address in bind()
+      address: '0.0.0.0',
       family: 'IPv4',
-      port: 0 // You might want to store the actual port in bind()
+      port: 0,
     }
   }
 
@@ -203,17 +201,14 @@ const mockDgram = {
   }
 }
 
-// Apply polyfill globally
 if (typeof window !== 'undefined') {
   // @ts-ignore
   window.dgram = mockDgram
-  console.log('dgram polyfill applied to window')
 }
 
 if (typeof global !== 'undefined') {
   // @ts-ignore
   global.dgram = mockDgram
-  console.log('dgram polyfill applied globally')
 }
 
 export default mockDgram

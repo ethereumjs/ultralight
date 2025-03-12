@@ -6,27 +6,26 @@ import { DEFAULT_BOOTNODES } from 'portalnetwork/dist/util/bootnodes'
 import { createDatabase } from './db'
 
 const isBrowser = () => {
-  return typeof window !== 'undefined' && typeof window.navigator !== 'undefined';
+  return typeof window !== 'undefined' && typeof window.navigator !== 'undefined'
 }
 
-const db = createDatabase('portalHistory', { version: 1} )
-console.log('Database:', db)
-export const createPortalClient = async (port = 5050) => {
+const db = createDatabase({prefix: 'portalclient_history'})
+
+export const createPortalClient = async (port = 9090) => {
   try {
     const privateKey = await keys.generateKeyPair('secp256k1')
     const enr = SignableENR.createFromPrivateKey(privateKey)
     const nodeAddr = multiaddr(`/ip4/0.0.0.0/udp/${port}`)
     enr.setLocationMultiaddr(nodeAddr)
-    console.log(typeof window)
     const client = await PortalNetwork.create({
       transport: isBrowser() ? 
-        TransportLayer.MOBILE : TransportLayer.MOBILE, // Use Mobile for now
+        TransportLayer.WEB : TransportLayer.MOBILE,
       supportedNetworks: [
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.StateNetwork },
       ],
       db,
-      dataDir: './portalclient_history',
+      dbSize: async () => 1000 * 1024 * 1024,
       config: {
         enr,
         bindAddrs: { ip4: nodeAddr },
@@ -36,10 +35,11 @@ export const createPortalClient = async (port = 5050) => {
     })
 
     await client.start()
-    console.log('Portal client started', client)
     await client.bootstrap()
+    
+    await new Promise(resolve => setTimeout(resolve, 9000))
     console.log('Portal client bootstrapped', client)
-    console.log('History Network:', client.networks.get(NetworkId.HistoryNetwork))
+    
     return client
   } catch (error) {
     console.error('Error in createPortalClient:', error)

@@ -35,6 +35,7 @@ export class DBManager {
   }
 
   async put(key: string, val: string, network?: NetworkId) {
+    console.log('[DBManager] put', key, val, network)
     if (network !== undefined) {
       const db = this.sublevel(network)
       return db.put(key, val)
@@ -72,14 +73,17 @@ export class DBManager {
   }
 
   async open() {
+    console.log('[DBManager] open')
     await this.db.open()
     for (const sublevel of this.sublevels.values()) {
+      console.log('[DBManager] open sublevel', sublevel)
       await sublevel.open()
     }
   }
 
   async close() {
     this.db.removeAllListeners()
+    console.log('[DBManager]: close')
     await this.db.close()
   }
 

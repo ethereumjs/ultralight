@@ -152,7 +152,7 @@ export class ETH {
     const headerNumberContentKey = BlockHeaderByNumberKey(BigInt(blockNumber))
     const lookup = new ContentLookup(this.history!, headerNumberContentKey)
     const lookupResponse = await lookup.startLookup()
-
+    console.log('lookupResponse', lookupResponse)
     if (lookupResponse && 'content' in lookupResponse) {
       // Header found by number.  Now get the body via hash
       header = BlockHeaderWithProof.deserialize(lookupResponse.content).header

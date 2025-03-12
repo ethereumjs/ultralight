@@ -31,3 +31,4 @@ tower = "0.4"
 tower-http = { version = "0.5", features = ["cors"] }
 http = "1.0"
 tauri-plugin-udp = "0.1.2"
+warp = "0.3"

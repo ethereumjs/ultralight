@@ -28,6 +28,7 @@
     "esbuild-plugin-polyfill-node": "^0.3.0",
     "events": "^3.3.0",
     "lucide-react": "^0.475.0",
+    "memory-level": "^3.0.0",
     "portalnetwork": "^0.0.2-rc2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

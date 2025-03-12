@@ -115,7 +115,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     let dbSize
     switch (opts.transport) {
       case TransportLayer.WEB:
-      case TransportLayer.MOBILE:
         dbSize = async function () {
           // eslint-disable-next-line no-undef
           console.log('Storage estimating...')
@@ -124,6 +123,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
           return sizeEstimate.usage !== undefined ? sizeEstimate.usage / MEGABYTE : 0
         }
         break
+      case TransportLayer.MOBILE:   
       case TransportLayer.NODE:
       default:
     }
@@ -141,7 +141,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         break
       }
       case TransportLayer.MOBILE:
-        console.log('Creating TauriUDPTransportService')
         config.transport = new TauriUDPTransportService(
           ma, 
           config.enr.nodeId,
@@ -302,7 +301,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    * Starts the portal network client
    */
   public start = async () => {
-    console.log('[portalclient]Starting portal network client')
     await this.discv5.start()
     await this.db.open()
     const storedIndex = await this.db.getBlockIndex()
@@ -319,7 +317,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         // No action
       }
       if (network instanceof HistoryNetwork) {
-        console.log('Setting block hash index:', storedIndex)
         network.blockHashIndex = storedIndex
       }
       this.shouldRefresh && network.startRefresh()

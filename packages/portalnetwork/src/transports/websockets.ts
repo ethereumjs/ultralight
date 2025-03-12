@@ -46,14 +46,15 @@ export class WebSocketTransportService
     ip6: false,
   }
   bindAddrs: Multiaddr[] = []
+  //@ts-ignore
   public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string, rateLimiter?: IRateLimiter) {
     //eslint-disable-next-line constructor-super
     super()
     this.log = debug('Portal').extend('WebSocketTransportService')
     this.multiaddr = multiaddr
     this.srcId = srcId
-    this.socket = new WebSocketAsPromised(proxyAddress, {
-      packMessage: (data: Uint8Array) => data.buffer,
+    this.socket = new WebSocketAsPromised('ws://127.0.0.1:5050/portal', {
+      packMessage: (data: Uint8Array) => data.buffer as ArrayBuffer,
       unpackMessage: (data) => data,
       //@ts-ignore node websocket types don't match browser websocket types - so tell Typescript not to worry about it
       createWebSocket: (url) => new WebSocket(url),
@@ -65,23 +66,30 @@ export class WebSocketTransportService
   public async start(): Promise<void> {
     this.socket.onOpen.addListener(() => {
       this.log('opening websocket')
+      console.log('opening websocket', this.multiaddr.nodeAddress().port)
       this.socket.send(`port:${this.multiaddr.nodeAddress().port}`)
     })
     await this.socket.open()
     this.socket.ws.binaryType = 'arraybuffer'
     this.socket.onMessage.addListener((msg: MessageEvent | ArrayBuffer) => {
       const data = msg instanceof MessageEvent ? Buffer.from(msg.data) : Buffer.from(msg)
-
-      if (data.length === 6) {
-        // const address = `${data[0].toString()}.${data[1].toString()}.${data[2].toString()}.${data[3].toString()}`
-        // const port = data.readUIntBE(4, 2)
-        // this.multiaddr = ma(`/ip4/${address}/udp/${port}`)
-        // this.emit('multiAddr', this.multiaddr)
+      if (data.length === 2) {
+        const port = new DataView(data.buffer).getUint16(0, false)
+        this.log(`Received port assignment: ${port}`)
+        console.log(`Received port assignment: ${port}`)
+        
+        const ip = '0.0.0.0'
+        this.multiaddr = ma(`/ip4/${ip}/udp/${port}`)
+        this.emit('multiAddr', this.multiaddr)
       } else {
-        this.handleIncoming(data)
+        this.handleIncoming(new Uint8Array(data))
       }
     })
     this.socket.onClose.addListener(() => log('socket to proxy closed'))
+
+    this.socket.onError.addListener((error) => {
+      this.log('WebSocket error:', error)
+    })
   }
 
   public async stop(): Promise<void> {
@@ -90,10 +98,13 @@ export class WebSocketTransportService
 
   public async send(to: Multiaddr, toId: string, packet: IPacket): Promise<void> {
     this.log('sending via websocket')
+    console.log('sending via websocket', to, toId, packet)
     // Send via websocket (i.e. in browser)
     const opts = to.toOptions()
     const encodedPacket = encodePacket(toId, packet)
+    console.log('encodedPacket', encodedPacket)
     const encodedAddress = Uint8Array.from(opts.host.split('.').map((num) => parseInt(num)))
+    console.log('encodedAddress', encodedAddress)
     const port = new DataView(new Uint8Array(2).buffer)
     port.setUint16(0, opts.port)
     const encodedPort = new Uint8Array(port.buffer)
@@ -102,23 +113,25 @@ export class WebSocketTransportService
       ...encodedPort,
       ...Uint8Array.from(encodedPacket),
     ])
+    console.log('sending packed', encodedMessage)
     this.socket.sendPacked(encodedMessage)
   }
 
   public handleIncoming = (data: Uint8Array): void => {
+    console.log('websocket incoming data', data)
     const rinfoLength = parseInt(data.slice(0, 2).toString())
     const rinfo = JSON.parse(
       new TextDecoder().decode(data.slice(2, rinfoLength + 2)),
     ) as IRemoteInfo
     if (this.rateLimiter && !this.rateLimiter.allowEncodedPacket(rinfo.address)) {
-      return;
+      return
     }
     const multiaddr = ma(
       `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`,
     )
     const packetBuf = Buffer.from(data.slice(2 + rinfoLength))
     try {
-      const packet = decodePacket(this.srcId, packetBuf)
+      const packet = decodePacket(this.srcId, new Uint8Array(packetBuf))
       this.emit('packet', multiaddr, packet)
     } catch (e) {
       this.emit('decodeError', e as Error, multiaddr)

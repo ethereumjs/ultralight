@@ -30,41 +30,41 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   children,
   port = 5050,
   autoInitialize = false,
-  networkReadyTimeout = 600000,
+  // networkReadyTimeout = 600000,
 }) => {
   const [client, setClient] = useState<any | null>(null)
   const [isLoading, setIsLoading] = useState(autoInitialize)
   const [error, setError] = useState<Error | null>(null)
   const [isNetworkReady, setIsNetworkReady] = useState(false)
 
-   const waitForNetwork = async (portalClient: any, timeout: number): Promise<boolean> => {
-     console.log('Waiting for network to start...')
-     setIsNetworkReady(false)
+  //  const waitForNetwork = async (portalClient: any, timeout: number): Promise<boolean> => {
+  //    console.log('Waiting for network to start...')
+  //    setIsNetworkReady(false)
 
-     const startTime = Date.now()
+  //    const startTime = Date.now()
 
-     while (Date.now() - startTime < timeout) {
-       try {
-         // Check if network is ready
-         if (
-           portalClient.network &&
-           portalClient.network()['0x500b']?.routingTable &&
-           portalClient.network()['0x500b']?.routingTable.values().length > 0
-         ) {
-           console.log('Network is ready!')
-           setIsNetworkReady(true)
-           return true
-         }
-         console.log('Waiting for network to start...')
-         await new Promise((resolve) => setTimeout(resolve, 5000))
-       } catch (error) {
-         console.log('Error while waiting for network to start:', error)
-       }
-     }
+  //    while (Date.now() - startTime < timeout) {
+  //      try {
+  //        // Check if network is ready
+  //        if (
+  //          portalClient.network &&
+  //          portalClient.network()['0x500b']?.routingTable &&
+  //          portalClient.network()['0x500b']?.routingTable.values().length > 0
+  //        ) {
+  //          console.log('Network is ready!')
+  //          setIsNetworkReady(true)
+  //          return true
+  //        }
+  //        console.log('Waiting for network to start...')
+  //        await new Promise((resolve) => setTimeout(resolve, 5000))
+  //      } catch (error) {
+  //        console.log('Error while waiting for network to start:', error)
+  //      }
+  //    }
 
-     console.warn('Network readiness timeout reached')
-     return false
-   }
+  //    console.warn('Network readiness timeout reached')
+  //    return false
+  //  }
 
   const initialize = async (customPort?: number): Promise<void> => {
     const portToUse = customPort ?? port
@@ -76,13 +76,14 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     try {
       const portalClient = await createPortalClient(portToUse)
       setClient(portalClient)
-      waitForNetwork(portalClient, networkReadyTimeout)
-        .catch((err) => {
-          console.error('Error while waiting for network:', err)
-        })
-        .finally(() => {
+      // waitForNetwork(portalClient, networkReadyTimeout)
+      //   .catch((err) => {
+      //     console.error('Error while waiting for network:', err)
+      //   })
+      //   .finally(() => {
           setIsLoading(false)
-        })
+          setIsNetworkReady(true)
+      //   })
     } catch (err) {
       console.error('Failed to initialize portal client:', err)
       setError(err instanceof Error ? err : new Error(String(err)))
@@ -95,11 +96,6 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   const cleanup = async () => {
     if (client) {
       try {
-        console.log('Stopping portal client, current state:', {
-          networks: client.networks ? Array.from(client.networks.keys()) : 'undefined',
-          discv5: client.discv5 ? 'initialized' : 'undefined',
-        })
-
         await client.stop()
         console.log('Portal client stopped successfully')
   

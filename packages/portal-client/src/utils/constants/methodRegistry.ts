@@ -6,14 +6,17 @@ export const APPROVED_METHODS = [
   'portal_findNodes',
   'eth_getBlockReceipts',
   'eth_getLogs',
-] as const;
+] as const
 
-export type MethodType = typeof APPROVED_METHODS[number];
+export type MethodType = typeof APPROVED_METHODS[number]
 
 interface MethodConfig {
-  name: string;
-  paramPlaceholder: string;
-  handler: (value: string, sendRequest: (method: string, params?: any[]) => Promise<any>) => void | Promise<any>;
+  name: string
+  paramPlaceholder: string
+  handler: (
+    value: string, 
+    sendRequest: (method: string, params?: any[])
+    => Promise<any>) => void | Promise<any>
 }
 
 export const methodRegistry: Record<MethodType, MethodConfig> = {
@@ -21,8 +24,8 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
     name: 'Get Block By Hash',
     paramPlaceholder: 'Enter Block Hash',
     handler: (hash: string, sendRequest: Function) => {
-      sendRequest('eth_getBlockByHash', [hexToBytes(`0x${hash}`)]);
-    }
+      sendRequest('eth_getBlockByHash', [hexToBytes(`0x${hash}`)])
+    },
   },
   'eth_getBlockByNumber': {
     name: 'Get Block By Number',
@@ -30,30 +33,27 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
       const [blockNumber, includeFullTx = false] = input.split(',')
       return sendRequestHandle('eth_getBlockByNumber', [blockNumber, includeFullTx])
-    }
-    // handler: (number: string, sendRequest: Function) => {
-    //   sendRequest('eth_getBlockByNumber', [number]);
-    // }
+    },
   },
   'portal_findNodes': {
     name: 'Find Nodes',
     paramPlaceholder: 'Enter Node ID',
     handler: (nodeId: string, sendRequest: Function) => {
-      sendRequest('portal_findNodes', [toHex(nodeId)]);
-    }
+      sendRequest('portal_findNodes', [toHex(nodeId)])
+    },
   },
   'eth_getBlockReceipts': {
     name: 'Get Block Receipts',
     paramPlaceholder: 'Enter Block Hash',
     handler: (hash: string, sendRequest: Function) => {
-      sendRequest('eth_getBlockReceipts', [hexToBytes(`0x${hash}`)]);
-    }
+      sendRequest('eth_getBlockReceipts', [hexToBytes(`0x${hash}`)])
+    },
   },
   'eth_getLogs': {
     name: 'Get Logs',
     paramPlaceholder: 'Enter Block Hash',
     handler: (hash: string, sendRequest: Function) => {
-      sendRequest('eth_getLogs', [hexToBytes(`0x${hash}`)]);
-    }
+      sendRequest('eth_getLogs', [hexToBytes(`0x${hash}`)])
+    },
   }
-};
+}

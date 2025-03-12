@@ -107,7 +107,7 @@ class UDPSocket extends EventEmitter {
         }
 
         const base64Data = this.bufferToBase64(buffer)
-        
+        console.log('sending udp socket', base64Data)
         await invoke('plugin:udp|send', {
           id: this.socketId,
           target: `${address}:${port}`,
@@ -136,7 +136,7 @@ class UDPSocket extends EventEmitter {
           this.unlistenFn = null
         }
 
-        await invoke('plugin:udp|close', {
+        await invoke('plugin:udp|close', { // TODO: investigate this close function. seems not defined in the plugin
           id: this.socketId
         })
 

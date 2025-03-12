@@ -1,71 +1,26 @@
-
 import { FC, useState } from 'react'
 import { useNodes } from '@/hooks/useNodes'
 import { MethodInput } from '@/components/ui/MethodInput'
 import { ResponseViewer } from '@/components/ui/ResponseViewer'
 import { methodRegistry, APPROVED_METHODS, MethodType } from '@/utils/constants/methodRegistry'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
-import { log2Distance } from 'portalnetwork'
-import { ENR } from '@chainsafe/enr'
 
 const BlockExplorer: FC = () => {
   const [selectedMethod, setSelectedMethod] = useState<MethodType | ''>('')
   const [inputValue, setInputValue] = useState('')
   const { node, isLoading, error, sendRequestHandle } = useNodes()
-  const { client, isLoading: isPortalNetworkLoading, isNetworkReady, error: portalNetworkError } = usePortalNetwork()
+  const { isLoading: isPortalNetworkLoading, isNetworkReady, error: portalNetworkError } = usePortalNetwork()
 
   const handleSubmit = async () => {
-    // const res = await sendRequestHandle(selectedMethod, [inputValue])
-    // console.log('res', res)
     if (selectedMethod && methodRegistry[selectedMethod]) {
       methodRegistry[selectedMethod].handler(inputValue, sendRequestHandle)
     }
   }
 
-  const getPeerInfo = async () => {
-      try {
-        console.log('Getting peer info...', client)
-        const known = client.networks['0x500b'].routingTable.values()
-        console.log('known routing table', known)
-        const formattedKnown = known.map((enr: ENR) => {
-          const distToSelf = log2Distance(client.networks['0x500b'].enr.nodeId, enr.nodeId)
-          return [
-            distToSelf,
-            `${enr.ip}`,
-            `${enr.getLocationMultiaddr('udp')?.nodeAddress().port}`,
-            enr.nodeId,
-            enr.encodeTxt(),
-          ]
-        })
-        
-        //@ts-ignore
-        const sorted = formattedKnown.sort((a, b) => a[0] - b[0])
-        //@ts-ignore
-        const table = sorted.map((d) => {
-          return [d[0], [d[1], d[2], d[3], d[4]]]
-        })
-
-        console.log('table', table) 
-        console.log('known', known)
-        
-        return {
-          peers: known,
-          sortedPeers: table,
-        }
-      } catch (error) {
-        console.error('Error getting peer info:', error)
-        return {
-          peers: [],
-          sortedPeers: [],
-        }
-      }
-    }
-
  return (
    <div className="w-full max-w-2xl mx-auto mt-4 p-4 bg-[#1C232A]">
      <div className="bg-[#2A323C] rounded-lg shadow-lg p-6">
        <h2 className="text-2xl font-bold mb-6 text-gray-200">JSON RPC Interface</h2>
-       <button type='button' onClick={getPeerInfo}>Get Peers</button>
        {isLoading && <p>Loading client...</p>}
        {!isPortalNetworkLoading && !isNetworkReady && <p>Client loaded, waiting for network...</p>}
        {isNetworkReady && <p>Network is ready!</p>}
@@ -109,7 +64,6 @@ const BlockExplorer: FC = () => {
            Error: {error.message}
          </div>
        )}
-
        {node && <ResponseViewer data={node.result} />}
      </div>
    </div>
