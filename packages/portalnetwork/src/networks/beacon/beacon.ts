@@ -21,9 +21,10 @@ import debug from 'debug'
 import { getENR, shortId } from '../../util/util.js'
 import {
   FoundContent,
-  MAX_PACKET_SIZE,
+  MAX_UDP_PACKET_SIZE,
   RequestCode,
   encodeWithVariantPrefix,
+  getTalkReqOverhead,
   randUint16,
 } from '../../wire/index.js'
 import { ContentMessageType, MessageCodes, PortalWireMessageType } from '../../wire/types.js'
@@ -571,7 +572,10 @@ export class BeaconNetwork extends BaseNetwork {
     const value = await this.findContentLocally(decodedContentMessage.contentKey)
     if (!value) {
       await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
-    } else if (value !== undefined && value.length < MAX_PACKET_SIZE) {
+    } else if (
+      value !== undefined &&
+      value.length < MAX_UDP_PACKET_SIZE - getTalkReqOverhead(hexToBytes(this.networkId).byteLength)
+    ) {
       this.logger(
         'Found value for requested content ' +
           bytesToHex(decodedContentMessage.contentKey) +

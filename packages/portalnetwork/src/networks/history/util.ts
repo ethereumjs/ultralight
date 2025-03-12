@@ -41,6 +41,7 @@ import type { WithdrawalBytes } from '@ethereumjs/util'
 import type { ForkConfig } from '@lodestar/config'
 import type { HistoryNetwork } from './history.js'
 import type { BlockBodyContent, Witnesses } from './types.js'
+import type { EphemeralHeaderKeyValues } from '../history/types.js'
 
 export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
   return Uint8Array.from([
@@ -57,7 +58,7 @@ export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
  */
 export const getContentKey = (
   contentType: HistoryNetworkContentType,
-  key: Uint8Array | bigint | { blockHash: Uint8Array; ancestorCount: number },
+  key: Uint8Array | bigint | EphemeralHeaderKeyValues,
 ): Uint8Array => {
   let encodedKey
   switch (contentType) {
@@ -120,12 +121,15 @@ export const decodeHistoryNetworkContentKey = (
         | HistoryNetworkContentType.BlockHeader
         | HistoryNetworkContentType.BlockBody
         | HistoryNetworkContentType.Receipt
-        | HistoryNetworkContentType.EphemeralHeader
       keyOpt: Uint8Array
     }
   | {
       contentType: HistoryNetworkContentType.BlockHeaderByNumber
       keyOpt: bigint
+    }
+  | {
+      contentType: HistoryNetworkContentType.EphemeralHeader
+      keyOpt: EphemeralHeaderKeyValues
     } => {
   const contentType: HistoryNetworkContentType = contentKey[0]
   switch (contentType) {
@@ -140,7 +144,7 @@ export const decodeHistoryNetworkContentKey = (
       const key = EphemeralHeaderKey.deserialize(contentKey.slice(1))
       return {
         contentType,
-        keyOpt: key.blockHash,
+        keyOpt: key,
       }
     }
     default: {
