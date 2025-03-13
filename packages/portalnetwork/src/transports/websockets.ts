@@ -96,26 +96,63 @@ export class WebSocketTransportService
     await this.socket.close()
   }
 
-  public async send(to: Multiaddr, toId: string, packet: IPacket): Promise<void> {
-    this.log('sending via websocket')
-    console.log('sending via websocket', to, toId, packet)
-    // Send via websocket (i.e. in browser)
-    const opts = to.toOptions()
-    const encodedPacket = encodePacket(toId, packet)
-    console.log('encodedPacket', encodedPacket)
-    const encodedAddress = Uint8Array.from(opts.host.split('.').map((num) => parseInt(num)))
-    console.log('encodedAddress', encodedAddress)
-    const port = new DataView(new Uint8Array(2).buffer)
-    port.setUint16(0, opts.port)
-    const encodedPort = new Uint8Array(port.buffer)
-    const encodedMessage = new Uint8Array([
-      ...Uint8Array.from(encodedAddress),
-      ...encodedPort,
-      ...Uint8Array.from(encodedPacket),
-    ])
-    console.log('sending packed', encodedMessage)
-    this.socket.sendPacked(encodedMessage)
+ public async send(to: Multiaddr, toId: string, packet: IPacket): Promise<void> {
+  console.log('=== START WebSocket Send ===')
+  
+  if (!this.socket.isOpened) {
+    console.error('ERROR: WebSocket not connected. Cannot send packet.')
+    console.log('Attempting to reconnect...')
+    try {
+      await this.socket.open()
+      console.log('Reconnection successful')
+    } catch (err) {
+      console.error('Failed to reconnect:', err)
+      return
+    }
   }
+  
+  const opts = to.toOptions()
+  console.log(`Destination: ${opts.host}:${opts.port}`)
+  
+  try {
+    console.log('Encoding packet...')
+    const encodedPacket = encodePacket(toId, packet)
+    console.log(`Packet encoded, length: ${encodedPacket.length} bytes`)
+
+    console.log('Parsing IP address...')
+    const ipParts = opts.host.split('.').map(part => parseInt(part, 10))
+    console.log('IP parts:', ipParts)
+    
+    if (ipParts.length !== 4 || ipParts.some(part => isNaN(part) || part < 0 || part > 255)) {
+      console.error('ERROR: Invalid IP address format:', opts.host)
+      return
+    }
+
+    const ipBytes = new Uint8Array(ipParts)
+    console.log('IP bytes:', Array.from(ipBytes))
+    
+    const portBytes = new Uint8Array(2)
+    const portView = new DataView(portBytes.buffer)
+    portView.setUint16(0, opts.port, false)
+    console.log('Port bytes:', Array.from(portBytes))
+    
+    const message = new Uint8Array(ipBytes.length + portBytes.length + encodedPacket.length)
+    message.set(ipBytes, 0)
+    message.set(portBytes, ipBytes.length)
+    message.set(encodedPacket, ipBytes.length + portBytes.length)
+    
+    console.log(`Complete message assembled, total length: ${message.length} bytes`)
+    console.log('Header:', Array.from(message.slice(0, 6)))
+    
+    console.log('Sending WebSocket message...')
+    this.socket.sendPacked(message)
+    console.log('Message sent successfully')
+  } catch (error) {
+    console.error('ERROR in send process:', error)
+  }
+  
+  console.log('=== END WebSocket Send ===')
+}
 
   public handleIncoming = (data: Uint8Array): void => {
     console.log('websocket incoming data', data)

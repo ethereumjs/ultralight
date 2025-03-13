@@ -23,8 +23,8 @@
           process: true,
         },
       }),
-      polyfillNode(), // Handles Node.js polyfills automatically
-      tsconfigPaths(), // Auto-resolve paths from tsconfig.json
+      polyfillNode(),
+      tsconfigPaths(),
     ],
     resolve: {
       alias: {
@@ -33,6 +33,8 @@
         process: resolve(__dirname, 'src/utils/polyfills/processBrowser.ts'),
         'bls-eth-wasm': resolve(__dirname, 'src/utils/polyfills/blsPatch.ts'),
         '@chainsafe/bls-keygen': resolve(__dirname, 'src/utils/polyfills/blsKeyGen.ts'),
+        'node:crypto': resolve(__dirname, 'src/utils/polyfills/crypto.ts'),
+        crypto: resolve(__dirname, 'src/utils/polyfills/crypto.ts'), 
         // 'dgram': resolve(__dirname, 'src/utils/polyfills/dgram.ts'),
         // 'node:dgram': resolve(__dirname, 'src/utils/polyfills/dgram.ts'),
       },
