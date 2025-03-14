@@ -2,8 +2,9 @@ import { FC, useState } from 'react'
 import { useNodes } from '@/hooks/useNodes'
 import { MethodInput } from '@/components/ui/MethodInput'
 import { ResponseViewer } from '@/components/ui/ResponseViewer'
-import { methodRegistry, APPROVED_METHODS, MethodType } from '@/utils/constants/methodRegistry'
+import { methodRegistry, MethodType } from '@/utils/constants/methodRegistry'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
+import { APPROVED_METHODS } from '@/services/portalNetwork/types'
 
 const BlockExplorer: FC = () => {
   const [selectedMethod, setSelectedMethod] = useState<MethodType | ''>('')
@@ -12,7 +13,9 @@ const BlockExplorer: FC = () => {
   const { isLoading: isPortalNetworkLoading, isNetworkReady, error: portalNetworkError } = usePortalNetwork()
 
   const handleSubmit = async () => {
+    //@ts-ignore
     if (selectedMethod && methodRegistry[selectedMethod]) {
+      //@ts-ignore
       methodRegistry[selectedMethod].handler(inputValue, sendRequestHandle)
     }
   }

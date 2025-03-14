@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, FC } from 'react'
 import { Edit, Save } from 'lucide-react'
 
 interface ConfigCardProps {
@@ -8,7 +8,7 @@ interface ConfigCardProps {
   storageKey: string
 }
 
-const ConfigCard: React.FC<ConfigCardProps> = ({
+const ConfigCard: FC<ConfigCardProps> = ({
   title,
   defaultValue,
   description,

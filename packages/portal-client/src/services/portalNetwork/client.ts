@@ -9,7 +9,7 @@ const isBrowser = () => !window.__TAURI__
 
 const db = createDatabase({prefix: 'portalclient_history'})
 
-export const createPortalClient = async (port = 9090) => {
+export const createPortalClient = async (port: number, proxyAddress: string): Promise<PortalNetwork> => {
   try {
     const privateKey = await keys.generateKeyPair('secp256k1')
     const enr = SignableENR.createFromPrivateKey(privateKey)
@@ -23,6 +23,7 @@ export const createPortalClient = async (port = 9090) => {
         { networkId: NetworkId.StateNetwork },
       ],
       db,
+      proxyAddress,
       dbSize: async () => 1000 * 1024 * 1024,
       config: {
         enr,

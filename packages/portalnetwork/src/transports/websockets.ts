@@ -46,14 +46,14 @@ export class WebSocketTransportService
     ip6: false,
   }
   bindAddrs: Multiaddr[] = []
-  //@ts-ignore
+
   public constructor(multiaddr: Multiaddr, srcId: string, proxyAddress: string, rateLimiter?: IRateLimiter) {
     //eslint-disable-next-line constructor-super
     super()
     this.log = debug('Portal').extend('WebSocketTransportService')
     this.multiaddr = multiaddr
     this.srcId = srcId
-    this.socket = new WebSocketAsPromised('ws://127.0.0.1:5050/portal', {
+    this.socket = new WebSocketAsPromised(`${proxyAddress}/portal`, {
       packMessage: (data: Uint8Array) => data.buffer as ArrayBuffer,
       unpackMessage: (data) => data,
       //@ts-ignore node websocket types don't match browser websocket types - so tell Typescript not to worry about it

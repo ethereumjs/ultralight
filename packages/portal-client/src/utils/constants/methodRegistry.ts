@@ -1,12 +1,5 @@
 import { hexToBytes, toHex } from 'viem'
-
-export const APPROVED_METHODS = [
-  'eth_getBlockByHash',
-  'eth_getBlockByNumber',
-  'portal_findNodes',
-  'eth_getBlockReceipts',
-  'eth_getLogs',
-] as const
+import { APPROVED_METHODS } from '@/services/portalNetwork/types'
 
 export type MethodType = typeof APPROVED_METHODS[number]
 

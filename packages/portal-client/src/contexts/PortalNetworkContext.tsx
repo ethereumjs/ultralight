@@ -1,11 +1,13 @@
 import { createContext, useContext, useEffect, useState, ReactNode, FC } from 'react'
 import { createPortalClient } from '@/services/portalNetwork/client'
+import { getConfigValue } from '@/utils/helpers'
+import { ConfigId } from '@/utils/types'
 
 type PortalNetworkContextType = {
   client: any | null
   isLoading: boolean
   error: Error | null
-  initialize: (customPort?: number) => Promise<void>
+  initialize: (customPort: number, proxyAddress: string) => Promise<void>
   isNetworkReady: boolean
   cleanup: () => Promise<void>
 }
@@ -21,21 +23,21 @@ const PortalNetworkContext = createContext<PortalNetworkContextType>({
 
 type PortalNetworkProviderProps = {
   children: ReactNode
-  port?: number
-  autoInitialize?: boolean
   networkReadyTimeout?: number
 }
 
 export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   children,
-  port = 5050,
-  autoInitialize = false,
   // networkReadyTimeout = 600000,
 }) => {
   const [client, setClient] = useState<any | null>(null)
-  const [isLoading, setIsLoading] = useState(autoInitialize)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [isNetworkReady, setIsNetworkReady] = useState(false)
+
+  const udpPort = getConfigValue(ConfigId.UdpPort);
+  const websocketAddress = getConfigValue(ConfigId.WebsocketAddress)
+  const shouldAutoInitialize = false
 
   //  const waitForNetwork = async (portalClient: any, timeout: number): Promise<boolean> => {
   //    console.log('Waiting for network to start...')
@@ -66,15 +68,14 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   //    return false
   //  }
 
-  const initialize = async (customPort?: number): Promise<void> => {
-    const portToUse = customPort ?? port
+  const initialize = async (port: number, proxyAddress: string): Promise<void> => {
 
     setIsLoading(true)
     setError(null)
     setIsNetworkReady(false)
 
     try {
-      const portalClient = await createPortalClient(portToUse)
+      const portalClient = await createPortalClient(port, proxyAddress)
       setClient(portalClient)
       // waitForNetwork(portalClient, networkReadyTimeout)
       //   .catch((err) => {
@@ -107,26 +108,34 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     }
   }
 
-  useEffect(() => {
-    if (autoInitialize) {
-      initialize().catch((err) => {
-        console.error('Auto-initialization failed:', err)
-      })
+   useEffect(() => {
+    if (shouldAutoInitialize) {
+      initialize(Number(udpPort), websocketAddress).catch((err) => {
+        console.error('Auto-initialization failed:', err);
+      });
     }
+  }, [shouldAutoInitialize, udpPort, websocketAddress])
 
-    return () => {
-      if (client) {
-        try {
-          //@ts-ignore
-          client.stop().catch((err) => {
-            console.warn('Non-blocking error during client stop:', err)
-          })
-        } catch (error) {
-          console.warn('Error in cleanup:', error)
-        }
-      }
-    }
-  }, [])
+  // useEffect(() => {
+  //   if (autoInitialize) {
+  //     initialize().catch((err) => {
+  //       console.error('Auto-initialization failed:', err)
+  //     })
+  //   }
+
+  //   return () => {
+  //     if (client) {
+  //       try {
+  //         //@ts-ignore
+  //         client.stop().catch((err) => {
+  //           console.warn('Non-blocking error during client stop:', err)
+  //         })
+  //       } catch (error) {
+  //         console.warn('Error in cleanup:', error)
+  //       }
+  //     }
+  //   }
+  // }, [])
 
   const contextValue: PortalNetworkContextType = {
     client,
