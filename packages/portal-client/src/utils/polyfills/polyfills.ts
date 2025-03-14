@@ -13,10 +13,10 @@ if (!process.env) {
   process.env = {}
 }
 
-if (!window.crypto) {
-  window.crypto = {
-    subtle: {},
-    getRandomValues: (array: Uint8Array) => crypto.getRandomValues(array),
-    randomUUID: () => crypto.randomUUID()
-  } as Crypto
-}
+// if (!window.crypto) {
+//   window.crypto = {
+//     subtle: {},
+//     getRandomValues: (array: Uint8Array) => crypto.getRandomValues(array),
+//     randomUUID: () => crypto.randomUUID()
+//   } as Crypto
+// }

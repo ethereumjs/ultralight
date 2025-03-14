@@ -2,10 +2,10 @@ import { SignableENR } from '@chainsafe/enr'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { NetworkId, PortalNetwork, TransportLayer } from 'portalnetwork'
-import { DEFAULT_BOOTNODES } from 'portalnetwork/dist/util/bootnodes'
+// import { DEFAULT_BOOTNODES } from 'portalnetwork/dist/util/bootnodes'
 import { createDatabase } from './db'
 
-const isBrowser = () => !window.__TAURI__
+// const isBrowser = () => !window.__TAURI__
 
 const db = createDatabase({prefix: 'portalclient_history'})
 
@@ -16,8 +16,7 @@ export const createPortalClient = async (port: number, proxyAddress: string): Pr
     const nodeAddr = multiaddr(`/ip4/0.0.0.0/udp/${port}`)
     enr.setLocationMultiaddr(nodeAddr)
     const client = await PortalNetwork.create({
-      transport: isBrowser() ? 
-        TransportLayer.WEB : TransportLayer.MOBILE,
+      transport: TransportLayer.MOBILE,
       supportedNetworks: [
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.StateNetwork },
@@ -30,13 +29,14 @@ export const createPortalClient = async (port: number, proxyAddress: string): Pr
         bindAddrs: { ip4: nodeAddr },
         privateKey,
       },
-      bootnodes: DEFAULT_BOOTNODES.mainnet,
+      bootnodes: ['enr:-I24QIRhfeRScXqGwrG9yrEgL0ndg40XbuwJSgNulPzCmwpAGYktxM35h3GUQX_EvcfdU1YnjIjjInufI_Mqfu0G5RAEY4d1IDAuMC4xgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQMZR_0w_3yH2Mf_LArRUVYk0keXD5Ru_ahy6ISkMqu2NIN1ZHCCIyg'],
+      // bootnodes: DEFAULT_BOOTNODES.mainnet,
     })
 
     await client.start()
     await client.bootstrap()
     
-    await new Promise(resolve => setTimeout(resolve, 9000))
+    await new Promise(resolve => setTimeout(resolve, 1000))
     console.log('Portal client bootstrapped', client)
     
     return client
