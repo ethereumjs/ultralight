@@ -1,10 +1,11 @@
-import dgramPolyfill from './dgramMock'
 import { EventEmitter } from 'events'
 import { ITransportService } from '@chainsafe/discv5'
 import { multiaddr as ma } from '@multiformats/multiaddr'
 import { decodePacket, encodePacket } from '@chainsafe/discv5/packet'
 import { getSocketAddressOnENR } from '@chainsafe/discv5'
 import { MAX_PACKET_SIZE } from '../wire'
+import { bind, send } from "@kuyoonjo/tauri-plugin-udp"
+import { listen } from "@tauri-apps/api/event"
 
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { IPacket } from '@chainsafe/discv5/packet'
@@ -15,8 +16,9 @@ export class TauriUDPTransportService
   extends (EventEmitter as { new (): TransportEventEmitter })
   implements ITransportService
 {
-  private socket: ReturnType<typeof dgramPolyfill.createSocket> | null = null
+  private socketId: string = 'portal-client-socket-id'
   private isListening = false
+  private unlisten: (() => void) | null = null
 
   bindAddrs: Multiaddr[] = []
   ipMode: IPMode = {
@@ -38,42 +40,46 @@ export class TauriUDPTransportService
     const opts = this.bindAddrs[0].toOptions()
     console.log('Starting UDP transport with options:', opts)
     const port = Number.isInteger(opts.port) ? opts.port : 0
-    const address = opts.host || '0.0.0.0'
+    const host = opts.host || '0.0.0.0'
+    const address = `${host}:${port}`
 
     try {
-      this.socket = dgramPolyfill.createSocket({
-        type: 'udp4',
-        recvBufferSize: 16 * MAX_PACKET_SIZE,
-        sendBufferSize: MAX_PACKET_SIZE
+      await bind(this.socketId, address, true)
+       
+      this.unlisten = await listen(`udp://message/${this.socketId}`, (event) => {
+        const payload = event.payload as { 
+          buffer: number[], 
+          addr: string,
+          port: number 
+        }
+        
+        console.log(`Received message from ${payload.addr}:${payload.port}, size: ${payload.buffer.length}`)
+        
+        const data = new Uint8Array(payload.buffer)
+        
+        const rinfo: IRemoteInfo = {
+          address: payload.addr,
+          port: payload.port,
+          family: 'IPv4',
+          size: payload.buffer.length
+        }
+        
+        this.handleIncoming(data, rinfo)
       })
       
-      console.log('Socket created', this.socket)
-      
-      this.socket.on('message', (msg: Buffer, rinfo: IRemoteInfo) => {
-        console.log(`Received message from ${rinfo.address}:${rinfo.port}, size: ${rinfo.size}`)
-        this.handleIncoming(new Uint8Array(msg), rinfo)
+      const errorUnlisten = await listen(`udp://error/${this.socketId}`, (event) => {
+        console.error('Socket error:', event.payload)
       })
       
-      this.socket.on('error', (error) => {
-        console.error('Socket error:', error)
-      })
-
-      await new Promise<void>((resolve, reject) => {
-        this.socket!.bind(port, address, (error?: Error) => {
-          console.log('Socket bind callback', port, address)
-          if (error) {
-            console.error('Failed to bind socket:', error)
-            reject(error)
-            return
-          }
-          const addr = this.socket!.address()
-          console.log(`UDP Transport bound to ${addr.address}:${addr.port}`)
-          resolve()
-        })
-      })
-
+      // Store the combined unlisten function
+      const originalUnlisten = this.unlisten
+      this.unlisten = () => {
+        originalUnlisten()
+        errorUnlisten()
+      }
+      
       this.isListening = true
-      console.log('UDP Transport started successfully')
+      console.log(`UDP Transport bound to ${address}:${port}, socket ID: ${this.socketId}`)
     } catch (error) {
       console.error('Failed to start UDP transport:', error)
       throw error
@@ -84,11 +90,12 @@ export class TauriUDPTransportService
     if (!this.isListening) return
 
     try {
-      if (this.socket) {
-        this.socket.close()
-        this.socket = null
+      if (this.unlisten) {
+        this.unlisten()
+        this.unlisten = null
       }
       
+      this.socketId = ''
       this.isListening = false
       console.log('UDP Transport stopped')
     } catch (error) {
@@ -98,7 +105,7 @@ export class TauriUDPTransportService
   }
 
   public async send(to: Multiaddr, toId: string, packet: IPacket): Promise<void> {
-    if (!this.isListening || !this.socket) {
+    if (!this.isListening || this.socketId === null) {
       throw new Error('Transport not started')
     }
 
@@ -108,24 +115,11 @@ export class TauriUDPTransportService
     try {
       console.log(`Sending packet to ${nodeAddr.host}:${nodeAddr.port}, size: ${encodedPacket.length}`)
       
-      return new Promise<void>((resolve, reject) => {
-        this.socket!.send(
-          encodedPacket, 
-          0, 
-          encodedPacket.length, 
-          nodeAddr.port, 
-          nodeAddr.host,
-          (error?: Error) => {
-            if (error) {
-              console.error('Failed to send packet:', error)
-              reject(error)
-              return
-            }
-            console.log(`Successfully sent packet to ${nodeAddr.host}:${nodeAddr.port}`)
-            resolve()
-          }
-        )
-      })
+      const buffer = Array.from(encodedPacket)
+      const address = `${nodeAddr.host}:${nodeAddr.port}`
+      await send(this.socketId, address, buffer)
+      
+      console.log(`Successfully sent packet to ${nodeAddr.host}:${nodeAddr.port}`)
     } catch (error) {
       console.error('Failed to send packet:', error)
       throw error

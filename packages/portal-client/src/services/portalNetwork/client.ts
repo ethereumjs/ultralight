@@ -5,9 +5,7 @@ import { NetworkId, PortalNetwork, TransportLayer } from 'portalnetwork'
 import { DEFAULT_BOOTNODES } from 'portalnetwork/dist/util/bootnodes'
 import { createDatabase } from './db'
 
-const isBrowser = () => {
-  return typeof window !== 'undefined' && typeof window.navigator !== 'undefined'
-}
+const isBrowser = () => !window.__TAURI__
 
 const db = createDatabase({prefix: 'portalclient_history'})
 
