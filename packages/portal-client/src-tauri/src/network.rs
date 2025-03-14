@@ -1,4 +1,3 @@
-// network.rs
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -147,7 +146,8 @@ pub async fn handle_websocket(ws: WebSocket, state: Arc<crate::state::PortalStat
             Ok(dest) => {
               println!("Forwarding WebSocket message to UDP destination: {}", dest);
               
-              // Send the packet payload to the UDP destination
+              println!("UDP payload being sent: {:?}", &data[6..]);
+              println!("UDP payload length: {}", data.len() - 6);
               match udp_socket.clone().send_to(&data[6..], dest).await {
                 Ok(bytes_sent) => {
                   println!("Successfully sent {} bytes to UDP destination", bytes_sent);

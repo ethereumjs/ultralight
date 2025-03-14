@@ -2,7 +2,7 @@ import { SignableENR } from '@chainsafe/enr'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { NetworkId, PortalNetwork, TransportLayer } from 'portalnetwork'
-import { DEFAULT_BOOTNODES } from 'portalnetwork/dist/util/bootnodes'
+// import { DEFAULT_BOOTNODES } from 'portalnetwork/dist/util/bootnodes'
 import { createDatabase } from './db'
 
 const isBrowser = () => !window.__TAURI__
@@ -30,7 +30,8 @@ export const createPortalClient = async (port: number, proxyAddress: string): Pr
         bindAddrs: { ip4: nodeAddr },
         privateKey,
       },
-      bootnodes: DEFAULT_BOOTNODES.mainnet,
+      bootnodes: ['enr:-I24QIRhfeRScXqGwrG9yrEgL0ndg40XbuwJSgNulPzCmwpAGYktxM35h3GUQX_EvcfdU1YnjIjjInufI_Mqfu0G5RAEY4d1IDAuMC4xgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQMZR_0w_3yH2Mf_LArRUVYk0keXD5Ru_ahy6ISkMqu2NIN1ZHCCIyg'],
+      // bootnodes: DEFAULT_BOOTNODES.mainnet,
     })
 
     await client.start()
