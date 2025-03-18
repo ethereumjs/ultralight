@@ -1,18 +1,32 @@
 import { Block, BlockHeader } from '@ethereumjs/block'
-import { bytesToHex, bytesToInt, equalsBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, bytesToInt, concatBytes, equalsBytes, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
-import type { BaseNetworkConfig, ContentLookupResponse, FindContentMessage } from '../../index.js'
+import type {
+  BaseNetworkConfig,
+  ContentLookupResponse,
+  EphemeralHeaderKeyValues,
+  FindContentMessage,
+  INodeAddress,
+} from '../../index.js'
 import {
+  BasicRadius,
+  BiMap,
+  ClientInfoAndCapabilities,
   ContentMessageType,
   FoundContent,
   HistoricalSummariesBlockProof,
+  HistoryRadius,
+  MAX_UDP_PACKET_SIZE,
   MessageCodes,
   PingPongPayloadExtensions,
   PortalWireMessageType,
   RequestCode,
   decodeHistoryNetworkContentKey,
   decodeReceipts,
+  encodeClientInfo,
+  getTalkReqOverhead,
+  randUint16,
   reassembleBlock,
   saveReceipts,
   shortId,
@@ -24,6 +38,7 @@ import {
   AccumulatorProofType,
   BlockHeaderWithProof,
   BlockNumberKey,
+  EphemeralHeaderPayload,
   HistoricalRootsBlockProof,
   HistoryNetworkContentType,
   MERGE_BLOCK,
@@ -32,6 +47,7 @@ import {
 } from './types.js'
 import {
   getContentKey,
+  getEphemeralHeaderDbKey,
   verifyPostCapellaHeaderProof,
   verifyPreCapellaHeaderProof,
   verifyPreMergeHeaderProof,
@@ -46,7 +62,7 @@ export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
   networkName = 'HistoryNetwork'
   logger: Debugger
-
+  public ephemeralHeaderIndex: BiMap<bigint, string> // Map of block number to block hashes
   public blockHashIndex: Map<string, string>
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, networkId: NetworkId.HistoryNetwork, db, radius, maxStorage })
@@ -58,6 +74,7 @@ export class HistoryNetwork extends BaseNetwork {
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
     this.routingTable.setLogger(this.logger)
     this.blockHashIndex = new Map()
+    this.ephemeralHeaderIndex = new BiMap()
   }
 
   public blockNumberToHash(blockNumber: bigint): Uint8Array | undefined {
@@ -223,7 +240,6 @@ export class HistoryNetwork extends BaseNetwork {
       let deserializedProof: ReturnType<typeof HistoricalSummariesBlockProof.deserialize>
       try {
         deserializedProof = HistoricalSummariesBlockProof.deserialize(proof)
-        console.log(HistoricalSummariesBlockProof.toJson(deserializedProof))
       } catch (err: any) {
         this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
         throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)
@@ -252,6 +268,37 @@ export class HistoryNetwork extends BaseNetwork {
     return header.hash()
   }
 
+  public override pingPongPayload(extensionType: number) {
+    let payload: Uint8Array
+    switch (extensionType) {
+      case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
+        payload = ClientInfoAndCapabilities.serialize({
+          ClientInfo: encodeClientInfo(this.portal.clientInfo),
+          DataRadius: this.nodeRadius,
+          Capabilities: this.capabilities,
+        })
+        break
+      }
+      case PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD: {
+        payload = BasicRadius.serialize({ dataRadius: this.nodeRadius })
+        break
+      }
+      case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
+        if (this.networkId !== NetworkId.HistoryNetwork) {
+          throw new Error('HISTORY_RADIUS extension not supported on this network')
+        }
+        payload = HistoryRadius.serialize({
+          dataRadius: this.nodeRadius,
+          ephemeralHeadersCount: this.ephemeralHeaderIndex.size,
+        })
+        break
+      }
+      default: {
+        throw new Error(`Unsupported PING extension type: ${extensionType}`)
+      }
+    }
+    return payload
+  }
   /**
    * Send FINDCONTENT request for content corresponding to `key` to peer corresponding to `dstId`
    * @param dstId node id of peer
@@ -324,6 +371,138 @@ export class HistoryNetwork extends BaseNetwork {
     }
   }
 
+  protected override handleFindContent = async (
+    src: INodeAddress,
+    requestId: bigint,
+    decodedContentMessage: FindContentMessage,
+  ) => {
+    this.portal.metrics?.contentMessagesSent.inc()
+
+    this.logger(
+      `Received FindContent request for contentKey: ${bytesToHex(
+        decodedContentMessage.contentKey,
+      )}`,
+    )
+
+    const contentKey = decodeHistoryNetworkContentKey(decodedContentMessage.contentKey)
+    let value: Uint8Array | undefined
+    if (contentKey.contentType === HistoryNetworkContentType.EphemeralHeader) {
+      if (contentKey.keyOpt.ancestorCount < 0 || contentKey.keyOpt.ancestorCount > 255) {
+        const errorMessage = `received invalid ephemeral headers request with invalid ancestorCount: expected 0 <= 255, got ${contentKey.keyOpt.ancestorCount}`
+        this.logger.extend('FOUNDCONTENT')(errorMessage)
+        throw new Error(errorMessage)
+      }
+      this.logger.extend('FOUNDCONTENT')(
+        `Received ephemeral headers request for block ${bytesToHex(contentKey.keyOpt.blockHash)} with ancestorCount ${contentKey.keyOpt.ancestorCount}`,
+      )
+      // Retrieve the starting header from the FINDCONTENT request
+      const headerKey = getEphemeralHeaderDbKey(contentKey.keyOpt.blockHash)
+      const firstHeader = await this.findContentLocally(headerKey)
+
+      if (firstHeader === undefined) {
+        // If we don't have the requested header, send an empty payload
+        // We never send an ENRs response for ephemeral headers
+        value = undefined
+        const emptyHeaderPayload = EphemeralHeaderPayload.serialize([])
+        const messagePayload = ContentMessageType.serialize({
+          selector: FoundContent.CONTENT,
+          value: emptyHeaderPayload,
+        })
+        this.logger.extend('FOUNDCONTENT')(
+          `Header not found for ${bytesToHex(contentKey.keyOpt.blockHash)}, sending empty ephemeral headers response to ${shortId(src.nodeId)}`,
+        )
+        await this.sendResponse(
+          src,
+          requestId,
+          concatBytes(Uint8Array.from([MessageCodes.CONTENT]), messagePayload),
+        )
+        return
+      } else {
+        this.logger.extend('FOUNDCONTENT')(
+          `Header found for ${bytesToHex(contentKey.keyOpt.blockHash)}, assembling ephemeral headers response to ${shortId(src.nodeId)}`,
+        )
+        // We have the requested header so begin assembling the payload
+        const headersList = [firstHeader]
+        const firstHeaderNumber = this.ephemeralHeaderIndex.getByValue(
+          bytesToHex(contentKey.keyOpt.blockHash),
+        )
+        for (let x = 1; x <= contentKey.keyOpt.ancestorCount; x++) {
+          // Determine if we have the ancestor header at block number `firstHeaderNumber - x`
+          const ancestorNumber = firstHeaderNumber! - BigInt(x)
+          const ancestorHash = this.ephemeralHeaderIndex.getByKey(ancestorNumber)
+          if (ancestorHash === undefined)
+            break // Stop looking for more ancestors if we don't have the current one in the index
+          else {
+            const ancestorKey = getEphemeralHeaderDbKey(hexToBytes(ancestorHash))
+            const ancestorHeader = await this.findContentLocally(ancestorKey)
+            if (ancestorHeader === undefined) {
+              // This would only happen if our index gets out of sync with the DB
+              // Stop looking for more ancestors if we don't have the current one in the DB
+              this.ephemeralHeaderIndex.delete(ancestorNumber)
+              break
+            } else {
+              headersList.push(ancestorHeader)
+            }
+          }
+        }
+        this.logger.extend('FOUNDCONTENT')(
+          `found ${headersList.length - 1} ancestor headers for ${bytesToHex(contentKey.keyOpt.blockHash)}`,
+        )
+        value = EphemeralHeaderPayload.serialize(headersList)
+      }
+    } else {
+      value = await this.findContentLocally(decodedContentMessage.contentKey)
+    }
+    if (!value) {
+      await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
+    } else if (
+      value instanceof Uint8Array &&
+      value.length < MAX_UDP_PACKET_SIZE - getTalkReqOverhead(hexToBytes(this.networkId).byteLength)
+    ) {
+      this.logger.extend('FOUNDCONTENT')(
+        'Found value for requested content ' +
+          bytesToHex(decodedContentMessage.contentKey) +
+          ' ' +
+          bytesToHex(value.slice(0, 10)) +
+          `...`,
+      )
+      const payload = ContentMessageType.serialize({
+        selector: FoundContent.CONTENT,
+        value,
+      })
+      this.logger.extend('CONTENT')(`Sending requested content to ${src.nodeId}`)
+      await this.sendResponse(
+        src,
+        requestId,
+        concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
+      )
+    } else {
+      this.logger.extend('FOUNDCONTENT')(
+        'Found value for requested content.  Larger than 1 packet.  uTP stream needed.',
+      )
+      const _id = randUint16()
+      const enr = this.findEnr(src.nodeId) ?? src
+      await this.handleNewRequest({
+        networkId: this.networkId,
+        contentKeys: [decodedContentMessage.contentKey],
+        enr,
+        connectionId: _id,
+        requestCode: RequestCode.FOUNDCONTENT_WRITE,
+        contents: value,
+      })
+
+      const id = new Uint8Array(2)
+      new DataView(id.buffer).setUint16(0, _id, false)
+      this.logger.extend('FOUNDCONTENT')(`Sent message with CONNECTION ID: ${_id}.`)
+      const payload = ContentMessageType.serialize({ selector: FoundContent.UTP, value: id })
+      await this.sendResponse(
+        src,
+        requestId,
+        concatBytes(Uint8Array.from([MessageCodes.CONTENT]), payload),
+      )
+    }
+  }
+
   /**
    * Convenience method to add content for the History Network to the DB
    * @param contentType - content type of the data item being stored
@@ -374,12 +553,65 @@ export class HistoryNetwork extends BaseNetwork {
         }
         break
       }
+
+      case HistoryNetworkContentType.EphemeralHeader: {
+        const payload = EphemeralHeaderPayload.deserialize(value)
+        if (payload.length === 0) {
+          this.logger.extend('STORE')('Received empty ephemeral header payload')
+          return
+        }
+        try {
+          // Verify first header matches requested header
+          const firstHeader = BlockHeader.fromRLPSerializedHeader(payload[0], { setHardfork: true })
+          const requestedHeaderHash = decodeHistoryNetworkContentKey(contentKey)
+            .keyOpt as EphemeralHeaderKeyValues
+          if (!equalsBytes(firstHeader.hash(), requestedHeaderHash.blockHash)) {
+            // TODO: Should we ban/mark down the score of peers who send junk payload?
+            const errorMessage = `invalid ephemeral header payload; requested ${bytesToHex(requestedHeaderHash.blockHash)}, got ${bytesToHex(firstHeader.hash())}`
+            this.logger(errorMessage)
+            throw new Error(errorMessage)
+          }
+          const hashKey = getEphemeralHeaderDbKey(firstHeader.hash())
+          await this.put(hashKey, bytesToHex(payload[0]))
+          // Index ephemeral header by block number
+          this.ephemeralHeaderIndex.set(firstHeader.number, bytesToHex(firstHeader.hash()))
+          let prevHeader = firstHeader
+          // Should get maximum of 256 headers
+          // TODO: Should we check this and ban/mark down the score of peers who violate this rule?
+          for (const header of payload.slice(1, 256)) {
+            const ancestorHeader = BlockHeader.fromRLPSerializedHeader(header, {
+              setHardfork: true,
+            })
+            if (equalsBytes(prevHeader.parentHash, ancestorHeader.hash())) {
+              // Verify that ancestor header matches parent hash of previous header
+              const hashKey = getEphemeralHeaderDbKey(ancestorHeader.hash())
+              await this.put(hashKey, bytesToHex(header))
+              // Index ephemeral header by block number
+              this.ephemeralHeaderIndex.set(
+                ancestorHeader.number,
+                bytesToHex(ancestorHeader.hash()),
+              )
+              prevHeader = ancestorHeader
+            } else {
+              const errorMessage = `invalid ephemeral header payload; expected parent hash ${bytesToHex(ancestorHeader.parentHash)} but got ${bytesToHex(prevHeader.hash())}`
+              this.logger(errorMessage)
+              throw new Error(errorMessage)
+            }
+          }
+          break
+        } catch (err: any) {
+          this.logger(`Error validating ephemeral header: ${err.message}`)
+          return
+        }
+      }
     }
 
     this.emit('ContentAdded', contentKey, value)
     if (this.routingTable.values().length > 0) {
-      // Gossip new content to network
-      this.gossipManager.add(contentKey)
+      if (contentType !== HistoryNetworkContentType.EphemeralHeader) {
+        // Gossip new content to network except for ephemeral headers
+        this.gossipManager.add(contentKey)
+      }
     }
     this.logger(
       `${HistoryNetworkContentType[contentType]} added for ${

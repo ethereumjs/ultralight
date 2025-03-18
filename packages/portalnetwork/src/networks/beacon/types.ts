@@ -21,7 +21,7 @@ export const MAX_REQUEST_LIGHT_CLIENT_UPDATES = 128
 
 export const MIN_BOOTSTRAP_VOTES = 5
 
-export enum BeaconLightClientNetworkContentType {
+export enum BeaconNetworkContentType {
   LightClientBootstrap = 0x10,
   LightClientUpdatesByRange = 0x11,
   LightClientFinalityUpdate = 0x12,
@@ -54,7 +54,11 @@ export const HistoricalSummariesKey = new ContainerType({ epoch: new UintBigintT
 
 export const HistoricalSummariesStateProof = new VectorCompositeType(Bytes32Type, 5)
 
-export const HistoricalSummariesWithProof = new ContainerType(
+export const HistoricalSummariesWithProof = new ContainerType<{
+  epoch: UintBigintType
+  historicalSummaries: typeof ssz.capella.BeaconState.fields.historicalSummaries
+  proof: typeof HistoricalSummariesStateProof
+}>(
   {
     epoch: new UintBigintType(8),
     historicalSummaries: ssz.capella.BeaconState.fields.historicalSummaries,

@@ -10,7 +10,7 @@ import { assert, describe, it, vi } from 'vitest'
 
 import {
   AccumulatorProofType,
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   LightClientBootstrapKey,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
@@ -22,7 +22,7 @@ import {
   getBeaconContentKey,
 } from '../../../src/index.js'
 
-import type { BeaconLightClientNetwork, HistoryNetwork } from '../../../src/index.js'
+import type { BeaconNetwork, HistoryNetwork } from '../../../src/index.js'
 
 const privateKeys = [
   '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
@@ -117,7 +117,7 @@ describe(
 
 //   await node1.start()
 
-//   const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+//   const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
 //   const history = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
 //   const bootstrapJSON = require('../testdata/bootstrap.json').data
@@ -142,7 +142,7 @@ describe(
 
 //   await beacon.store(
 //     getBeaconContentKey(
-//       BeaconLightClientNetworkContentType.LightClientBootstrap,
+//       BeaconNetworkContentType.LightClientBootstrap,
 //       LightClientBootstrapKey.serialize({
 //         blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
 //       }),
@@ -172,7 +172,7 @@ describe(
 
 //   await beacon.store(
 //     getBeaconContentKey(
-//       BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+//       BeaconNetworkContentType.LightClientOptimisticUpdate,
 //       LightClientOptimisticUpdateKey.serialize({
 //         signatureSlot: BigInt(optimisticUpdate.signatureSlot),
 //       }),

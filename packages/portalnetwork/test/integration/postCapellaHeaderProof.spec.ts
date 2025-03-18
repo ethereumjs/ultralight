@@ -10,7 +10,7 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { readFileSync } from 'fs'
 import { assert, describe, it, vi } from 'vitest'
 import {
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   HistoricalSummariesKey,
   HistoricalSummariesWithProof,
   HistoryNetworkContentType,
@@ -18,7 +18,7 @@ import {
   NetworkId,
   PortalNetwork,
   getBeaconContentKey,
-  getContentKey
+  getContentKey,
 } from '../../src/index.js'
 
 describe('Block Bridge Data Test', () => {
@@ -70,7 +70,7 @@ describe('Block Bridge Data Test', () => {
     // Store bootstrap
 
     const bootstrapKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.LightClientBootstrap,
+      BeaconNetworkContentType.LightClientBootstrap,
       LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) }),
     )
     const bootstrapValue = concatBytes(
@@ -95,7 +95,7 @@ describe('Block Bridge Data Test', () => {
       proof: historicalSummariesJson.proof,
     })
     const summariesKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.HistoricalSummaries,
+      BeaconNetworkContentType.HistoricalSummaries,
       HistoricalSummariesKey.serialize({ epoch: BigInt(historicalSummariesEpoch) }),
     )
     const summariesValue = concatBytes(

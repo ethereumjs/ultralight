@@ -7,7 +7,7 @@ import {
   FoundContent,
   NetworkId,
   NodeLookup,
-  shortId
+  shortId,
 } from 'portalnetwork'
 
 import { BEACON_CLIENT_NOT_INITIALIZED, CONTENT_NOT_FOUND, INVALID_PARAMS } from '../error-code.js'
@@ -16,12 +16,7 @@ import { callWithStackTrace, isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
 import type { Debugger } from 'debug'
-import type {
-  BeaconLightClientNetwork,
-  HistoryNetwork,
-  PortalNetwork,
-  StateNetwork,
-} from 'portalnetwork'
+import type { BeaconNetwork, HistoryNetwork, PortalNetwork, StateNetwork } from 'portalnetwork'
 import type { GetEnrResult } from '../schema/types.js'
 import { RunStatusCode } from '@lodestar/light-client'
 
@@ -89,16 +84,14 @@ const methods = [
 export class portal {
   private _client: PortalNetwork
   private _history: HistoryNetwork
-  private _beacon: BeaconLightClientNetwork
+  private _beacon: BeaconNetwork
   private _state: StateNetwork
   private logger: Debugger
 
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
     this._history = this._client.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-    this._beacon = this._client.networks.get(
-      NetworkId.BeaconChainNetwork,
-    ) as BeaconLightClientNetwork
+    this._beacon = this._client.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     this._state = this._client.networks.get(NetworkId.StateNetwork) as StateNetwork
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
@@ -1189,7 +1182,10 @@ export class portal {
 
   async beaconOptimisticStateRoot(params: []): Promise<string> {
     this.logger(`beaconOptimisticStateRoot request received`)
-    if (this._beacon.lightClient?.status === RunStatusCode.uninitialized || this._beacon.lightClient?.status === RunStatusCode.stopped) {
+    if (
+      this._beacon.lightClient?.status === RunStatusCode.uninitialized ||
+      this._beacon.lightClient?.status === RunStatusCode.stopped
+    ) {
       const error = {
         code: BEACON_CLIENT_NOT_INITIALIZED,
         message: 'beacon client not initialized',
@@ -1197,13 +1193,18 @@ export class portal {
       throw error
     }
     const res = await this._beacon.lightClient?.getHead()
-    this.logger(`beaconOptimisticStateRoot request returned ${res !== undefined ? bytesToHex(res?.beacon.stateRoot) : '0x'}`)
+    this.logger(
+      `beaconOptimisticStateRoot request returned ${res !== undefined ? bytesToHex(res?.beacon.stateRoot) : '0x'}`,
+    )
     return res !== undefined ? bytesToHex(res?.beacon.stateRoot) : '0x'
   }
 
   async beaconFinalizedStateRoot(params: []): Promise<string> {
     this.logger(`beaconFinalizedStateRoot request received`)
-    if (this._beacon.lightClient?.status === RunStatusCode.uninitialized || this._beacon.lightClient?.status === RunStatusCode.stopped) {
+    if (
+      this._beacon.lightClient?.status === RunStatusCode.uninitialized ||
+      this._beacon.lightClient?.status === RunStatusCode.stopped
+    ) {
       const error = {
         code: BEACON_CLIENT_NOT_INITIALIZED,
         message: 'beacon client not initialized',
@@ -1211,7 +1212,9 @@ export class portal {
       throw error
     }
     const res = await this._beacon.lightClient?.getFinalized()
-    this.logger(`beaconFinalizedStateRoot request returned ${res !== undefined ? bytesToHex(res?.beacon.stateRoot) : '0x'}`)
+    this.logger(
+      `beaconFinalizedStateRoot request returned ${res !== undefined ? bytesToHex(res?.beacon.stateRoot) : '0x'}`,
+    )
     return res !== undefined ? bytesToHex(res?.beacon.stateRoot) : '0x'
   }
 

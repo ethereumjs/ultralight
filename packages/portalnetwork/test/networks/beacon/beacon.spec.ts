@@ -13,7 +13,7 @@ import {
   getBeaconContentKey,
 } from '../../../src/index.js'
 import {
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   HistoricalSummariesKey,
   HistoricalSummariesWithProof,
   LightClientFinalityUpdateKey,
@@ -21,7 +21,7 @@ import {
   LightClientUpdatesByRange,
 } from '../../../src/networks/beacon/types.js'
 
-import type { BeaconLightClientNetwork } from '../../../src/networks/beacon/index.js'
+import type { BeaconNetwork } from '../../../src/networks/beacon/index.js'
 
 const require = createRequire(import.meta.url)
 
@@ -48,7 +48,7 @@ describe('API tests', async () => {
     },
   })
 
-  const network = <BeaconLightClientNetwork>node1.networks.get(NetworkId.BeaconChainNetwork)
+  const network = <BeaconNetwork>node1.networks.get(NetworkId.BeaconChainNetwork)
 
   it('stores and retrieves bootstrap', async () => {
     const bootstrap = specTestVectors.bootstrap['6718368']
@@ -83,7 +83,7 @@ describe('API tests', async () => {
     }
     const retrievedFinalityUpdate = await network.findContentLocally(
       concatBytes(
-        new Uint8Array([BeaconLightClientNetworkContentType.LightClientFinalityUpdate]),
+        new Uint8Array([BeaconNetworkContentType.LightClientFinalityUpdate]),
         LightClientFinalityUpdateKey.serialize({ finalitySlot: 6718463n }),
       ),
     )
@@ -117,7 +117,7 @@ describe('API tests', async () => {
     }
     const retrievedOptimisticUpdate = await network.findContentLocally(
       concatBytes(
-        new Uint8Array([BeaconLightClientNetworkContentType.LightClientOptimisticUpdate]),
+        new Uint8Array([BeaconNetworkContentType.LightClientOptimisticUpdate]),
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718464n }),
       ),
     )
@@ -215,7 +215,7 @@ describe('API tests', async () => {
     }
     const epoch = BigInt(finalityUpdateJson.finalized_header.beacon.slot) / 8192n
     const historicalSummariesKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.HistoricalSummaries,
+      BeaconNetworkContentType.HistoricalSummaries,
       HistoricalSummariesKey.serialize({
         epoch,
       }),
@@ -255,7 +255,7 @@ describe('constructor/initialization tests', async () => {
         privateKey: pk1,
       },
     })
-    const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     const listeners = beacon.portal.listeners('NodeAdded')
     assert.equal(listeners.length, 1, 'bootstrap vote listener is running')
     assert.equal(listeners[0], beacon['getBootStrapVote'])
@@ -274,7 +274,7 @@ describe('constructor/initialization tests', async () => {
       },
       trustedBlockRoot: bytesToHex(randomBytes(32)),
     })
-    const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     const listeners = beacon.portal.listeners('NodeAdded')
     assert.equal(listeners.length, 1, 'bootstrap listener is running')
     assert.equal(listeners[0], beacon['getBootstrap'])
@@ -308,7 +308,7 @@ describe('constructor/initialization tests', async () => {
       },
       trustedBlockRoot,
     })
-    const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
     await beacon.initializeLightClient(trustedBlockRoot)
     assert.equal((beacon.lightClient as any).checkpointRoot, trustedBlockRoot)

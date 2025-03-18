@@ -1,6 +1,14 @@
 import { Block, BlockHeader } from '@ethereumjs/block'
 import { TransactionFactory } from '@ethereumjs/tx'
-import { TypeOutput, bigIntToHex, bytesToHex, intToHex, setLengthLeft, toBytes, toType } from '@ethereumjs/util'
+import {
+  TypeOutput,
+  bigIntToHex,
+  bytesToHex,
+  intToHex,
+  setLengthLeft,
+  toBytes,
+  toType,
+} from '@ethereumjs/util'
 import { VM } from '@ethereumjs/vm'
 import debug from 'debug'
 import { ethers } from 'ethers'
@@ -235,6 +243,7 @@ export function blockHeaderFromRpc(blockParams: JsonRpcBlock, options?: BlockOpt
     mixHash,
     nonce,
     baseFeePerGas,
+    withdrawalsRoot,
   } = blockParams
 
   const blockHeader = BlockHeader.fromHeaderData(
@@ -255,6 +264,7 @@ export function blockHeaderFromRpc(blockParams: JsonRpcBlock, options?: BlockOpt
       mixHash,
       nonce,
       baseFeePerGas,
+      withdrawalsRoot,
     },
     { ...options, setHardfork: true },
   )
@@ -298,15 +308,15 @@ export function formatBlockResponse(block: Block, includeTransactions: boolean) 
   const header = parsedBlock.header
 
   const withdrawalsAttr =
-  header.withdrawalsRoot !== undefined
-    ? {
-        withdrawalsRoot: header.withdrawalsRoot!,
-        withdrawals: parsedBlock.withdrawals,
-      }
-    : {}
+    header.withdrawalsRoot !== undefined
+      ? {
+          withdrawalsRoot: header.withdrawalsRoot!,
+          withdrawals: parsedBlock.withdrawals,
+        }
+      : {}
 
   const transactions = block.transactions.map((tx, txIndex) =>
-  includeTransactions ? toJSONRPCTx(tx, block, txIndex) : bytesToHex(tx.hash()),
+    includeTransactions ? toJSONRPCTx(tx, block, txIndex) : bytesToHex(tx.hash()),
   )
 
   return {
@@ -366,7 +376,7 @@ export function toJSONRPCTx(tx: TypedTransaction, block?: Block, txIndex?: numbe
     r: txJSON.r!,
     s: txJSON.s!,
     maxFeePerBlobGas: txJSON.maxFeePerBlobGas,
-    blobVersionedHashes: txJSON.blobVersionedHashes
+    blobVersionedHashes: txJSON.blobVersionedHashes,
   }
 }
 

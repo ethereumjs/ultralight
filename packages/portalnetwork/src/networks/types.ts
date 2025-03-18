@@ -6,7 +6,7 @@ import type { ENR, NodeId } from '@chainsafe/enr'
 import type { PrefixedHexString } from '@ethereumjs/util'
 import type { AbstractLevel } from 'abstract-level'
 import type { PortalNetwork } from '../client'
-import type { BeaconLightClientNetwork } from './beacon'
+import type { BeaconNetwork } from './beacon'
 import type { HistoryNetwork } from './history'
 import type { StateNetwork } from './state'
 
@@ -48,9 +48,9 @@ export type SubNetwork<T extends NetworkId> = T extends '0x500a'
       : T extends '0x504b'
         ? StateNetwork
         : T extends '0x500c'
-          ? BeaconLightClientNetwork
+          ? BeaconNetwork
           : T extends '0x504c'
-            ? BeaconLightClientNetwork
+            ? BeaconNetwork
             : never
 
 export class Bloom {

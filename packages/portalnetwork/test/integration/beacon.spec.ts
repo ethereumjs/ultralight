@@ -10,7 +10,7 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, it, vi } from 'vitest'
 
 import {
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   HistoricalSummariesKey,
   HistoricalSummariesWithProof,
   LightClientBootstrapKey,
@@ -24,7 +24,7 @@ import {
   getBeaconContentKey,
 } from '../../src/index.js'
 
-import type { BeaconLightClientNetwork } from '../../src/index.js'
+import type { BeaconNetwork } from '../../src/index.js'
 
 const require = createRequire(import.meta.url)
 
@@ -71,8 +71,8 @@ describe('Find Content tests', () => {
 
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     await network1!.sendPing(network2?.enr!.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
@@ -130,8 +130,8 @@ describe('Find Content tests', () => {
 
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
     // Stub out light client
     network1.lightClient = {
@@ -227,8 +227,8 @@ describe('Find Content tests', () => {
 
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     await network1!.sendPing(network2?.enr!.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
@@ -294,12 +294,12 @@ describe('OFFER/ACCEPT tests', () => {
       },
     })
 
-    node1.enableLog('*BeaconLightClientNetwork*')
-    node2.enableLog('*BeaconLightClientNetwork')
+    node1.enableLog('*BeaconNetwork*')
+    node2.enableLog('*BeaconNetwork')
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
     // Stub out light client and set the light client's head slot value to equal our optimistic update slot
     network1.lightClient = {
@@ -335,7 +335,7 @@ describe('OFFER/ACCEPT tests', () => {
     )
     await network1.store(
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+        BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
       hexToBytes(optimisticUpdate.content_value),
@@ -344,7 +344,7 @@ describe('OFFER/ACCEPT tests', () => {
     await new Promise((resolve) => {
       network2.on('ContentAdded', (contentKey: Uint8Array) => {
         const contentType = contentKey[0]
-        if (contentType === BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)
+        if (contentType === BeaconNetworkContentType.LightClientOptimisticUpdate)
           // Update the light client stub to report the new "optimistic head"
           network2.lightClient = {
             //@ts-ignore
@@ -361,7 +361,7 @@ describe('OFFER/ACCEPT tests', () => {
     })
     const content = await network2.findContentLocally(
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+        BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
     )
@@ -405,8 +405,8 @@ describe('OFFER/ACCEPT tests', () => {
     })
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
     // Stub out light client and set the light client's head slot value to equal our optimistic update slot
     network1.lightClient = {
@@ -442,7 +442,7 @@ describe('OFFER/ACCEPT tests', () => {
     )
 
     const staleOptimisticUpdateContentKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+      BeaconNetworkContentType.LightClientOptimisticUpdate,
       LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
     )
     await network1.store(
@@ -455,7 +455,7 @@ describe('OFFER/ACCEPT tests', () => {
     ])
     assert.deepEqual(acceptedOffers, [], 'no content was accepted by node 2')
     const content = await network2.retrieve(
-      hexToBytes(intToHex(BeaconLightClientNetworkContentType.LightClientOptimisticUpdate)),
+      hexToBytes(intToHex(BeaconNetworkContentType.LightClientOptimisticUpdate)),
     )
 
     assert.equal(content, undefined, 'should not retrieve content for stale optimistic update key')
@@ -495,13 +495,13 @@ describe('OFFER/ACCEPT tests', () => {
     })
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
     await network1!.sendPing(network2?.enr!.toENR())
 
     const bootstrapKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.LightClientBootstrap,
+      BeaconNetworkContentType.LightClientBootstrap,
       LightClientBootstrapKey.serialize({
         blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
       }),
@@ -570,8 +570,8 @@ describe('beacon light client sync tests', () => {
 
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
     const bootstrapJSON = require('./testdata/bootstrap.json').data
     const bootstrap = ssz.capella.LightClientBootstrap.fromJson(bootstrapJSON)
@@ -601,7 +601,7 @@ describe('beacon light client sync tests', () => {
 
     await network1.store(
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientBootstrap,
+        BeaconNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({
           blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
         }),
@@ -615,7 +615,7 @@ describe('beacon light client sync tests', () => {
 
     await network1.store(
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+        BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({
           signatureSlot: BigInt(optimisticUpdate.signatureSlot),
         }),
@@ -687,12 +687,12 @@ describe('beacon light client sync tests', () => {
         privateKey: pk2,
       },
     })
-    node1.enableLog('*BeaconLightClientNetwork,-uTP')
+    node1.enableLog('*BeaconNetwork,-uTP')
     //   node2.enableLog('*')
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
     const capellaForkDigest = network1.beaconConfig.forkName2ForkDigest(ForkName.capella)
 
@@ -722,14 +722,14 @@ describe('beacon light client sync tests', () => {
     )
 
     const rangeKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+      BeaconNetworkContentType.LightClientUpdatesByRange,
       LightClientUpdatesByRangeKey.serialize({
         startPeriod: BigInt(computeSyncPeriodAtSlot(range[0].data.attested_header.beacon.slot)),
         count: 3n,
       }),
     )
     const bootstrapKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.LightClientBootstrap,
+      BeaconNetworkContentType.LightClientBootstrap,
       LightClientBootstrapKey.serialize({
         blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
       }),
@@ -800,14 +800,14 @@ describe('historicalSummaries verification', () => {
 
     await node1.start()
     await node2.start()
-    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
-    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork
+    const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
     const capellaForkDigest = network1.beaconConfig.forkName2ForkDigest(ForkName.deneb)
 
     await network1.store(
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientBootstrap,
+        BeaconNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({
           blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
         }),
@@ -817,7 +817,7 @@ describe('historicalSummaries verification', () => {
 
     await network1.store(
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+        BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({
           signatureSlot: BigInt(optimisticUpdate.signatureSlot),
         }),
@@ -846,7 +846,7 @@ describe('historicalSummaries verification', () => {
 
     await network1.store(
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
+        BeaconNetworkContentType.LightClientFinalityUpdate,
         LightClientFinalityUpdateKey.serialize({
           finalitySlot: BigInt(finalityUpdate.signatureSlot),
         }),
@@ -873,7 +873,7 @@ describe('historicalSummaries verification', () => {
     })
     await network1.store(
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.HistoricalSummaries,
+        BeaconNetworkContentType.HistoricalSummaries,
         HistoricalSummariesKey.serialize({ epoch }),
       ),
       concatBytes(network1.forkDigest, HistoricalSummariesWithProof.serialize(hsWProof)),

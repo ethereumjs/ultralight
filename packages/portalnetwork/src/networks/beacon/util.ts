@@ -1,7 +1,7 @@
 import { padToEven } from '@ethereumjs/util'
 
 import {
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
@@ -15,7 +15,7 @@ import {
  * @returns the content key encoded as a hex string
  */
 export const getBeaconContentKey = (
-  contentType: BeaconLightClientNetworkContentType,
+  contentType: BeaconNetworkContentType,
   serializedKey: Uint8Array,
 ) => {
   return Uint8Array.from([contentType, ...serializedKey])
@@ -27,16 +27,16 @@ export const getBeaconContentKey = (
  * @returns the decoded key corresponding to the specific type of content
  */
 export const decodeBeaconContentKey = (serializedKey: Uint8Array) => {
-  const selector = serializedKey[0] as BeaconLightClientNetworkContentType
+  const selector = serializedKey[0] as BeaconNetworkContentType
   const contentKeyBytes = serializedKey.slice(1)
   switch (selector) {
-    case BeaconLightClientNetworkContentType.LightClientBootstrap:
+    case BeaconNetworkContentType.LightClientBootstrap:
       return LightClientBootstrapKey.deserialize(contentKeyBytes)
-    case BeaconLightClientNetworkContentType.LightClientOptimisticUpdate:
+    case BeaconNetworkContentType.LightClientOptimisticUpdate:
       return LightClientOptimisticUpdateKey.deserialize(contentKeyBytes)
-    case BeaconLightClientNetworkContentType.LightClientFinalityUpdate:
+    case BeaconNetworkContentType.LightClientFinalityUpdate:
       return LightClientFinalityUpdateKey.deserialize(contentKeyBytes)
-    case BeaconLightClientNetworkContentType.LightClientUpdatesByRange:
+    case BeaconNetworkContentType.LightClientUpdatesByRange:
       return LightClientUpdatesByRange.deserialize(contentKeyBytes)
     default:
       throw new Error(`unknown content type ${selector}`)
@@ -45,8 +45,6 @@ export const decodeBeaconContentKey = (serializedKey: Uint8Array) => {
 
 export const computeLightClientKeyFromPeriod = (period: number) => {
   return (
-    '0x' +
-    BeaconLightClientNetworkContentType.LightClientUpdate.toString(16) +
-    padToEven(period.toString(16))
+    '0x' + BeaconNetworkContentType.LightClientUpdate.toString(16) + padToEven(period.toString(16))
   )
 }

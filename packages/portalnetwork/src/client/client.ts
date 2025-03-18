@@ -9,12 +9,7 @@ import debug from 'debug'
 import packageJson from '../../package.json' assert { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
-import {
-  BeaconLightClientNetwork,
-  NetworkId,
-  StateNetwork,
-  SyncStrategy,
-} from '../networks/index.js'
+import { BeaconNetwork, NetworkId, StateNetwork, SyncStrategy } from '../networks/index.js'
 import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
 import { MEGABYTE } from '../util/index.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
@@ -238,7 +233,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
                 : SyncStrategy.PollNetwork
             this.networks.set(
               network.networkId,
-              new BeaconLightClientNetwork({
+              new BeaconNetwork({
                 client: this,
                 networkId: NetworkId.BeaconChainNetwork,
                 maxStorage: network.maxStorage,
@@ -343,7 +338,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   public network = (): {
     [NetworkId.HistoryNetwork]: HistoryNetwork | undefined
     [NetworkId.StateNetwork]: StateNetwork | undefined
-    [NetworkId.BeaconChainNetwork]: BeaconLightClientNetwork | undefined
+    [NetworkId.BeaconChainNetwork]: BeaconNetwork | undefined
   } => {
     const history = this.networks.get(NetworkId.HistoryNetwork)
       ? (this.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork)
@@ -352,7 +347,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       ? (this.networks.get(NetworkId.StateNetwork) as StateNetwork)
       : undefined
     const beacon = this.networks.get(NetworkId.BeaconChainNetwork)
-      ? (this.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork)
+      ? (this.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork)
       : undefined
     return {
       [NetworkId.HistoryNetwork]: history,
@@ -513,7 +508,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public addToBlackList = (ma: Multiaddr) => {
-    (<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).addToBlackList(
+    ;(<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).addToBlackList(
       ma.nodeAddress().address,
     )
   }
@@ -525,7 +520,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public removeFromBlackList = (ma: Multiaddr) => {
-    (<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).removeFromBlackList(
+    ;(<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).removeFromBlackList(
       ma.nodeAddress().address,
     )
   }
