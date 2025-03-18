@@ -551,11 +551,14 @@ export class portal {
     return true
   }
   // portal_*Ping
-  async historyPing(params: [string]) {
-    const [enr] = params
+  async historyPing(params: [string, number, object]) {
+    const [enr, ext, payload] = params
     const encodedENR = ENR.decodeTxt(enr)
-    this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
-    const pong = await this._history.sendPing(encodedENR, 0)
+    const extension = ext ?? 0
+    this.logger(
+      `PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)} with extension ${extension}`,
+    )
+    const pong = await this._history.sendPing(encodedENR, extension)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
       // const decoded = CustomPayloadExtensionsFormat.deserialize(pong.customPayload)
@@ -569,11 +572,14 @@ export class portal {
       return false
     }
   }
-  async statePing(params: [string]) {
-    const [enr] = params
+  async statePing(params: [string, number, object]) {
+    const [enr, ext, payload] = params
     const encodedENR = ENR.decodeTxt(enr)
-    this.logger(`PING request received on StateNetwork for ${shortId(encodedENR.nodeId)}`)
-    const pong = await this._state.sendPing(encodedENR)
+    const extension = ext ?? 0
+    this.logger(
+      `PING request received on StateNetwork for ${shortId(encodedENR.nodeId)} with extension ${extension}`,
+    )
+    const pong = await this._state.sendPing(encodedENR, extension)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
       const { DataRadius } = ClientInfoAndCapabilities.deserialize(pong.customPayload)
@@ -586,11 +592,14 @@ export class portal {
       return false
     }
   }
-  async beaconPing(params: [string]) {
-    const [enr] = params
+  async beaconPing(params: [string, number, object]) {
+    const [enr, ext, payload] = params
     const encodedENR = ENR.decodeTxt(enr)
-    this.logger(`PING request received on BeaconNetwork for ${shortId(encodedENR.nodeId)}`)
-    const pong = await this._beacon.sendPing(encodedENR)
+    const extension = ext ?? 0
+    this.logger(
+      `PING request received on BeaconNetwork for ${shortId(encodedENR.nodeId)} with extension ${extension}`,
+    )
+    const pong = await this._beacon.sendPing(encodedENR, extension)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
       const { DataRadius } = ClientInfoAndCapabilities.deserialize(pong.customPayload)
