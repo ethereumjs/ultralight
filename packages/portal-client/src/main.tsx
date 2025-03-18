@@ -1,4 +1,3 @@
-import './utils/polyfills/dgram'
 import './utils/polyfills/polyfills'
 import React from 'react'
 import ReactDOM from 'react-dom/client'

@@ -5,7 +5,7 @@ import { NetworkId, PortalNetwork, TransportLayer } from 'portalnetwork'
 // import { DEFAULT_BOOTNODES } from 'portalnetwork/dist/util/bootnodes'
 import { createDatabase } from './db'
 
-const isBrowser = () => !window.__TAURI__
+// const isBrowser = () => !window.__TAURI__
 
 const db = createDatabase({prefix: 'portalclient_history'})
 
@@ -16,8 +16,7 @@ export const createPortalClient = async (port: number, proxyAddress: string): Pr
     const nodeAddr = multiaddr(`/ip4/0.0.0.0/udp/${port}`)
     enr.setLocationMultiaddr(nodeAddr)
     const client = await PortalNetwork.create({
-      transport: isBrowser() ? 
-        TransportLayer.WEB : TransportLayer.MOBILE,
+      transport: TransportLayer.MOBILE,
       supportedNetworks: [
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.StateNetwork },
