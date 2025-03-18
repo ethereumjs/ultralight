@@ -117,9 +117,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       case TransportLayer.WEB:
         dbSize = async function () {
           // eslint-disable-next-line no-undef
-          console.log('Storage estimating...')
           const sizeEstimate = await window.navigator.storage.estimate()
-          console.log('Storage estimate:', sizeEstimate)
           return sizeEstimate.usage !== undefined ? sizeEstimate.usage / MEGABYTE : 0
         }
         break
@@ -308,7 +306,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     for (const network of this.networks.values()) {
       try {
         // Check for stored radius in db
-        console.log('Checking for stored radius in db', network)
         const storedRadius = await network.db.db.get('radius')
         console.log('Stored radius:', storedRadius)
         await network.setRadius(BigInt(storedRadius))
