@@ -36,7 +36,7 @@ export const createPortalClient = async (port: number, proxyAddress: string): Pr
     await client.start()
     await client.bootstrap()
     
-    await new Promise(resolve => setTimeout(resolve, 9000))
+    await new Promise(resolve => setTimeout(resolve, 1000))
     console.log('Portal client bootstrapped', client)
     
     return client

@@ -128,8 +128,7 @@ class BrowserCrypto {
     const cipher = new AesCtr(key, iv);
     
     return {
-      update: async (data: Uint8Array): Promise<Buffer> => {
-        console.log(`Encrypting ${data.length} bytes`);
+      update: async (data: Uint8Array): Promise<Buffer> => {  
         try {
           const result = await cipher.update(data);
           return Buffer.from(result);
@@ -182,7 +181,7 @@ class SyncCompatAdapter {
     this.processQueue();
   }
   
-  update(data: Uint8Array): Promise<Buffer> {
+  update(data: Uint8Array): any {
     // Create a promise that will be resolved when this update is processed
     return new Promise((resolve, reject) => {
       this.pendingUpdates.push({ data, resolve, reject });
@@ -232,7 +231,6 @@ class SyncCompatAdapter {
   }
 }
 
-// Export the crypto interface
 const localCrypto = {
   createCipheriv: (algorithm: string, key: any, iv: any) => {
     const keyArray = safeUint8Array(key);
@@ -245,12 +243,7 @@ const localCrypto = {
   createDecipheriv: async (algorithm: string, key: any, iv: any) => {
     const keyArray = safeUint8Array(key);
     const ivArray = safeUint8Array(iv);
-    if (keyArray.length !== 16) {
-      throw new Error('Key must be 16 bytes for AES-128-CTR');
-    }
-    if (ivArray.length < 16) {
-      throw new Error('IV must be at least 16 bytes for AES-128-CTR');
-    }
+    
     const cryptoPromise = await BrowserCrypto.createDecipheriv(algorithm, keyArray, ivArray);
     return new SyncCompatAdapter(cryptoPromise);
   },
