@@ -559,7 +559,7 @@ export class portal {
     return true
   }
   // portal_*Ping
-  async historyPing(params: [string, number, object]) {
+  async historyPing(params: [string, number, object | undefined]) {
     const [enr, ext, payload] = params
     const encodedENR = ENR.decodeTxt(enr)
     const extension = ext ?? 0
@@ -588,7 +588,7 @@ export class portal {
       return false
     }
   }
-  async statePing(params: [string, number, object]) {
+  async statePing(params: [string, number, object | undefined]) {
     const [enr, ext, payload] = params
     const encodedENR = ENR.decodeTxt(enr)
     const extension = ext ?? 0
@@ -613,7 +613,7 @@ export class portal {
       return false
     }
   }
-  async beaconPing(params: [string, number, object]) {
+  async beaconPing(params: [string, number, object | undefined]) {
     const [enr, ext, payload] = params
     const encodedENR = ENR.decodeTxt(enr)
     const extension = ext ?? 0
