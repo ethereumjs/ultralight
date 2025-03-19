@@ -11,11 +11,11 @@ describe(`${method} tests`, () => {
       networks: ['history'],
     })
     const enr = (await rpc2.request('portal_historyNodeInfo', [])).result.enr
-
+    assert.exists(enr)
     const res = await rpc.request(method, [
       enr,
       0,
-      JSON.stringify({ ClientInfo: 'ultralight', DataRadius: 1, Capabilities: [0] }),
+      { ClientInfo: 'ultralight', DataRadius: 1, Capabilities: [0] },
     ])
     assert.equal(res.result, true)
     ultralight.kill()
