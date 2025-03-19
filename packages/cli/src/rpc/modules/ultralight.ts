@@ -1,4 +1,4 @@
-import { hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { HistoryNetworkContentType, NetworkId } from 'portalnetwork'
 
 import { INTERNAL_ERROR } from '../error-code.js'
@@ -17,7 +17,7 @@ const methods = [
   'ultralight_getNetworkDBSize',
   'ultralight_pruneNetworkDB',
   'ultralight_setNetworkStorage',
-  'ultralight_getPingPayload'
+  'ultralight_getPingPayload',
 ]
 
 export class ultralight {
@@ -62,7 +62,7 @@ export class ultralight {
     ])
     this.getPingPayload = middleware(this.getPingPayload.bind(this), 1, [
       [validators.networkId],
-      [validators.extension]
+      [validators.extension],
     ])
   }
   async methods() {
@@ -201,12 +201,11 @@ export class ultralight {
     const network = this._client.networks.get(networkId)
     if (!network) {
       throw {
-        code: INTERNAL_ERROR, 
+        code: INTERNAL_ERROR,
         message: `Invalid network id ${networkId}`,
       }
     }
-    const payload = network.pingPongPayload(extension)
+    const payload = bytesToHex(network.pingPongPayload(extension))
     return payload
   }
-  
 }
