@@ -523,5 +523,16 @@ export const validators = {
       }
     }
   },
+
+  get payload() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'object') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument must be an object`,
+        }
+      }
+    }
+  },
 }
 
