@@ -7,7 +7,9 @@ class AesCtr {
   private counter: Uint8Array;
   //@ts-ignore
   private blockIndex: number = 0;
+  //@ts-ignore
   private keyStream: Uint8Array = new Uint8Array(0);
+  //@ts-ignore
   private keyStreamIndex: number = 0;
 
   constructor(key: Uint8Array, iv: Uint8Array) {
@@ -32,6 +34,7 @@ class AesCtr {
   }
 
   // Generate a new keystream block
+  //@ts-ignore
   private async generateKeyStream(): Promise<void> {
     // Import the key for AES
     const key = await window.crypto.subtle.importKey(
@@ -69,23 +72,28 @@ class AesCtr {
     this.incrementCounter();
   }
 
-  // Process data
   async update(data: Uint8Array): Promise<Uint8Array> {
-    const result = new Uint8Array(data.length);
-    let resultIndex = 0;
+    // Import the key
+    const key = await window.crypto.subtle.importKey(
+      'raw',
+      this.key,
+      { name: 'AES-CTR', length: 128 },
+      false,
+      ['encrypt']
+    );
     
-    // Process each byte
-    for (let i = 0; i < data.length; i++) {
-      // If we've used up the keystream, generate more
-      if (this.keyStreamIndex >= this.keyStream.length) {
-        await this.generateKeyStream();
-      }
-      
-      // XOR data with keystream
-      result[resultIndex++] = data[i] ^ this.keyStream[this.keyStreamIndex++];
-    }
+    // Encrypt/decrypt the data in one go
+    const processed = await window.crypto.subtle.encrypt(
+      { 
+        name: 'AES-CTR',
+        counter: this.initialCounter,  // Use initial counter
+        length: 128 // Counter size in bits
+      },
+      key,
+      data
+    );
     
-    return result;
+    return new Uint8Array(processed);
   }
   
   // Finalize (typically no additional data for CTR mode)

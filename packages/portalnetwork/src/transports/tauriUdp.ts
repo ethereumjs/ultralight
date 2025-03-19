@@ -14,7 +14,8 @@ import {
   STATIC_HEADER_SIZE, 
   decodePacket,
   MIN_PACKET_SIZE,
-  MAX_PACKET_SIZE
+  MAX_PACKET_SIZE,
+  PacketType
 } from '@chainsafe/discv5/packet'
 import { getSocketAddressOnENR } from '@chainsafe/discv5'
 import { bind, send } from "@kuyoonjo/tauri-plugin-udp"
@@ -165,7 +166,6 @@ export class TauriUDPTransportService
   }
 }
 
-
 async function decodePacketAsync(srcId: string, data: Uint8Array): Promise<IPacket> {
   try {
     console.log('Decrypting packet - total size:', data.length);
@@ -181,73 +181,59 @@ async function decodePacketAsync(srcId: string, data: Uint8Array): Promise<IPack
     const maskingIv = data.slice(0, MASKING_IV_SIZE);
     console.log('Masking IV (first 4 bytes):', Array.from(maskingIv.slice(0, 4)));
     
-    console.log('Full srcId:', srcId);
-    const srcIdHex = srcId.startsWith('0x') ? srcId : `0x${srcId}`;
+    // Ensure srcId is properly formatted
+    const srcIdHex = srcId.startsWith('0x') ? srcId.substring(2) : srcId;
     const decryptionKey = hexToBytes(srcIdHex).slice(0, MASKING_KEY_SIZE);
-    console.log('Full decryption key:', Array.from(decryptionKey));
     
-    // Create decipher
+    // Create a complete decipher for the entire packet (important!)
     const decipher = await localCrypto.createDecipheriv("aes-128-ctr", decryptionKey, maskingIv);
-    console.log('decipher ', decipher)
-    // Decrypt the static header portion
-    const staticHeaderData = data.slice(MASKING_IV_SIZE, MASKING_IV_SIZE + STATIC_HEADER_SIZE);
-    console.log('Static header encrypted size:', staticHeaderData.length);
     
+    // The data to decrypt starts after the IV
+    const encryptedData = data.slice(MASKING_IV_SIZE);
+    
+    // First, decrypt just the static header portion
+    const staticHeaderData = encryptedData.slice(0, STATIC_HEADER_SIZE);
     const staticHeaderBuf = await decipher.update(staticHeaderData);
-    console.log('Static header decrypted size:', staticHeaderBuf.length);
     
-    
-    // Extract protocol ID (should be "discv5")
+    // Extract and validate protocol ID
     const protocolIdBytes = staticHeaderBuf.slice(0, PROTOCOL_SIZE);
     const protocolId = bytesToUtf8(protocolIdBytes);
-    console.log('Decoded protocolId:', protocolId);
+    console.log('Decoded protocolId:', protocolId, 'raw bytes:', Array.from(protocolIdBytes));
     
     if (protocolId !== "discv5") {
       throw new Error(`Invalid protocol id: ${protocolId}, raw bytes: ${Array.from(protocolIdBytes)}`);
     }
     
-    // Extract version
+    // Continue with the rest of the header decoding
     const versionBytes = staticHeaderBuf.slice(PROTOCOL_SIZE, PROTOCOL_SIZE + VERSION_SIZE);
     const version = bytesToNumber(versionBytes, VERSION_SIZE);
-    console.log('Decoded version:', version);
     
     if (version !== 1) {
       throw new Error(`Invalid version: ${version}`);
     }
     
-    // Extract flag
-    const flagBytes = staticHeaderBuf.slice(PROTOCOL_SIZE + VERSION_SIZE, 
-                                          PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE);
+    const flagBytes = staticHeaderBuf.slice(
+      PROTOCOL_SIZE + VERSION_SIZE, 
+      PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE
+    );
     const flag = bytesToNumber(flagBytes, FLAG_SIZE);
-    console.log('Decoded flag:', flag);
     
-    // Extract nonce
-    const nonce = staticHeaderBuf.slice(PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE, 
-                                      PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE + NONCE_SIZE);
+    const nonce = staticHeaderBuf.slice(
+      PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE, 
+      PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE + NONCE_SIZE
+    );
     
-    // Extract authdata size
     const authdataSizeBytes = staticHeaderBuf.slice(
       PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE + NONCE_SIZE,
       PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE + NONCE_SIZE + AUTHDATA_SIZE_SIZE
     );
     const authdataSize = bytesToNumber(authdataSizeBytes, AUTHDATA_SIZE_SIZE);
-    console.log('Authdata size:', authdataSize);
     
-    // Validate authdata size
-    if (MASKING_IV_SIZE + STATIC_HEADER_SIZE + authdataSize > data.length) {
-      throw new Error(`Invalid authdata size: ${authdataSize}, packet too small`);
-    }
+    // Now decrypt the authdata portion
+    const authdataEncrypted = encryptedData.slice(STATIC_HEADER_SIZE, STATIC_HEADER_SIZE + authdataSize);
+    const authdata = await decipher.update(authdataEncrypted);
     
-    // Decrypt the authdata
-    const authdataSlice = data.slice(
-      MASKING_IV_SIZE + STATIC_HEADER_SIZE, 
-      MASKING_IV_SIZE + STATIC_HEADER_SIZE + authdataSize
-    );
-    
-    const authdata = await decipher.update(authdataSlice);
-    console.log('Authdata decrypted length:', authdata.length);
-    
-    // Create the header object
+    // Create header object
     const header = {
       protocolId,
       version,
@@ -257,14 +243,13 @@ async function decodePacketAsync(srcId: string, data: Uint8Array): Promise<IPack
       authdata,
     };
     
-    // Concatenate the header components
+    // Combine the decoded parts as header buffer
     const headerBuf = Buffer.concat([staticHeaderBuf, authdata]);
     
-    // The message is the remainder of the packet
-    const message = data.slice(MASKING_IV_SIZE + STATIC_HEADER_SIZE + authdataSize);
-    console.log('Message size:', message.length);
+    // The remaining data is the message
+    const message = encryptedData.slice(STATIC_HEADER_SIZE + authdataSize);
     
-    // Construct and return the packet
+    // Return the packet structure
     return {
       maskingIv,
       header,
@@ -272,7 +257,9 @@ async function decodePacketAsync(srcId: string, data: Uint8Array): Promise<IPack
       messageAd: Buffer.concat([Buffer.from(maskingIv), headerBuf]),
     };
   } catch (error) {
-    console.error('Error in custom decodePacket:', error);
+    console.error('Error in decodePacketAsync:', error);
     throw error;
   }
 }
+
+
