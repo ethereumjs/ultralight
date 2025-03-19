@@ -172,7 +172,7 @@ export const encodeExtensionPayload = (extension: number, payload: any) => {
     case 0:
       return ClientInfoAndCapabilities.serialize({
         ClientInfo: encodeClientInfo(payload.ClientInfo),
-        DataRadius: payload.DataRadius,
+        DataRadius: BigInt(payload.DataRadius),
         Capabilities: payload.Capabilities,
       })
     case 1:
