@@ -238,7 +238,7 @@ async function decodePacketAsync(srcId: string, data: Uint8Array): Promise<IPack
       maskingIv,
       header,
       message,
-      messageAd: Buffer.concat([Buffer.from(maskingIv), headerBuf]),
+      // messageAd: Buffer.concat([Buffer.from(maskingIv), headerBuf]),
     }
   } catch (error) {
     console.error('Error in decodePacketAsync:', error)
