@@ -4,18 +4,29 @@ import {
   LightClientOptimisticUpdateKey,
   getBeaconContentKey,
 } from 'portalnetwork'
-import { assert, describe, it } from 'vitest'
+import { afterAll, assert, beforeAll, describe, it } from 'vitest'
 
 import { startRpc } from '../util.js'
 const method = 'portal_beaconLocalContent'
 describe(`${method} tests`, () => {
-  it('should not find any local content', async () => {
-    const { ultralight, rpc } = await startRpc()
-    const key = LightClientOptimisticUpdateKey.serialize({ signatureSlot: 7807053n })
-    const res = await rpc.request(method, [
-      bytesToHex(getBeaconContentKey(BeaconNetworkContentType.LightClientOptimisticUpdate, key)),
-    ])
-    assert.equal(res.error.code, -32009)
-    ultralight.kill(9)
-  }, 10000)
+  describe(`${method} tests`, () => {
+    let ul
+    let rp
+    beforeAll(async () => {
+      const { ultralight, rpc } = await startRpc({ networks: ['beacon'], rpcPort: 8545 })
+      ul = ultralight
+      rp = rpc
+    })
+    it('should not find any local content', async () => {
+      const key = LightClientOptimisticUpdateKey.serialize({ signatureSlot: 7807053n })
+      const res = await rp.request(method, [
+        bytesToHex(getBeaconContentKey(BeaconNetworkContentType.LightClientOptimisticUpdate, key)),
+      ])
+      console.log(res)
+      assert.equal(res.error.code, -32009)
+    }, 10000)
+    afterAll(() => {
+      ul.kill()
+    })
+  })
 })
