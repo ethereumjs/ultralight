@@ -157,7 +157,6 @@ class BrowserCrypto {
 // Helper function to safely convert any array-like to Uint8Array
 function safeUint8Array(data: any): Uint8Array {
   if (data instanceof Uint8Array) {
-<<<<<<< HEAD
     return new Uint8Array(data) // Create a copy
   } else if (Buffer.isBuffer(data)) {
     return new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
@@ -165,15 +164,6 @@ function safeUint8Array(data: any): Uint8Array {
     return new Uint8Array(data)
   } else {
     return new Uint8Array(Array.from(data))
-=======
-    return new Uint8Array(data); // Create a copy
-  } else if (Buffer.isBuffer(data)) {
-    return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-  } else if (Array.isArray(data)) {
-    return new Uint8Array(data);
-  } else {
-    return new Uint8Array(Array.from(data));
->>>>>>> cf7ea74c83be0dda1a6904d26ad44e631591226c
   }
 }
 
