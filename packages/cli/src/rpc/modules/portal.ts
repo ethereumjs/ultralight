@@ -823,11 +823,11 @@ export class portal {
     const d = distance(contentId, this._client.discv5.enr.nodeId)
     let storedLocally = false
     try {
+      const peerCount = await this._history.gossipContent(contentKey, content)
       if (d <= this._history.nodeRadius) {
         await this._history.store(contentKey, content)
         storedLocally = true
       }
-      const peerCount = await this._history.gossipContent(contentKey, content)
       return {
         peerCount,
         storedLocally,
@@ -845,11 +845,11 @@ export class portal {
     const d = distance(contentId, this._client.discv5.enr.nodeId)
     let storedLocally = false
     try {
+      const peerCount = await this._state.gossipContent(contentKey, content)
       if (d <= this._state.nodeRadius) {
         await this._state.store(contentKey, content)
         storedLocally = true
       }
-      const peerCount = await this._state.gossipContent(contentKey, content)
       return {
         peerCount,
         storedLocally,
@@ -867,11 +867,11 @@ export class portal {
     const d = distance(contentId, this._client.discv5.enr.nodeId)
     let storedLocally = false
     try {
+      const peerCount = await this._beacon.gossipContent(contentKey, content)
       if (d <= this._beacon.nodeRadius) {
         await this._beacon.store(contentKey, content)
         storedLocally = true
       }
-      const peerCount = await this._beacon.gossipContent(contentKey, content)
       return {
         peerCount,
         storedLocally,
