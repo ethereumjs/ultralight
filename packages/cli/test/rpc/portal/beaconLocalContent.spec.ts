@@ -13,7 +13,11 @@ describe(`${method} tests`, () => {
     let ul
     let rp
     beforeAll(async () => {
-      const { ultralight, rpc } = await startRpc({ networks: ['beacon'], rpcPort: 8545 })
+      const { ultralight, rpc } = await startRpc({
+        networks: ['beacon'],
+        rpcPort: 8547,
+        port: 9002,
+      })
       ul = ultralight
       rp = rpc
     })
