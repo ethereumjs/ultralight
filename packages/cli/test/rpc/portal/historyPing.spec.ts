@@ -1,24 +1,36 @@
-import { assert, describe, it } from 'vitest'
+import { afterAll, assert, beforeAll, describe, it } from 'vitest'
 
 import { startRpc } from '../util.js'
 const method = 'portal_historyPing'
 describe(`${method} tests`, () => {
-  it('should get pong response', async () => {
-    const { ultralight, rpc } = await startRpc({ networks: ['history'] })
+  let ul
+  let ul2
+  let rp
+  let rp2
+  beforeAll(async () => {
+    const { ultralight, rpc } = await startRpc({ networks: ['history'], rpcPort: 8545 })
     const { ultralight: ultralight2, rpc: rpc2 } = await startRpc({
       port: 9001,
       rpcPort: 8546,
       networks: ['history'],
     })
-    const enr = (await rpc2.request('portal_historyNodeInfo', [])).result.enr
+    ul = ultralight
+    ul2 = ultralight2
+    rp = rpc
+    rp2 = rpc2
+  })
+  it('should get pong response', async () => {
+    const enr = (await rp2.request('portal_historyNodeInfo', [])).result.enr
     assert.exists(enr)
-    const res = await rpc.request(method, [
+    const res = await rp.request(method, [
       enr,
       0,
       { ClientInfo: 'ultralight', DataRadius: 1, Capabilities: [0] },
     ])
     assert.equal(res.result, true)
-    ultralight.kill()
-    ultralight2.kill()
   }, 20000)
+  afterAll(() => {
+    ul.kill()
+    ul2.kill()
+  })
 })

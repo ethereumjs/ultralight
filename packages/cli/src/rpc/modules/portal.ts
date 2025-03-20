@@ -8,7 +8,6 @@ import {
   NodeLookup,
   decodeExtensionPayloadToJson,
   encodeExtensionPayload,
-  encodeExtensionPayloadFromJson,
   shortId,
 } from 'portalnetwork'
 
