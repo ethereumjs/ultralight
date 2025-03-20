@@ -7,7 +7,7 @@ import {
   NetworkId,
   NodeLookup,
   decodeExtensionPayloadToJson,
-  encodeExtensionPayload,
+  encodeExtensionPayloadFromJson,
   shortId,
 } from 'portalnetwork'
 
@@ -574,7 +574,7 @@ export class portal {
 
     let encodedPayload = undefined
     if (payload !== undefined) {
-      encodedPayload = encodeExtensionPayload(extension, payload)
+      encodedPayload = encodeExtensionPayloadFromJson(extension, payload)
     }
     const pong = await this._history.sendPing(encodedENR, extension, encodedPayload)
     if (pong) {
@@ -598,7 +598,7 @@ export class portal {
     )
     let encodedPayload = undefined
     if (payload !== undefined) {
-      encodedPayload = encodeExtensionPayload(extension, payload)
+      encodedPayload = encodeExtensionPayloadFromJson(extension, payload)
     }
     const pong = await this._state.sendPing(encodedENR, extension, encodedPayload)
     if (pong) {
@@ -624,7 +624,7 @@ export class portal {
 
     let encodedPayload = undefined
     if (payload !== undefined) {
-      encodedPayload = encodeExtensionPayload(extension, payload)
+      encodedPayload = encodeExtensionPayloadFromJson(extension, payload)
     }
 
     const pong = await this._beacon.sendPing(encodedENR, extension, encodedPayload)

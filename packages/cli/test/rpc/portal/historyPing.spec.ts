@@ -27,7 +27,7 @@ describe(`${method} tests`, () => {
       0,
       { ClientInfo: 'ultralight', DataRadius: 1, Capabilities: [0] },
     ])
-    assert.equal(res.result, true)
+    assert.equal(res.result.payload.ClientInfo.clientName, 'ultralight')
   }, 20000)
   afterAll(() => {
     ul.kill()
