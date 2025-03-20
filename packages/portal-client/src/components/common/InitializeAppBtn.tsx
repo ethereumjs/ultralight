@@ -6,7 +6,6 @@ import { ConfigId } from '@/utils/types'
 import { CONFIG_DEFAULTS } from '@/utils/constants/config'
 
 const InitializeAppBtn = () => {
-//@ts-ignore
   const { initialize, client, cleanup } = usePortalNetwork()
   const [udpPort, setUdpPort] = useState<number | undefined>()
   const [wsa, setWsa] = useState<string | undefined>()
@@ -40,7 +39,7 @@ const InitializeAppBtn = () => {
   }, [websocketAddressDefault])
 
   return (
-    <div onClick={client ? handleClick : handleClick} className="cursor-pointer">
+    <div onClick={client ? cleanup : handleClick} className="cursor-pointer">
       {/* <input type="checkbox" className="toggle-primary" /> */}
       {client ? 'Off' : 'On'}
       {/* <PowerOffIcon />
