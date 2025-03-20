@@ -271,25 +271,29 @@ export abstract class BaseNetwork extends EventEmitter {
   /**
    * Sends a Portal Network Wire Network PING message to a specified node
    * @param dstId the nodeId of the peer to send a ping to
-   * @param payload custom payload to be sent in PING message
-   * @param networkId subnetwork ID
+   * @param extensionType ping extension type to be sent in PING message
+   * @param payload serialized ping extension payload to be sent in PING message
    * @returns the PING payload specified by the subnetwork or undefined
    */
-  public sendPing = async (enr: ENR, extensionType: number = 0) => {
+  public sendPing = async (enr: ENR, extensionType: number = 0, payload?: Uint8Array) => {
     if (enr.nodeId === this.portal.discv5.enr.nodeId) {
       // Don't ping ourselves
       return undefined
     }
-    // 3000ms tolerance for ping timeout
+
     if (!enr.nodeId) {
       this.logger(`Invalid ENR provided. PING aborted`)
       return
     }
+
     const peerCapabilities = this.portal.enrCache.getPeerCapabilities(enr.nodeId)
+
     if (peerCapabilities.has(extensionType) === false) {
       throw new Error(`Peer is not know to support extension type: ${extensionType}`)
     }
+
     const timeout = setTimeout(() => {
+      // 3000ms tolerance for ping timeout
       return undefined
     }, 3000)
     try {
@@ -298,7 +302,7 @@ export abstract class BaseNetwork extends EventEmitter {
         value: {
           enrSeq: this.enr.seq,
           payloadType: extensionType,
-          customPayload: this.pingPongPayload(extensionType),
+          customPayload: payload ?? this.pingPongPayload(extensionType),
         },
       })
       this.logger.extend(`PING`)(`Sent to ${shortId(enr)}`)
@@ -314,6 +318,7 @@ export abstract class BaseNetwork extends EventEmitter {
             const { ClientInfo, Capabilities, DataRadius } = ClientInfoAndCapabilities.deserialize(
               pongMessage.customPayload,
             )
+
             this.logger.extend('PONG')(
               `Client ${shortId(enr.nodeId)} is ${decodeClientInfo(ClientInfo).clientName} node with capabilities: ${Capabilities}`,
             )

@@ -2,11 +2,12 @@ import { EntryStatus, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { bigIntToHex, bytesToHex, hexToBytes, short } from '@ethereumjs/util'
 import {
-  ClientInfoAndCapabilities,
   ContentLookup,
   FoundContent,
   NetworkId,
   NodeLookup,
+  decodeExtensionPayloadToJson,
+  encodeExtensionPayloadFromJson,
   shortId,
 } from 'portalnetwork'
 
@@ -15,10 +16,10 @@ import { content_params } from '../schema/index.js'
 import { callWithStackTrace, isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
+import { RunStatusCode } from '@lodestar/light-client'
 import type { Debugger } from 'debug'
 import type { BeaconNetwork, HistoryNetwork, PortalNetwork, StateNetwork } from 'portalnetwork'
 import type { GetEnrResult } from '../schema/types.js'
-import { RunStatusCode } from '@lodestar/light-client'
 
 const methods = [
   // state
@@ -137,9 +138,21 @@ export class portal {
     ])
 
     // portal_*Ping
-    this.historyPing = middleware(this.historyPing.bind(this), 1, [[validators.enr]])
-    this.statePing = middleware(this.statePing.bind(this), 1, [[validators.enr]])
-    this.beaconPing = middleware(this.beaconPing.bind(this), 1, [[validators.enr]])
+    this.historyPing = middleware(callWithStackTrace(this.historyPing.bind(this), true), 2, [
+      [validators.enr],
+      [validators.extension],
+      [validators.optional(validators.payload)],
+    ])
+    this.statePing = middleware(this.statePing.bind(this), 2, [
+      [validators.enr],
+      [validators.extension],
+      [validators.optional(validators.payload)],
+    ])
+    this.beaconPing = middleware(this.beaconPing.bind(this), 2, [
+      [validators.enr],
+      [validators.extension],
+      [validators.optional(validators.payload)],
+    ])
 
     // portal_*FindNodes
     this.historyFindNodes = middleware(this.historyFindNodes.bind(this), 2, [
@@ -551,52 +564,76 @@ export class portal {
     return true
   }
   // portal_*Ping
-  async historyPing(params: [string]) {
-    const [enr] = params
+  async historyPing(params: [string, number, object | undefined]) {
+    const [enr, ext, payload] = params
     const encodedENR = ENR.decodeTxt(enr)
-    this.logger(`PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)}`)
-    const pong = await this._history.sendPing(encodedENR, 0)
+    const extension = ext ?? 0
+    this.logger(
+      `PING request received on HistoryNetwork for ${shortId(encodedENR.nodeId)} with extension ${extension}`,
+    )
+
+    let encodedPayload = undefined
+    if (payload !== undefined) {
+      encodedPayload = encodeExtensionPayloadFromJson(extension, payload)
+    }
+    const pong = await this._history.sendPing(encodedENR, extension, encodedPayload)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
-      // const decoded = CustomPayloadExtensionsFormat.deserialize(pong.customPayload)
-      const { DataRadius } = ClientInfoAndCapabilities.deserialize(pong.customPayload)
       return {
         enrSeq: Number(pong.enrSeq),
-        dataRadius: bigIntToHex(DataRadius),
+        payloadType: pong.payloadType,
+        payload: decodeExtensionPayloadToJson(pong.payloadType, pong.customPayload),
       }
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
       return false
     }
   }
-  async statePing(params: [string]) {
-    const [enr] = params
+  async statePing(params: [string, number, object | undefined]) {
+    const [enr, ext, payload] = params
     const encodedENR = ENR.decodeTxt(enr)
-    this.logger(`PING request received on StateNetwork for ${shortId(encodedENR.nodeId)}`)
-    const pong = await this._state.sendPing(encodedENR)
+    const extension = ext ?? 0
+    this.logger(
+      `PING request received on StateNetwork for ${shortId(encodedENR.nodeId)} with extension ${extension}`,
+    )
+    let encodedPayload = undefined
+    if (payload !== undefined) {
+      encodedPayload = encodeExtensionPayloadFromJson(extension, payload)
+    }
+    const pong = await this._state.sendPing(encodedENR, extension, encodedPayload)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
-      const { DataRadius } = ClientInfoAndCapabilities.deserialize(pong.customPayload)
+
       return {
         enrSeq: Number(pong.enrSeq),
-        dataRadius: bigIntToHex(DataRadius),
+        payloadType: pong.payloadType,
+        payload: decodeExtensionPayloadToJson(pong.payloadType, pong.customPayload),
       }
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
       return false
     }
   }
-  async beaconPing(params: [string]) {
-    const [enr] = params
+  async beaconPing(params: [string, number, object | undefined]) {
+    const [enr, ext, payload] = params
     const encodedENR = ENR.decodeTxt(enr)
-    this.logger(`PING request received on BeaconNetwork for ${shortId(encodedENR.nodeId)}`)
-    const pong = await this._beacon.sendPing(encodedENR)
+    const extension = ext ?? 0
+    this.logger(
+      `PING request received on BeaconNetwork for ${shortId(encodedENR.nodeId)} with extension ${extension}`,
+    )
+
+    let encodedPayload = undefined
+    if (payload !== undefined) {
+      encodedPayload = encodeExtensionPayloadFromJson(extension, payload)
+    }
+
+    const pong = await this._beacon.sendPing(encodedENR, extension, encodedPayload)
     if (pong) {
       this.logger(`PING/PONG successful with ${encodedENR.nodeId}`)
-      const { DataRadius } = ClientInfoAndCapabilities.deserialize(pong.customPayload)
       return {
         enrSeq: Number(pong.enrSeq),
-        dataRadius: bigIntToHex(DataRadius),
+        payloadType: pong.payloadType,
+        payload: decodeExtensionPayloadToJson(pong.payloadType, pong.customPayload),
       }
     } else {
       this.logger(`PING/PONG with ${encodedENR.nodeId} was unsuccessful`)
@@ -1180,7 +1217,7 @@ export class portal {
 
   // other
 
-  async beaconOptimisticStateRoot(params: []): Promise<string> {
+  async beaconOptimisticStateRoot(): Promise<string> {
     this.logger(`beaconOptimisticStateRoot request received`)
     if (
       this._beacon.lightClient?.status === RunStatusCode.uninitialized ||
@@ -1192,14 +1229,14 @@ export class portal {
       }
       throw error
     }
-    const res = await this._beacon.lightClient?.getHead()
+    const res = this._beacon.lightClient?.getHead()
     this.logger(
       `beaconOptimisticStateRoot request returned ${res !== undefined ? bytesToHex(res?.beacon.stateRoot) : '0x'}`,
     )
     return res !== undefined ? bytesToHex(res?.beacon.stateRoot) : '0x'
   }
 
-  async beaconFinalizedStateRoot(params: []): Promise<string> {
+  async beaconFinalizedStateRoot(): Promise<string> {
     this.logger(`beaconFinalizedStateRoot request received`)
     if (
       this._beacon.lightClient?.status === RunStatusCode.uninitialized ||
@@ -1211,7 +1248,7 @@ export class portal {
       }
       throw error
     }
-    const res = await this._beacon.lightClient?.getFinalized()
+    const res = this._beacon.lightClient?.getFinalized()
     this.logger(
       `beaconFinalizedStateRoot request returned ${res !== undefined ? bytesToHex(res?.beacon.stateRoot) : '0x'}`,
     )

@@ -508,6 +508,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public addToBlackList = (ma: Multiaddr) => {
+    // eslint-disable-next-line no-extra-semi
     ;(<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).addToBlackList(
       ma.nodeAddress().address,
     )
@@ -520,6 +521,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public removeFromBlackList = (ma: Multiaddr) => {
+    // eslint-disable-next-line no-extra-semi
     ;(<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).removeFromBlackList(
       ma.nodeAddress().address,
     )
