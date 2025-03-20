@@ -575,11 +575,7 @@ export class portal {
 
     let encodedPayload = undefined
     if (payload !== undefined) {
-      if (typeof payload === 'string') {
-        encodedPayload = encodeExtensionPayloadFromJson(extension, JSON.parse(payload))
-      } else {
-        encodedPayload = encodeExtensionPayload(extension, payload)
-      }
+      encodedPayload = encodeExtensionPayload(extension, payload)
     }
     const pong = await this._history.sendPing(encodedENR, extension, encodedPayload)
     if (pong) {
