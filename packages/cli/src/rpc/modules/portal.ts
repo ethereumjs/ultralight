@@ -138,17 +138,17 @@ export class portal {
     ])
 
     // portal_*Ping
-    this.historyPing = middleware(callWithStackTrace(this.historyPing.bind(this), true), 2, [
+    this.historyPing = middleware(callWithStackTrace(this.historyPing.bind(this), true), 1, [
       [validators.enr],
       [validators.optional(validators.extension)],
       [validators.optional(validators.payload)],
     ])
-    this.statePing = middleware(this.statePing.bind(this), 2, [
+    this.statePing = middleware(this.statePing.bind(this), 1, [
       [validators.enr],
       [validators.optional(validators.extension)],
       [validators.optional(validators.payload)],
     ])
-    this.beaconPing = middleware(this.beaconPing.bind(this), 2, [
+    this.beaconPing = middleware(this.beaconPing.bind(this), 1, [
       [validators.enr],
       [validators.optional(validators.extension)],
       [validators.optional(validators.payload)],
