@@ -140,17 +140,17 @@ export class portal {
     // portal_*Ping
     this.historyPing = middleware(callWithStackTrace(this.historyPing.bind(this), true), 2, [
       [validators.enr],
-      [validators.extension],
+      [validators.optional(validators.extension)],
       [validators.optional(validators.payload)],
     ])
     this.statePing = middleware(this.statePing.bind(this), 2, [
       [validators.enr],
-      [validators.extension],
+      [validators.optional(validators.extension)],
       [validators.optional(validators.payload)],
     ])
     this.beaconPing = middleware(this.beaconPing.bind(this), 2, [
       [validators.enr],
-      [validators.extension],
+      [validators.optional(validators.extension)],
       [validators.optional(validators.payload)],
     ])
 
@@ -564,7 +564,7 @@ export class portal {
     return true
   }
   // portal_*Ping
-  async historyPing(params: [string, number, object | undefined]) {
+  async historyPing(params: [string, number | undefined, object | undefined]) {
     const [enr, ext, payload] = params
     const encodedENR = ENR.decodeTxt(enr)
     const extension = ext ?? 0
@@ -589,7 +589,7 @@ export class portal {
       return false
     }
   }
-  async statePing(params: [string, number, object | undefined]) {
+  async statePing(params: [string, number | undefined, object | undefined]) {
     const [enr, ext, payload] = params
     const encodedENR = ENR.decodeTxt(enr)
     const extension = ext ?? 0
@@ -614,7 +614,7 @@ export class portal {
       return false
     }
   }
-  async beaconPing(params: [string, number, object | undefined]) {
+  async beaconPing(params: [string, number | undefined, object | undefined]) {
     const [enr, ext, payload] = params
     const encodedENR = ENR.decodeTxt(enr)
     const extension = ext ?? 0
