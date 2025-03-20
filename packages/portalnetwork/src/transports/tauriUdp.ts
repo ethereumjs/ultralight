@@ -86,14 +86,14 @@ export class TauriUDPTransportService
           size: payload.data.length,
         }
         
-        this.handleIncoming(data, rinfo)
-      })
+        this.handleIncoming(data, rinfo);
+      });
       
       this.isListening = true
       console.log(`UDP Transport started with socket ID: ${this.socketId}`)
     } catch (error) {
-      console.error('Failed to start UDP transport:', error)
-      throw error
+      console.error('Failed to start UDP transport:', error);
+      throw error;
     }
   }
   
@@ -102,15 +102,15 @@ export class TauriUDPTransportService
     
     try {
       if (this.unlisten) {
-        this.unlisten()
-        this.unlisten = null
+        this.unlisten();
+        this.unlisten = null;
       }
       
       this.isListening = false
       console.log('UDP Transport stopped')
     } catch (error) {
-      console.error('Failed to stop UDP transport:', error)
-      throw error
+      console.error('Failed to stop UDP transport:', error);
+      throw error;
     }
   }
   
@@ -128,8 +128,8 @@ export class TauriUDPTransportService
       await send(this.socketId, address, Array.from(fullPacket))
       console.log(`Successfully sent packet to ${address}`)
     } catch (error) {
-      console.error('Failed to send packet:', error)
-      throw error
+      console.error('Failed to send packet:', error);
+      throw error;
     }
   }
   
@@ -145,15 +145,15 @@ export class TauriUDPTransportService
       const dataCopy = new Uint8Array(data)  
       const packet = await decodePacketAsync(this.srcId, dataCopy)
       
-      this.emit('packet', multiaddr, packet)
+      this.emit('packet', multiaddr, packet);
     } catch (e) {
-      console.error('Failed to decode packet:', e)
-      this.emit('decodeError', e as any, multiaddr)
+      console.error('Failed to decode packet:', e);
+      this.emit('decodeError', e as any, multiaddr);
     }
   }
   
   public getContactableAddr(enr: ENR): SocketAddress | undefined {
-    return getSocketAddressOnENR(enr, this.ipMode)
+    return getSocketAddressOnENR(enr, this.ipMode);
   }
 }
 
