@@ -35,8 +35,6 @@
         '@chainsafe/bls-keygen': resolve(__dirname, 'src/utils/polyfills/blsKeyGen.ts'), 
         'node:crypto': resolve(__dirname, 'src/utils/polyfills/localCrypto.ts'),
         crypto: resolve(__dirname, 'src/utils/polyfills/localCrypto.ts'), 
-        // 'dgram': resolve(__dirname, 'src/utils/polyfills/dgram.ts'),
-        // 'node:dgram': resolve(__dirname, 'src/utils/polyfills/dgram.ts'),
       },
     },
     define: {
@@ -56,7 +54,6 @@
       },
       exclude: ['@chainsafe/bls', 'herumi-*'],
       include: ['bls-eth-wasm'],
-      // include: ['@chainsafe/bls/switchable', 'bls-eth-wasm'],
     },
     assetsInclude: ['**/*.wasm'],
     build: {
@@ -72,8 +69,7 @@
           /^node:.*/,
           'fs', 
           'child_process',
-          // 'dgram',
-        ], // Automatically exclude built-in Node.js modules
+        ],
 
       },
       output: {
