@@ -83,7 +83,7 @@ export abstract class BaseNetwork extends EventEmitter {
   private lastRefreshTime: number = 0
   private nextRefreshTimeout: ReturnType<typeof setTimeout> | null = null
   private refreshInterval: number = 30000 // Start with 30s
-
+  private pruning: boolean = false
   constructor({
     client,
     networkId,
@@ -178,13 +178,18 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   public async prune(newMaxStorage?: number) {
+    if (this.pruning) {
+      return
+    }
+    this.pruning = true
     const MB = 1000000
+    const toDelete: [string, string][] = []
+    let size = this.db.approximateSize
     try {
       if (newMaxStorage !== undefined) {
         this.maxStorage = newMaxStorage
       }
-      let size = await this.db.size()
-      const toDelete: [string, string][] = []
+      size = await this.db.size()
       while (size > this.maxStorage * MB) {
         const radius = this.nodeRadius / 2n
         const pruned = await this.db.prune(radius)
@@ -198,8 +203,11 @@ export abstract class BaseNetwork extends EventEmitter {
     } catch (err: any) {
       this.logger(`Error pruning content: ${err.message}`)
       return `Error pruning content: ${err.message}`
+    } finally {
+      this.pruning = false
     }
-    return this.db.size()
+    this.logger(`Pruned ${toDelete.length} items.  New size: ${size}`)
+    return size
   }
 
   public streamingKey(contentKey: Uint8Array) {
