@@ -16,6 +16,7 @@ interface NetworkDBConfig {
   logger?: Debugger
   contentId?: (contentKey: Uint8Array) => string
   maxStorage?: number
+  dbSize?: () => Promise<number>
 }
 
 export class NetworkDB {
@@ -27,7 +28,8 @@ export class NetworkDB {
   contentId: (contentKey: Uint8Array) => string
   logger: Debugger
   dataDir?: string
-  constructor({ networkId, nodeId, db, logger, contentId, maxStorage }: NetworkDBConfig) {
+  dbSize?: () => Promise<number>
+  constructor({ networkId, nodeId, db, logger, contentId, maxStorage, dbSize }: NetworkDBConfig) {
     this.networkId = networkId
     this.nodeId = nodeId ?? '0'.repeat(64)
     this.db = db?.db ?? (new MemoryLevel() as any)
@@ -40,6 +42,7 @@ export class NetworkDB {
         return bytesToHex(contentKey)
       }
     this.maxStorage = maxStorage ?? 1024
+    this.dbSize = dbSize
   }
 
   /**

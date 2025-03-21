@@ -211,6 +211,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
               maxStorage: network.maxStorage,
               db: network.db,
               gossipCount: opts.gossipCount,
+              dbSize: async () => opts.dbSize((opts.dataDir ?? '.') + '/history'),
             }),
           )
           break
@@ -223,6 +224,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
               maxStorage: network.maxStorage,
               db: network.db,
               gossipCount: opts.gossipCount,
+              dbSize: async () => opts.dbSize((opts.dataDir ?? '.') + '/state'),
             }),
           )
           break
@@ -242,6 +244,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
                 sync: syncStrategy,
                 db: network.db,
                 gossipCount: opts.gossipCount,
+                dbSize: async () => opts.dbSize((opts.dataDir ?? '.') + '/beacon'),
               }),
             )
           }
