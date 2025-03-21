@@ -77,7 +77,7 @@ class AesGcm {
         const algorithm = {
           name: 'AES-GCM',
           iv: this.nonce,
-          additionalData: this.aad || undefined,
+          additionalData: this.aad ?? undefined,
           tagLength: this.authTag.length * 8 // Tag length in bits
         }
         
@@ -98,7 +98,7 @@ class AesGcm {
         const algorithm = {
           name: 'AES-GCM',
           iv: this.nonce,
-          additionalData: this.aad || undefined,
+          additionalData: this.aad ?? undefined,
           tagLength: 128 // Standard GCM tag length (16 bytes)
         }
         
@@ -304,7 +304,7 @@ class BrowserCrypto {
           cipher.setAAD(aad)
         },
         getAuthTag: async (): Promise<Uint8Array> => {
-          return await cipher.getAuthTag()
+          return cipher.getAuthTag()
         }
       }
     } else {
@@ -364,20 +364,6 @@ class BrowserCrypto {
   }
 }
 
-
-// Helper function to safely convert any array-like to Uint8Array
-function safeUint8Array(data: any): Uint8Array {
-  if (data instanceof Uint8Array) {
-    return new Uint8Array(data) // Create a copy
-  } else if (Buffer.isBuffer(data)) {
-    return new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
-  } else if (Array.isArray(data)) {
-    return new Uint8Array(data)
-  } else {
-    return new Uint8Array(Array.from(data))
-  }
-}
-
 class SyncCompatAdapter {
   private crypto: Promise<any>
   private pendingUpdates: Array<{ data: Uint8Array, resolve: Function, reject: Function }> = []
@@ -385,7 +371,7 @@ class SyncCompatAdapter {
   
   constructor(cryptoPromise: Promise<any>) {
     this.crypto = cryptoPromise
-    this.processQueue()
+    // this.processQueue()
   }
   
   update(data: Uint8Array): any {
@@ -393,7 +379,7 @@ class SyncCompatAdapter {
       this.pendingUpdates.push({ data, resolve, reject })
       
       if (!this.isProcessing) {
-        this.processQueue()
+        this.processQueue().catch(reject)
       }
     })
   }
@@ -414,7 +400,9 @@ class SyncCompatAdapter {
       } else {
         console.error('setAAD not supported by this cipher');
       }
-    });
+    }).catch(error => {
+      console.error('Error setting AAD:', error);
+    })
     
     return this;
   }
@@ -431,7 +419,9 @@ class SyncCompatAdapter {
       } else {
         console.error('setAuthTag not supported by this cipher');
       }
-    });
+    }).catch(error => {
+      console.error('Error setting AuthTag:', error);
+    })
     
     return this;
   }
@@ -473,7 +463,7 @@ class SyncCompatAdapter {
       
       // If more updates came in while processing, start processing again
       if (this.pendingUpdates.length > 0) {
-        this.processQueue()
+        await this.processQueue()
       }
     }
   }
@@ -481,17 +471,18 @@ class SyncCompatAdapter {
 
 const localCrypto = {
   createCipheriv: (algorithm: string, key: any, iv: any) => {
-    const keyArray = safeUint8Array(key)
-    const ivArray = safeUint8Array(iv)
+    const keyArray = new Uint8Array(key)
+    const ivArray = new Uint8Array(iv)
     
     const cryptoPromise = BrowserCrypto.createCipheriv(algorithm, keyArray, ivArray)
     return new SyncCompatAdapter(cryptoPromise)
   },
   
   createDecipheriv: (algorithm: string, key: any, iv: any) => {
-    const keyArray = safeUint8Array(key)
-    const ivArray = safeUint8Array(iv)
-    
+    const keyArray = new Uint8Array(key)
+    const ivArray = new Uint8Array(iv)
+    console.log('Key type:', key?.constructor?.name);
+    console.log('IV type:', iv?.constructor?.name);
     const cryptoPromise = BrowserCrypto.createDecipheriv(algorithm, keyArray, ivArray)
     return new SyncCompatAdapter(cryptoPromise)
   },

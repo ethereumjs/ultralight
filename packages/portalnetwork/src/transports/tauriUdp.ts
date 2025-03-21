@@ -1,25 +1,12 @@
 import { EventEmitter } from 'events'
-import { Buffer } from 'buffer'
-import { bytesToNumber, ITransportService } from '@chainsafe/discv5'
+import { ITransportService } from '@chainsafe/discv5'
 import { multiaddr as ma } from '@multiformats/multiaddr'
-import { 
-  encodeHeader, 
-  MASKING_IV_SIZE, 
-  MASKING_KEY_SIZE, 
-  PROTOCOL_SIZE, 
-  VERSION_SIZE, 
-  FLAG_SIZE, 
-  NONCE_SIZE, 
-  AUTHDATA_SIZE_SIZE, 
-  STATIC_HEADER_SIZE, 
-  MIN_PACKET_SIZE,
-  MAX_PACKET_SIZE,
-} from '@chainsafe/discv5/packet'
+import { encodeHeader } from '@chainsafe/discv5/packet'
 import { getSocketAddressOnENR } from '@chainsafe/discv5'
 import { bind, send, unbind } from '@kuyoonjo/tauri-plugin-udp'
 import { listen } from '@tauri-apps/api/event'
-import localCrypto from './localCrypto.js'
-import { bytesToUtf8, concatBytes, hexToBytes } from 'ethereum-cryptography/utils'
+import { concatBytes } from 'ethereum-cryptography/utils'
+import { decodePacketAsync } from '../util/portalClient/helpers.js'
 
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { IPacket } from '@chainsafe/discv5/packet'
@@ -31,6 +18,7 @@ interface UdpMessage {
   port: number
   data: number[]
 }
+
 
 export class TauriUDPTransportService 
   extends (EventEmitter as { new (): TransportEventEmitter }) 
@@ -162,97 +150,6 @@ export class TauriUDPTransportService
   
   public getContactableAddr(enr: ENR): SocketAddress | undefined {
     return getSocketAddressOnENR(enr, this.ipMode)
-  }
-}
-
-async function decodePacketAsync(srcId: string, data: Uint8Array): Promise<IPacket> {
-  try {
-    console.log('Decrypting packet - total size:', data.length)
-    
-    if (data.length < MIN_PACKET_SIZE) {
-      throw new Error(`Packet too small: ${data.length}`)
-    }
-    if (data.length > MAX_PACKET_SIZE) {
-      throw new Error(`Packet too large: ${data.length}`)
-    }
-    
-    const maskingIv = data.slice(0, MASKING_IV_SIZE)
-    const srcIdHex = srcId.startsWith('0x') ? srcId.substring(2) : srcId
-    const decryptionKey = hexToBytes(srcIdHex).slice(0, MASKING_KEY_SIZE)
-    const decipher = await localCrypto.createDecipheriv('aes-128-ctr', decryptionKey, maskingIv)
-    
-    // The data to decrypt starts after the IV
-    const encryptedData = data.slice(MASKING_IV_SIZE)
-    
-    // First, decrypt just the static header portion
-    const staticHeaderData = encryptedData.slice(0, STATIC_HEADER_SIZE)
-    const staticHeaderBuf = await decipher.update(staticHeaderData)
-    
-    // Extract and validate protocol ID
-    const protocolIdBytes = staticHeaderBuf.slice(0, PROTOCOL_SIZE)
-    const protocolId = bytesToUtf8(protocolIdBytes)
-    console.log('Decoded protocolId:', protocolId, 'raw bytes:', Array.from(protocolIdBytes))
-    
-    if (protocolId !== 'discv5') {
-      throw new Error(`Invalid protocol id: ${protocolId}, raw bytes: ${Array.from(protocolIdBytes)}`)
-    }
-    
-    const versionBytes = staticHeaderBuf.slice(PROTOCOL_SIZE, PROTOCOL_SIZE + VERSION_SIZE)
-    const version = bytesToNumber(versionBytes, VERSION_SIZE)
-    
-    if (version !== 1) {
-      throw new Error(`Invalid version: ${version}`)
-    }
-    
-    const flagBytes = staticHeaderBuf.slice(
-      PROTOCOL_SIZE + VERSION_SIZE, 
-      PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE
-    )
-    const flag = bytesToNumber(flagBytes, FLAG_SIZE)
-    
-    const nonce = staticHeaderBuf.slice(
-      PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE, 
-      PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE + NONCE_SIZE
-    )
-    
-    const authdataSizeBytes = staticHeaderBuf.slice(
-      PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE + NONCE_SIZE,
-      PROTOCOL_SIZE + VERSION_SIZE + FLAG_SIZE + NONCE_SIZE + AUTHDATA_SIZE_SIZE
-    )
-    const authdataSize = bytesToNumber(authdataSizeBytes, AUTHDATA_SIZE_SIZE)
-    
-    // Now decrypt the authdata portion
-    const authdataEncrypted = encryptedData.slice(STATIC_HEADER_SIZE, STATIC_HEADER_SIZE + authdataSize)
-    console.log('before deciper update', authdataEncrypted)
-    const authdata = await decipher.update(authdataEncrypted)
-    console.log('after deciper update', authdata)
-    const header = {
-      protocolId,
-      version,
-      flag,
-      nonce,
-      authdataSize,
-      authdata,
-    }
-    
-    // Combine the decoded parts as header buffer
-    const headerBuf = Buffer.concat([staticHeaderBuf, authdata])
-    
-    // The remaining data is the message
-    const message = encryptedData.slice(MASKING_IV_SIZE + headerBuf.length)
-    // const message = encryptedData.slice(STATIC_HEADER_SIZE + authdataSize)
-    console.log('remaining message ', message)
-    
-    // Packet structure
-    return {
-      maskingIv,
-      header,
-      message,
-      // messageAd: Buffer.concat([Buffer.from(maskingIv), headerBuf]),
-    }
-  } catch (error) {
-    console.error('Error in decodePacketAsync:', error)
-    throw error
   }
 }
 
