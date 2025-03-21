@@ -74,7 +74,7 @@ export class NetworkDB {
       val = bytesToHex(val)
     }
     if (!key.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
-    if (!val.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
+    if (!val.startsWith('0x')) throw new Error('Value must be 0x prefixed hex string')
     try {
       await this.db.put(key, val)
     } catch (err: any) {
