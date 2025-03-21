@@ -59,7 +59,6 @@ import { NetworkDB } from './networkDB.js'
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
 import type { SignableENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
-import type * as PromClient from 'prom-client'
 import { GossipManager } from './gossip.js'
 
 export abstract class BaseNetwork extends EventEmitter {
@@ -118,6 +117,11 @@ export abstract class BaseNetwork extends EventEmitter {
       }
     }
     this.gossipManager = new GossipManager(this, gossipCount)
+    this.on('ContentAdded', () => {
+      if (this.db.approximateSize > this.maxStorage) {
+        void this.prune()
+      }
+    })
   }
 
   public routingTableInfo = async () => {
@@ -694,20 +698,6 @@ export abstract class BaseNetwork extends EventEmitter {
       }
     } catch {
       this.logger(`Error Processing OFFER msg`)
-    }
-    if (this.portal.metrics !== undefined) {
-      const totalOffers = (
-        await (this.portal.metrics.offerMessagesReceived as PromClient.Counter).get()
-      ).values[0]
-      this.logger.extend('METRICS')({ totalOffers })
-      if (totalOffers.value % 50 === 0) {
-        void this.prune()
-      }
-    } else if (Math.random() * 50 <= 1) {
-      const size = await this.db.size()
-      if (size > this.maxStorage) {
-        void this.prune()
-      }
     }
   }
 
