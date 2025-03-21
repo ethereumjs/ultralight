@@ -117,6 +117,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         break
       case TransportLayer.NODE:
       default:
+        dbSize = opts.dbSize
     }
 
     // Configure transport layer
@@ -197,7 +198,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     this.bootnodes = opts.bootnodes ?? []
     this.uTP = new PortalNetworkUTP(this)
     this.utpTimout = opts.utpTimeout ?? 180000 // set default utpTimeout to 3 minutes
-    this.db = new DBManager(this.discv5.enr.nodeId, this.logger, opts.dbSize, opts.db) as DBManager
+    this.db = new DBManager(this.discv5.enr.nodeId, this.logger, async () => opts.dbSize(opts.dataDir ?? './'), opts.db) as DBManager
     opts.supportedNetworks = opts.supportedNetworks ?? []
     for (const network of opts.supportedNetworks) {
       switch (network.networkId) {
@@ -210,6 +211,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
               maxStorage: network.maxStorage,
               db: network.db,
               gossipCount: opts.gossipCount,
+              dbSize: async () => opts.dbSize((opts.dataDir ?? '.') + '/history'),
             }),
           )
           break
@@ -222,6 +224,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
               maxStorage: network.maxStorage,
               db: network.db,
               gossipCount: opts.gossipCount,
+              dbSize: async () => opts.dbSize((opts.dataDir ?? '.') + '/state'),
             }),
           )
           break
@@ -241,6 +244,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
                 sync: syncStrategy,
                 db: network.db,
                 gossipCount: opts.gossipCount,
+                dbSize: async () => opts.dbSize((opts.dataDir ?? '.') + '/beacon'),
               }),
             )
           }

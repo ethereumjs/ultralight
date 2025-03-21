@@ -18,6 +18,7 @@ export interface BaseNetworkConfig {
   maxStorage?: number
   bridge?: boolean
   gossipCount?: number
+  dbSize?: () => Promise<number>
 }
 
 const BYTE_SIZE = 256

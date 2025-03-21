@@ -92,6 +92,7 @@ export abstract class BaseNetwork extends EventEmitter {
     maxStorage,
     bridge,
     gossipCount,
+    dbSize,
   }: BaseNetworkConfig) {
     super()
     this.bridge = bridge ?? false
@@ -109,6 +110,7 @@ export abstract class BaseNetwork extends EventEmitter {
       contentId: this.contentKeyToId,
       db,
       logger: this.logger,
+      dbSize,
     })
     if (this.portal.metrics) {
       this.portal.metrics.knownHistoryNodes.collect = () => {

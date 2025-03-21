@@ -51,7 +51,7 @@ export interface PortalNetworkOpts {
   rebuildFromMemory?: boolean
   config: Partial<IDiscv5CreateOptions>
   dataDir?: string
-  dbSize(): Promise<number>
+  dbSize(dir: string): Promise<number>
   trustedBlockRoot?: string
   eventLog?: boolean
   utpTimeout?: number

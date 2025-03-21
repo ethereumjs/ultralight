@@ -7,6 +7,7 @@ import * as PromClient from 'prom-client'
 import { args } from './cliArgs.js'
 import { RPCManager } from './rpc/rpc.js'
 import { readFileSync } from 'fs'
+import { dirSize } from './util.js'
 
 const register = new PromClient.Registry()
 
@@ -27,12 +28,12 @@ const main = async () => {
   const portalConfig = await cliConfig({
     ...args,
     bindAddress: args.bindAddress ?? `${ip}:9000`,
-    bootnodeList: args.bootnodeList ? readFileSync(args.bootnodeList, 'utf-8').split('\n') : undefined,
+    bootnodeList: args.bootnodeList !== undefined ? readFileSync(args.bootnodeList, 'utf-8').split('\n') : undefined,
   })
   log(`portalConfig: ${JSON.stringify(args, null, 2)}`)
   portalConfig.operatingSystemAndCpuArchitecture = args.arch
   portalConfig.shortCommit = args.commit ?? execSync('git rev-parse HEAD').toString().slice(0, 7)
-
+  portalConfig.dbSize = dirSize
   const portal = await PortalNetwork.create(portalConfig)
 
   log(`discv5Config: ${JSON.stringify(portal.discv5['config'], null, 2)}`)
@@ -113,3 +114,5 @@ main().catch((err) => {
   console.error('Encountered an error', err)
   console.error('Shutting down...')
 })
+
+export * from './util.js'
