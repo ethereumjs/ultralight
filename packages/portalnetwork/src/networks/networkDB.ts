@@ -82,6 +82,8 @@ export class NetworkDB {
     }
     this.streaming.delete(key)
     this.logger(`Put ${key} in DB.  Size=${hexToBytes(padToEven(val)).length} bytes`)
+    this.approximateSize += 2 * (val.length - 2)
+    this.approximateSize += 2 * (key.length - 2)
   }
   /**
    * Get a value from the database by key.
@@ -119,7 +121,10 @@ export class NetworkDB {
     if (key instanceof Uint8Array) {
       key = bytesToHex(key)
     }
+    const val = await this.db.get(key)
     await this.db.del(key)
+    this.approximateSize -= 2 * (key.length - 2)
+    this.approximateSize -= 2 * (val.length - 2)
   }
   /**
    * Perform multiple put and/or del operations in bulk.
