@@ -131,6 +131,9 @@ export class NetworkDB {
    * @returns the size of the data directory in bytes
    */
   async size(): Promise<number> {
+    if (this.dbSize) {
+      return this.dbSize()
+    }
     let size = 0
     for await (const [key, value] of this.db.iterator()) {
       try {
