@@ -33,9 +33,7 @@ const main = async () => {
   log(`portalConfig: ${JSON.stringify(args, null, 2)}`)
   portalConfig.operatingSystemAndCpuArchitecture = args.arch
   portalConfig.shortCommit = args.commit ?? execSync('git rev-parse HEAD').toString().slice(0, 7)
-  portalConfig.dbSize = async () => {
-    return dirSize(args.dataDir ?? './')
-  }
+  portalConfig.dbSize = dirSize
   const portal = await PortalNetwork.create(portalConfig)
 
   log(`discv5Config: ${JSON.stringify(portal.discv5['config'], null, 2)}`)
