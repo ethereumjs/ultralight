@@ -54,7 +54,7 @@ export const addBootNode = async (networkId: NetworkId, baseNetwork: BaseNetwork
   }
 }
 
-const MEGABYTE = 1024 * 1024
+const MEGABYTE = 1000 * 1000
 
 export const dirSize = async (directory: string) => {
   const files = fs.readdirSync(directory)
