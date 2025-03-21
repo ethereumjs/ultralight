@@ -117,6 +117,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         break
       case TransportLayer.NODE:
       default:
+        dbSize = opts.dbSize
     }
 
     // Configure transport layer
