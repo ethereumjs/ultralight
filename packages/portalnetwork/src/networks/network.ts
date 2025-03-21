@@ -36,6 +36,7 @@ import {
   ErrorPayload,
   HistoryRadius,
   MAX_UDP_PACKET_SIZE,
+  MEGABYTE,
   MessageCodes,
   NodeLookup,
   PingPongErrorCodes,
@@ -118,7 +119,8 @@ export abstract class BaseNetwork extends EventEmitter {
     }
     this.gossipManager = new GossipManager(this, gossipCount)
     this.on('ContentAdded', () => {
-      if (this.db.approximateSize > this.maxStorage) {
+      if ((this.db.approximateSize / MEGABYTE) > this.maxStorage) {
+        this.logger(`Pruning due to size limit ${this.db.approximateSize / MEGABYTE} > ${this.maxStorage}`)
         void this.prune()
       }
     })
