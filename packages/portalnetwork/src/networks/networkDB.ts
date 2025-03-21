@@ -29,6 +29,7 @@ export class NetworkDB {
   logger: Debugger
   dataDir?: string
   dbSize?: () => Promise<number>
+  approximateSize: number
   constructor({ networkId, nodeId, db, logger, contentId, maxStorage, dbSize }: NetworkDBConfig) {
     this.networkId = networkId
     this.nodeId = nodeId ?? '0'.repeat(64)
@@ -43,6 +44,7 @@ export class NetworkDB {
       }
     this.maxStorage = maxStorage ?? 1024
     this.dbSize = dbSize
+    this.approximateSize = 0
   }
 
   /**
