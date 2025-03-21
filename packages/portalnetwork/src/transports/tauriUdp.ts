@@ -123,11 +123,12 @@ export class TauriUDPTransportService
     try {
       const nodeAddr = to.toOptions()
       const encodedHeader = await encodeHeader(toId, packet.maskingIv, packet.header)
+      console.log('message before send ', packet.message)
       const fullPacket = concatBytes(packet.maskingIv, encodedHeader, packet.message)
       const address = `${nodeAddr.host}:${nodeAddr.port}`
 
       await send(this.socketId, address, Array.from(fullPacket))
-      console.log(`Successfully sent packet to ${address}`)
+      console.log(`Successfully sent packet to ${address} message: ${packet.message}`)
     } catch (error) {
       console.error('Failed to send packet:', error)
       throw error
@@ -145,8 +146,14 @@ export class TauriUDPTransportService
     try {
       const dataCopy = new Uint8Array(data)  
       const packet = await decodePacketAsync(this.srcId, dataCopy)
-      
+      console.log('decoded packet ', packet)
+      console.log('Emitting packet with types:', {
+        maskingIvType: packet.maskingIv?.constructor?.name,
+        headerType: packet.header?.constructor?.name,
+        messageType: packet.message?.constructor?.name
+      })
       this.emit('packet', multiaddr, packet)
+      console.log('packet emitted')
     } catch (e) {
       console.error('Failed to decode packet:', e)
       this.emit('decodeError', e as any, multiaddr)
@@ -216,8 +223,9 @@ async function decodePacketAsync(srcId: string, data: Uint8Array): Promise<IPack
     
     // Now decrypt the authdata portion
     const authdataEncrypted = encryptedData.slice(STATIC_HEADER_SIZE, STATIC_HEADER_SIZE + authdataSize)
+    console.log('before deciper update', authdataEncrypted)
     const authdata = await decipher.update(authdataEncrypted)
-    
+    console.log('after deciper update', authdata)
     const header = {
       protocolId,
       version,
@@ -231,7 +239,9 @@ async function decodePacketAsync(srcId: string, data: Uint8Array): Promise<IPack
     const headerBuf = Buffer.concat([staticHeaderBuf, authdata])
     
     // The remaining data is the message
-    const message = encryptedData.slice(STATIC_HEADER_SIZE + authdataSize)
+    const message = encryptedData.slice(MASKING_IV_SIZE + headerBuf.length)
+    // const message = encryptedData.slice(STATIC_HEADER_SIZE + authdataSize)
+    console.log('remaining message ', message)
     
     // Packet structure
     return {
