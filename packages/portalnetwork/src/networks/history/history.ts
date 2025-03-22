@@ -649,6 +649,8 @@ export class HistoryNetwork extends BaseNetwork {
     const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hashKey)
     if (block instanceof Block) {
       await this.put(bodyContentKey, bytesToHex(bodyBytes))
+      this.emit('ContentAdded', bodyContentKey, bodyBytes)
+
       // TODO: Decide when and if to build and store receipts.
       //       Doing this here caused a bottleneck when same receipt is gossiped via uTP at the same time.
       // if (block.transactions.length > 0) {
@@ -658,6 +660,7 @@ export class HistoryNetwork extends BaseNetwork {
       this.logger(`Could not verify block content`)
       this.logger(`Adding anyway for testing...`)
       await this.put(bodyContentKey, bytesToHex(bodyBytes))
+      this.emit('ContentAdded', bodyContentKey, bodyBytes)
       // TODO: Decide what to do here.  We shouldn't be storing block bodies without a corresponding header
       // as it's against spec
       return
