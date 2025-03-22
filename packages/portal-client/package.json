@@ -20,6 +20,7 @@
     "@libp2p/crypto": "^5.0.9",
     "@lodestar/types": "^1.26.0",
     "@multiformats/multiaddr": "^12.3.4",
+    "@peculiar/webcrypto": "^1.5.0",
     "@tauri-apps/api": "^2.2.0",
     "@tauri-apps/plugin-opener": "^2",
     "bcrypto": "^5.5.2",

@@ -44,6 +44,7 @@
     "@lodestar/params": "^1.21.0",
     "@lodestar/types": "^1.21.0",
     "@multiformats/multiaddr": "^12.1.10",
+    "@peculiar/webcrypto": "^1.5.0",
     "@thi.ng/leb128": "^2.1.11",
     "abstract-level": "^1.0.3",
     "debug": "^4.3.2",
