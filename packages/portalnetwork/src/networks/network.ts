@@ -83,7 +83,7 @@ export abstract class BaseNetwork extends EventEmitter {
   private lastRefreshTime: number = 0
   private nextRefreshTimeout: ReturnType<typeof setTimeout> | null = null
   private refreshInterval: number = 30000 // Start with 30s
-  private pruning: boolean = false
+  public pruning: boolean = false
   constructor({
     client,
     networkId,
@@ -197,22 +197,33 @@ export abstract class BaseNetwork extends EventEmitter {
       }
       size = await this.db.size()
       while (size > this.maxStorage * MB) {
+        this.logger.extend('prune')(`Size too large: ${size} > ${this.maxStorage * MB}`)
+        this.logger.extend('prune')(`old radius: ${this.nodeRadius}`)
         const radius = this.nodeRadius / 2n
+        this.logger.extend('prune')(`new radius: ${radius}`)
+        await this.setRadius(radius)
         const pruned = await this.db.prune(radius)
         toDelete.push(...pruned)
-        await this.setRadius(radius)
         size = await this.db.size()
+        this.logger.extend('prune')(`pruned ${pruned.length} more items`)
+        this.logger.extend('prune')(`Size after pruning: ${size}`)
+        if (radius === 0n) {
+          this.logger.extend('prune')(`Radius is 0, stopping pruning`)
+          break
+        }
       }
       for (const [key, val] of toDelete) {
+        this.logger.extend('prune')(`Gossiping ${key}`)
         void this.gossipContent(hexToBytes(key), hexToBytes(val))
       }
     } catch (err: any) {
-      this.logger(`Error pruning content: ${err.message}`)
+      this.logger.extend('prune')(`Error pruning content: ${err.message}`)
       return `Error pruning content: ${err.message}`
     } finally {
+      this.logger.extend('prune')(`Pruning complete`)
       this.pruning = false
     }
-    this.logger(`Pruned ${toDelete.length} items.  New size: ${size}`)
+    this.logger.extend('prune')(`Pruned ${toDelete.length} items.  New size: ${size}`)
     return size
   }
 
