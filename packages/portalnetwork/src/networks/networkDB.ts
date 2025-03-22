@@ -176,6 +176,10 @@ export class NetworkDB {
   ): Promise<[string, string][]> {
     const toDelete: [string, string][] = []
     for await (const [key, value] of this.db.iterator()) {
+      if (!key.startsWith('0x')) {
+        this.logger.extend('prune')(`Skipping non-hex key: ${key}`)
+        continue
+      }
       // Calculate distance between node and content
       const d = distance(this.nodeId, this.contentId(hexToBytes(key)))
       // If content is out of radius -- delete content
