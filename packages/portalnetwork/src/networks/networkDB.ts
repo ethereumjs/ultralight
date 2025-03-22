@@ -184,11 +184,17 @@ export class NetworkDB {
       const d = distance(this.nodeId, this.contentId(hexToBytes(key)))
       // If content is out of radius -- delete content
       if (d > radius) {
+        this.logger.extend('prune')(`Content ${key} is out of radius`)
         // Before deleting BlockHeaderWithProof (0x00) -- Check if BlockHeaderByNumber contentKey is in radius
         if (key.startsWith('0x00')) {
           // First find the block number from block index
           const blockHash = '0x' + key.slice(4)
-          const blockNumber = blockIndex.get(blockHash)!
+          const blockNumber = blockIndex.get(blockHash)
+          if (blockNumber === undefined) {
+            toDelete.push([key, value])
+            await this.db.del(key)
+            continue
+          }
           const numberKey = Uint8Array.from([
             0x03,
             ...new ContainerType({ blockNumber: new UintBigintType(8) }).serialize({
