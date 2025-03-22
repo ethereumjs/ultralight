@@ -15,7 +15,7 @@
       react(),
       tailwindcss(),
       nodePolyfills({
-        include: ['child_process'],
+        include: ['child_process', 'crypto', 'buffer', 'events', 'stream', 'os', 'path'],
         protocolImports: true,
         globals: {
           Buffer: true,
@@ -71,10 +71,8 @@
           main: resolve(__dirname, 'index.html'),
         },
         external: [
-          ...builtinModules, 
-          /^node:.*/,
-          'fs', 
-          'child_process',
+          ...builtinModules.filter(m => m !== 'crypto' && m !== 'buffer' && m !== 'events'), 
+          /^node:(?!crypto|buffer|events).*/,
         ],
 
       },
