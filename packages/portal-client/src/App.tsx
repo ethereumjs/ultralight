@@ -6,38 +6,22 @@ import Home from '@/pages/Home'
 import Config from '@/pages/Config'
 import PageNotFound from '@/pages/PageNotFound'
 import Header from '@/components/layout/Header'
-import ErrorBoundary from './components/ErrorBoundary'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 const setupErrorHandling = () => {
-  // Catch unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
-    // You can add analytics tracking here
-  });
+  })
 
-  // Catch global errors
   window.addEventListener('error', (event) => {
-    console.error('Global error:', event.error);
-    // You can add analytics tracking here
+    console.error('Global error:', event.error)
   });
 };
 
 const App: FC = () => {
   useEffect(() => {
-    setupErrorHandling();
-    
-    // Test WebCrypto to make sure it's properly initialized
-    try {
-      const crypto = window.crypto || (window as any).msCrypto;
-      if (crypto) {
-        console.log('Native WebCrypto is available');
-      } else {
-        console.log('Native WebCrypto is NOT available, should be using polyfill');
-      }
-    } catch (error) {
-      console.error('Error checking WebCrypto availability:', error);
-    }
-  }, []);
+    setupErrorHandling()
+  }, [])
   return (
     <ErrorBoundary>
       <PortalNetworkProvider>

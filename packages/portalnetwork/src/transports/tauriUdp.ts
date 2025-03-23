@@ -125,7 +125,6 @@ export class TauriUDPTransportService
   
   private handleIncoming = async (data: Uint8Array, rinfo: IRemoteInfo): Promise<void> => {
     console.log('rinfo ', rinfo)
-    console.log(`Processing packet from ${rinfo.address}, size: ${data.length}`)
     
     const multiaddr = ma(
       `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`
