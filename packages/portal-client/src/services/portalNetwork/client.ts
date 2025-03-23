@@ -7,7 +7,7 @@ import { createDatabase } from './db'
 
 // const isBrowser = () => !window.__TAURI__
 
-const db = createDatabase({prefix: 'portalclient_history'})
+const db = createDatabase('portal-client-db', {prefix: 'portalclient_history'})
 
 export const createPortalClient = async (port: number, proxyAddress: string): Promise<PortalNetwork> => {
   try {
