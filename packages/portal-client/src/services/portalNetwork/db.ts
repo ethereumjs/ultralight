@@ -1,28 +1,6 @@
-// import { MemoryLevel } from 'memory-level'
-
-// export function createDatabase(
-//   options: {
-//     version?: number,
-//     prefix?: string,
-//     keyEncoding?: string,
-//     valueEncoding?: string,
-//   } = {}
-// ) {
-//   const memoryDb = new MemoryLevel<string, string>({
-//     keyEncoding: options.keyEncoding || 'utf8',
-//     valueEncoding: options.valueEncoding || 'utf8',
-//   })
-
-//   const enhancedDb = memoryDb as any
-//   enhancedDb.nextTick = (fn: Function) => setTimeout(fn, 0)
-
-//   return enhancedDb
-// }
-
-import { BrowserLevel } from 'browser-level'
+import { MemoryLevel } from 'memory-level'
 
 export function createDatabase(
-  name: string,
   options: {
     version?: number,
     prefix?: string,
@@ -30,15 +8,37 @@ export function createDatabase(
     valueEncoding?: string,
   } = {}
 ) {
-  const browserDb = new BrowserLevel(name, {
-    prefix: options.prefix || '',
-    version: options.version || 1,
-    keyEncoding: 'utf8',
-    valueEncoding: 'utf8',
+  const memoryDb = new MemoryLevel<string, string>({
+    keyEncoding: options.keyEncoding || 'utf8',
+    valueEncoding: options.valueEncoding || 'utf8',
   })
-  
-  const enhancedDb = browserDb as any
+
+  const enhancedDb = memoryDb as any
   enhancedDb.nextTick = (fn: Function) => setTimeout(fn, 0)
-  
+
   return enhancedDb
 }
+
+// import { BrowserLevel } from 'browser-level'
+
+// export function createDatabase(
+//   name: string,
+//   options: {
+//     version?: number,
+//     prefix?: string,
+//     keyEncoding?: string,
+//     valueEncoding?: string,
+//   } = {}
+// ) {
+//   const browserDb = new BrowserLevel(name, {
+//     prefix: options.prefix || '',
+//     version: options.version || 1,
+//     keyEncoding: 'utf8',
+//     valueEncoding: 'utf8',
+//   })
+  
+//   const enhancedDb = browserDb as any
+//   enhancedDb.nextTick = (fn: Function) => setTimeout(fn, 0)
+  
+//   return enhancedDb
+// }

@@ -35,8 +35,7 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   const [error, setError] = useState<Error | null>(null)
   const [isNetworkReady, setIsNetworkReady] = useState(false)
 
-  const udpPort = getConfigValue(ConfigId.UdpPort);
-  const websocketAddress = getConfigValue(ConfigId.WebsocketAddress)
+  const udpPort = getConfigValue(ConfigId.UdpPort)
   const shouldAutoInitialize = false
 
   //  const waitForNetwork = async (portalClient: any, timeout: number): Promise<boolean> => {
@@ -68,14 +67,14 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   //    return false
   //  }
 
-  const initialize = async (port: number, proxyAddress: string): Promise<void> => {
+  const initialize = async (port: number): Promise<void> => {
 
     setIsLoading(true)
     setError(null)
     setIsNetworkReady(false)
 
     try {
-      const portalClient = await createPortalClient(port, proxyAddress)
+      const portalClient = await createPortalClient(port)
       setClient(portalClient)
       // waitForNetwork(portalClient, networkReadyTimeout)
       //   .catch((err) => {
@@ -110,11 +109,11 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
 
    useEffect(() => {
     if (shouldAutoInitialize) {
-      initialize(Number(udpPort), websocketAddress).catch((err) => {
+      initialize(Number(udpPort)).catch((err) => {
         console.error('Auto-initialization failed:', err);
       });
     }
-  }, [shouldAutoInitialize, udpPort, websocketAddress])
+  }, [shouldAutoInitialize, udpPort])
 
   // useEffect(() => {
   //   if (autoInitialize) {
