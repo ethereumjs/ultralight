@@ -135,11 +135,7 @@ export class TauriUDPTransportService
       const dataCopy = new Uint8Array(data)  
       const packet = await decodePacketAsync(this.srcId, dataCopy)
       console.log('decoded packet ', packet)
-      console.log('Emitting packet with types:', {
-        maskingIvType: packet.maskingIv?.constructor?.name,
-        headerType: packet.header?.constructor?.name,
-        messageType: packet.message?.constructor?.name
-      })
+   
       this.emit('packet', multiaddr, packet)
       console.log('packet emitted')
     } catch (e) {

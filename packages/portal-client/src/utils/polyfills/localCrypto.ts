@@ -124,25 +124,59 @@ class DecipherImpl implements Decipher {
   private authTag: Uint8Array | null = null;
   private crypto: Crypto;
   private isCTR: boolean;
+  private ctrCounter: Uint8Array; // Track counter state for CTR mode
+  private ctrPosition: number = 0; // Track position in counter
 
   constructor(cryptoKey: CryptoKey, algorithm: any, isCTR: boolean) {
     this.cryptoKey = cryptoKey;
     this.algorithm = algorithm;
     this.crypto = getWebCrypto();
     this.isCTR = isCTR;
+    
+    // Save a copy of the original counter
+    if (isCTR && algorithm.counter) {
+      this.ctrCounter = new Uint8Array(algorithm.counter);
+    } else {
+      // Default to a zero-filled counter if not provided
+      this.ctrCounter = new Uint8Array(16); // AES block size is 16 bytes
+    }
   }
 
   async update(data: Uint8Array | ArrayBuffer): Promise<Buffer> {
     const dataArray = data instanceof Uint8Array ? data : new Uint8Array(data);
 
     if (this.isCTR) {
+      // For CTR mode, we need to track the counter state
+      // Clone the algorithm object to avoid modifying the original
+      const algorithmCopy = { ...this.algorithm };
+      
+      // Adjust the counter based on how many bytes we've processed
+      if (this.ctrPosition > 0) {
+        // Create a new counter with the appropriate offset
+        const adjustedCounter = new Uint8Array(this.ctrCounter);
+        
+        // Increment the counter by ctrPosition/16 blocks (AES block size is 16 bytes)
+        let blockOffset = Math.floor(this.ctrPosition / 16);
+        for (let i = adjustedCounter.length - 1; i >= 0 && blockOffset > 0; i--) {
+          const sum = adjustedCounter[i] + blockOffset;
+          adjustedCounter[i] = sum & 0xff;
+          blockOffset = Math.floor(sum / 256);
+        }
+        
+        algorithmCopy.counter = adjustedCounter;
+      }
+      
       const decrypted = await safeAsync(
         this.crypto.subtle.decrypt(
-          this.algorithm,
+          algorithmCopy,
           this.cryptoKey,
           dataArray
         )
       );
+      
+      // Update our position counter
+      this.ctrPosition += dataArray.length;
+      
       return Buffer.from(decrypted);
     } else {
       // For GCM, collect data for final decryption
