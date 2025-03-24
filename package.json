@@ -30,7 +30,6 @@
     "eslint-plugin-implicit-dependencies": "^1.1.1",
     "eslint-plugin-import": "^2.29.0",
     "eslint-plugin-node": "^11.1.0",
-    "node-gyp": "^10.1.0",
     "tsx": "^4.19.2"
   }
 }
