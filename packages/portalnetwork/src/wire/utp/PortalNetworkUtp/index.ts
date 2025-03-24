@@ -132,35 +132,23 @@ export class PortalNetworkUTP {
     try {
       await this.requestManagers[srcId.nodeId].handlePacket(packetBuffer)
     } catch (err: any) {
-      switch (err.message) {
-        case `REQUEST_CLOSED`: {
-          // Packet arrived after request was closed.  Send RESET packet to peer.
-          const packet = Packet.fromBuffer(packetBuffer)
-          const resetPacket = new Packet({
-            header: {
-              connectionId: packet.header.connectionId,
-              pType: PacketType.ST_RESET,
-              ackNr: 0,
-              extension: 0,
-              version: 1,
-              timestampMicroseconds: 0,
-              timestampDifferenceMicroseconds: 0,
-              seqNr: 0,
-              wndSize: 0,
-            },
-          })
-          await this.send(srcId, resetPacket.encode(), NetworkId.UTPNetwork)
-          break
-        }
-        case `REQUEST_NOT_FOUND`: {
-          // Packet arrived for non-existent request.  Treat as spam and blacklist peer.
-          this.client.addToBlackList(srcId.socketAddr)
-          break
-        }
-        default: {
-          throw err
-        }
-      }
+      this.logger(`Error handling uTP packet: ${err}`)
+      this.logger(`Sending reset packet to ${srcId.nodeId}`)
+      const packet = Packet.fromBuffer(packetBuffer)
+      const resetPacket = new Packet({
+        header: {
+          connectionId: packet.header.connectionId,
+          pType: PacketType.ST_RESET,
+          ackNr: 0,
+          extension: 0,
+          version: 1,
+          timestampMicroseconds: 0,
+          timestampDifferenceMicroseconds: 0,
+          seqNr: 0,
+          wndSize: 0,
+        },
+      })
+      await this.send(srcId, resetPacket.encode(), NetworkId.UTPNetwork)
     }
   }
 
