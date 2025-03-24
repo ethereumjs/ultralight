@@ -242,6 +242,7 @@ export class StateNetwork extends BaseNetwork {
     }
     for (const { contentKey, dbContent } of interested) {
       await this.db.put(contentKey, dbContent)
+      this.emit('ContentAdded', contentKey, dbContent)
     }
     return { interested, notInterested }
   }
@@ -265,6 +266,7 @@ export class StateNetwork extends BaseNetwork {
       node: curRlp,
     })
     await this.db.put(contentKey, dbContent)
+    this.emit('ContentAdded', contentKey, dbContent)
   }
 
   async storeStorageTrieNode(contentKey: Uint8Array, content: Uint8Array) {
@@ -274,6 +276,7 @@ export class StateNetwork extends BaseNetwork {
       node: curRlp,
     })
     await this.db.put(contentKey, dbContent)
+    this.emit('ContentAdded', contentKey, dbContent)
   }
 
   async receiveStorageTrieNodeOffer(
@@ -344,6 +347,7 @@ export class StateNetwork extends BaseNetwork {
     }
     for (const { contentKey, dbContent } of interested) {
       await this.db.put(contentKey, dbContent)
+      this.emit('ContentAdded', contentKey, dbContent)
     }
     return { interested, notInterested }
   }
@@ -375,6 +379,7 @@ export class StateNetwork extends BaseNetwork {
     const codeContent = ContractRetrieval.serialize({ code })
     this.manager.trie.db.local.set(bytesToUnprefixedHex(codeHash), bytesToHex(contentKey))
     await this.db.put(contentKey, codeContent)
+    this.emit('ContentAdded', contentKey, codeContent)
     await this.receiveAccountTrieNodeOffer(
       ...extractAccountProof(addressHash, accountProof, blockHash),
     )

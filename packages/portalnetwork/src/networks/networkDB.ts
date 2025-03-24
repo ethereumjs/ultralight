@@ -29,6 +29,7 @@ export class NetworkDB {
   logger: Debugger
   dataDir?: string
   dbSize?: () => Promise<number>
+  approximateSize: number
   constructor({ networkId, nodeId, db, logger, contentId, maxStorage, dbSize }: NetworkDBConfig) {
     this.networkId = networkId
     this.nodeId = nodeId ?? '0'.repeat(64)
@@ -43,6 +44,7 @@ export class NetworkDB {
       }
     this.maxStorage = maxStorage ?? 1024
     this.dbSize = dbSize
+    this.approximateSize = 0
   }
 
   /**
@@ -72,7 +74,7 @@ export class NetworkDB {
       val = bytesToHex(val)
     }
     if (!key.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
-    if (!val.startsWith('0x')) throw new Error('Key must be 0x prefixed hex string')
+    if (!val.startsWith('0x')) throw new Error('Value must be 0x prefixed hex string')
     try {
       await this.db.put(key, val)
     } catch (err: any) {
@@ -80,6 +82,8 @@ export class NetworkDB {
     }
     this.streaming.delete(key)
     this.logger(`Put ${key} in DB.  Size=${hexToBytes(padToEven(val)).length} bytes`)
+    this.approximateSize += 2 * (val.length - 2)
+    this.approximateSize += 2 * (key.length - 2)
   }
   /**
    * Get a value from the database by key.
@@ -117,7 +121,10 @@ export class NetworkDB {
     if (key instanceof Uint8Array) {
       key = bytesToHex(key)
     }
+    const val = await this.db.get(key)
     await this.db.del(key)
+    this.approximateSize -= 2 * (key.length - 2)
+    this.approximateSize -= 2 * (val.length - 2)
   }
   /**
    * Perform multiple put and/or del operations in bulk.
@@ -131,18 +138,20 @@ export class NetworkDB {
    * @returns the size of the data directory in bytes
    */
   async size(): Promise<number> {
-    if (this.dbSize) {
-      return this.dbSize()
-    }
     let size = 0
+    if (this.dbSize) {
+      size = await this.dbSize()
+    } else {
     for await (const [key, value] of this.db.iterator()) {
       try {
         size += hexToBytes('0x' + padToEven(key.slice(2))).length
         size += hexToBytes(value).length
-      } catch {
-        // ignore
+        } catch {
+          // ignore
+        }
       }
     }
+    this.approximateSize = size
     return size
   }
 
@@ -167,15 +176,25 @@ export class NetworkDB {
   ): Promise<[string, string][]> {
     const toDelete: [string, string][] = []
     for await (const [key, value] of this.db.iterator()) {
+      if (!key.startsWith('0x')) {
+        this.logger.extend('prune')(`Skipping non-hex key: ${key}`)
+        continue
+      }
       // Calculate distance between node and content
       const d = distance(this.nodeId, this.contentId(hexToBytes(key)))
       // If content is out of radius -- delete content
       if (d > radius) {
+        this.logger.extend('prune')(`Content ${key} is out of radius`)
         // Before deleting BlockHeaderWithProof (0x00) -- Check if BlockHeaderByNumber contentKey is in radius
         if (key.startsWith('0x00')) {
           // First find the block number from block index
           const blockHash = '0x' + key.slice(4)
-          const blockNumber = blockIndex.get(blockHash)!
+          const blockNumber = blockIndex.get(blockHash)
+          if (blockNumber === undefined) {
+            toDelete.push([key, value])
+            await this.db.del(key)
+            continue
+          }
           const numberKey = Uint8Array.from([
             0x03,
             ...new ContainerType({ blockNumber: new UintBigintType(8) }).serialize({

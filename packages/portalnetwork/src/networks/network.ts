@@ -36,6 +36,7 @@ import {
   ErrorPayload,
   HistoryRadius,
   MAX_UDP_PACKET_SIZE,
+  MEGABYTE,
   MessageCodes,
   NodeLookup,
   PingPongErrorCodes,
@@ -59,7 +60,6 @@ import { NetworkDB } from './networkDB.js'
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
 import type { SignableENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
-import type * as PromClient from 'prom-client'
 import { GossipManager } from './gossip.js'
 
 export abstract class BaseNetwork extends EventEmitter {
@@ -83,7 +83,7 @@ export abstract class BaseNetwork extends EventEmitter {
   private lastRefreshTime: number = 0
   private nextRefreshTimeout: ReturnType<typeof setTimeout> | null = null
   private refreshInterval: number = 30000 // Start with 30s
-
+  public pruning: boolean = false
   constructor({
     client,
     networkId,
@@ -118,6 +118,12 @@ export abstract class BaseNetwork extends EventEmitter {
       }
     }
     this.gossipManager = new GossipManager(this, gossipCount)
+    this.on('ContentAdded', () => {
+      if ((this.db.approximateSize / MEGABYTE) > this.maxStorage) {
+        this.logger(`Pruning due to size limit ${this.db.approximateSize / MEGABYTE} > ${this.maxStorage}`)
+        void this.prune()
+      }
+    })
   }
 
   public routingTableInfo = async () => {
@@ -178,28 +184,47 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   public async prune(newMaxStorage?: number) {
+    if (this.pruning) {
+      return
+    }
+    this.pruning = true
     const MB = 1000000
+    const toDelete: [string, string][] = []
+    let size = this.db.approximateSize
     try {
       if (newMaxStorage !== undefined) {
         this.maxStorage = newMaxStorage
       }
-      let size = await this.db.size()
-      const toDelete: [string, string][] = []
+      size = await this.db.size()
       while (size > this.maxStorage * MB) {
+        this.logger.extend('prune')(`Size too large: ${size} > ${this.maxStorage * MB}`)
+        this.logger.extend('prune')(`old radius: ${this.nodeRadius}`)
         const radius = this.nodeRadius / 2n
+        this.logger.extend('prune')(`new radius: ${radius}`)
+        await this.setRadius(radius)
         const pruned = await this.db.prune(radius)
         toDelete.push(...pruned)
-        await this.setRadius(radius)
         size = await this.db.size()
+        this.logger.extend('prune')(`pruned ${pruned.length} more items`)
+        this.logger.extend('prune')(`Size after pruning: ${size}`)
+        if (radius === 0n) {
+          this.logger.extend('prune')(`Radius is 0, stopping pruning`)
+          break
+        }
       }
       for (const [key, val] of toDelete) {
+        this.logger.extend('prune')(`Gossiping ${key}`)
         void this.gossipContent(hexToBytes(key), hexToBytes(val))
       }
     } catch (err: any) {
-      this.logger(`Error pruning content: ${err.message}`)
+      this.logger.extend('prune')(`Error pruning content: ${err.message}`)
       return `Error pruning content: ${err.message}`
+    } finally {
+      this.logger.extend('prune')(`Pruning complete`)
+      this.pruning = false
     }
-    return this.db.size()
+    this.logger.extend('prune')(`Pruned ${toDelete.length} items.  New size: ${size}`)
+    return size
   }
 
   public streamingKey(contentKey: Uint8Array) {
@@ -686,20 +711,6 @@ export abstract class BaseNetwork extends EventEmitter {
       }
     } catch {
       this.logger(`Error Processing OFFER msg`)
-    }
-    if (this.portal.metrics !== undefined) {
-      const totalOffers = (
-        await (this.portal.metrics.offerMessagesReceived as PromClient.Counter).get()
-      ).values[0]
-      this.logger.extend('METRICS')({ totalOffers })
-      if (totalOffers.value % 50 === 0) {
-        void this.prune()
-      }
-    } else if (Math.random() * 50 <= 1) {
-      const size = await this.db.size()
-      if (size > this.maxStorage) {
-        void this.prune()
-      }
     }
   }
 
