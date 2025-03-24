@@ -132,6 +132,8 @@ export class PortalNetworkUTP {
     try {
       await this.requestManagers[srcId.nodeId].handlePacket(packetBuffer)
     } catch (err: any) {
+      this.logger(`Error handling uTP packet: ${err}`)
+      this.logger(`Sending reset packet to ${srcId.nodeId}`)
       const packet = Packet.fromBuffer(packetBuffer)
       const resetPacket = new Packet({
         header: {
