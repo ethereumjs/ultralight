@@ -457,7 +457,7 @@ export class BeaconNetwork extends BaseNetwork {
             response = await new Promise((resolve, _reject) => {
               // TODO: Figure out how to clear this listener
               this.on('ContentAdded', (contentKey: Uint8Array, value) => {
-                if (equalsBytes(contentKey, key)) {
+                if (equalsBytes(contentKey, key) === true) {
                   this.logger.extend('FOUNDCONTENT')(`received content for uTP Connection ID ${id}`)
                   resolve({ content: value, utp: true })
                 }
