@@ -1,6 +1,6 @@
-import { Common } from '@ethereumjs/common'
-import { EVM } from '@ethereumjs/evm'
-import { Address, TypeOutput, bytesToHex, hexToBytes, toType } from '@ethereumjs/util'
+import { Common, Mainnet } from '@ethereumjs/common'
+import { createEVM } from '@ethereumjs/evm'
+import { bytesToHex, createAddressFromString, hexToBytes } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 import {
@@ -185,22 +185,22 @@ export class ETH {
   call = async (tx: RpcTx, blockNumber: bigint): Promise<any> => {
     this.networkCheck([NetworkId.HistoryNetwork, NetworkId.StateNetwork])
     const stateRoot = await this.history!.getStateRoot(blockNumber)
-    const common = new Common({ chain: 'mainnet' })
+    const common = new Common({ chain: Mainnet })
     if (!stateRoot) {
       throw new Error(`Unable to find StateRoot for block ${blockNumber}`)
     }
     const usm = new UltralightStateManager(this.state!)
 
-    const evm = await EVM.create({ stateManager: usm, common })
+    const evm = await createEVM({ stateManager: usm, common })
     await evm.stateManager.setStateRoot(stateRoot)
     const { from, to, gas: gasLimit, gasPrice, value, data } = tx
 
     const runCallOpts = {
-      caller: from !== undefined ? Address.fromString(from) : undefined,
-      to: to !== undefined ? Address.fromString(to) : undefined,
-      gasLimit: toType(gasLimit, TypeOutput.BigInt),
-      gasPrice: toType(gasPrice, TypeOutput.BigInt),
-      value: toType(value, TypeOutput.BigInt),
+      caller: from !== undefined ? createAddressFromString(from) : undefined,
+      to: to !== undefined ? createAddressFromString(to) : undefined,
+      gasLimit: gasLimit !== undefined ? BigInt(gasLimit) : undefined,
+      gasPrice: gasPrice !== undefined ? BigInt(gasPrice) : undefined,
+      value: value !== undefined ? BigInt(value) : undefined,
       data: data !== undefined ? hexToBytes(data) : undefined,
     }
     const res = (await evm.runCall(runCallOpts)).execResult.returnValue

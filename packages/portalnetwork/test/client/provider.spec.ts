@@ -1,14 +1,14 @@
 import { SignableENR } from '@chainsafe/enr'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import { createBlock, createBlockHeader } from '@ethereumjs/block'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, expect, it } from 'vitest'
 
+import { bytesToUnprefixedHex } from '@ethereumjs/util'
+import { hexToBytes } from 'ethereum-cryptography/utils'
 import { UltralightProvider } from '../../src/client/provider.js'
 import { TransportLayer } from '../../src/index.js'
 import { NetworkId } from '../../src/networks/types.js'
-import { hexToBytes } from 'ethereum-cryptography/utils'
-import { bytesToHex, bytesToUnprefixedHex } from '@ethereumjs/util'
 
 describe('Test provider functionality', () => {
   it('should test provider API', async () => {
@@ -35,14 +35,14 @@ describe('Test provider functionality', () => {
 
     // Stub getBlockByHash for unit testing
     provider.portal.ETH.getBlockByHash = async (_hash: Uint8Array) => {
-      return Block.fromBlockData({ header: BlockHeader.fromHeaderData({ number: 2n }) })
+      return createBlock({ header: createBlockHeader({ number: 2n }) })
     }
 
     provider.portal.ETH.getBlockByNumber = async (
       blockNumber: number | bigint | 'latest' | 'finalized',
     ) => {
-      return Block.fromBlockData({
-        header: BlockHeader.fromHeaderData({
+      return createBlock({
+        header: createBlockHeader({
           number: typeof blockNumber === 'string' ? 0n : blockNumber,
         }),
       })

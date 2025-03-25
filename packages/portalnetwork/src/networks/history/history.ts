@@ -1,4 +1,5 @@
-import { Block, BlockHeader } from '@ethereumjs/block'
+import type { BlockHeader } from '@ethereumjs/block'
+import { Block, createBlockHeaderFromRLP } from '@ethereumjs/block'
 import { bytesToHex, bytesToInt, concatBytes, equalsBytes, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
@@ -136,9 +137,7 @@ export class HistoryNetwork extends BaseNetwork {
     if (value === undefined) return undefined
     const header = BlockHeaderWithProof.deserialize(value).header
 
-    return asBytes === true
-      ? header
-      : BlockHeader.fromRLPSerializedHeader(header, { setHardfork: true })
+    return asBytes === true ? header : createBlockHeaderFromRLP(header, { setHardfork: true })
   }
 
   public getBlockBodyBytes = async (blockHash: Uint8Array): Promise<Uint8Array | undefined> => {
@@ -178,7 +177,7 @@ export class HistoryNetwork extends BaseNetwork {
     validation: { blockHash: string } | { blockNumber: bigint },
   ) => {
     const headerProof = BlockHeaderWithProof.deserialize(value)
-    const header = BlockHeader.fromRLPSerializedHeader(headerProof.header, {
+    const header = createBlockHeaderFromRLP(headerProof.header, {
       setHardfork: true,
     })
     if ('blockHash' in validation) {
@@ -332,7 +331,7 @@ export class HistoryNetwork extends BaseNetwork {
             response = await new Promise((resolve, _reject) => {
               // TODO: Figure out how to clear this listener
               this.on('ContentAdded', (contentKey: Uint8Array, value) => {
-                if (equalsBytes(contentKey, key)) {
+                if (equalsBytes(contentKey, key) === true) {
                   this.logger.extend('FOUNDCONTENT')(`received content for uTP Connection ID ${id}`)
                   resolve({ content: value, utp: true })
                 }
@@ -562,10 +561,10 @@ export class HistoryNetwork extends BaseNetwork {
         }
         try {
           // Verify first header matches requested header
-          const firstHeader = BlockHeader.fromRLPSerializedHeader(payload[0], { setHardfork: true })
+          const firstHeader = createBlockHeaderFromRLP(payload[0], { setHardfork: true })
           const requestedHeaderHash = decodeHistoryNetworkContentKey(contentKey)
             .keyOpt as EphemeralHeaderKeyValues
-          if (!equalsBytes(firstHeader.hash(), requestedHeaderHash.blockHash)) {
+          if (equalsBytes(firstHeader.hash(), requestedHeaderHash.blockHash) === false) {
             // TODO: Should we ban/mark down the score of peers who send junk payload?
             const errorMessage = `invalid ephemeral header payload; requested ${bytesToHex(requestedHeaderHash.blockHash)}, got ${bytesToHex(firstHeader.hash())}`
             this.logger(errorMessage)
@@ -579,10 +578,8 @@ export class HistoryNetwork extends BaseNetwork {
           // Should get maximum of 256 headers
           // TODO: Should we check this and ban/mark down the score of peers who violate this rule?
           for (const header of payload.slice(1, 256)) {
-            const ancestorHeader = BlockHeader.fromRLPSerializedHeader(header, {
-              setHardfork: true,
-            })
-            if (equalsBytes(prevHeader.parentHash, ancestorHeader.hash())) {
+            const ancestorHeader = createBlockHeaderFromRLP(header, { setHardfork: true })
+            if (equalsBytes(prevHeader.parentHash, ancestorHeader.hash()) === true) {
               // Verify that ancestor header matches parent hash of previous header
               const hashKey = getEphemeralHeaderDbKey(ancestorHeader.hash())
               await this.put(hashKey, bytesToHex(header))

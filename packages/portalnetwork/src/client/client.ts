@@ -186,7 +186,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       clientName: 'ultralight',
       clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
       operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture ?? '',
-      programmingLanguageAndVersion: `typescript${packageJson.devDependencies.typescript}`,
+      programmingLanguageAndVersion: `typescript_${packageJson.devDependencies.typescript}`,
     }
     this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
@@ -198,7 +198,12 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     this.bootnodes = opts.bootnodes ?? []
     this.uTP = new PortalNetworkUTP(this)
     this.utpTimout = opts.utpTimeout ?? 180000 // set default utpTimeout to 3 minutes
-    this.db = new DBManager(this.discv5.enr.nodeId, this.logger, async () => opts.dbSize(opts.dataDir ?? './'), opts.db) as DBManager
+    this.db = new DBManager(
+      this.discv5.enr.nodeId,
+      this.logger,
+      async () => opts.dbSize(opts.dataDir ?? './'),
+      opts.db,
+    ) as DBManager
     opts.supportedNetworks = opts.supportedNetworks ?? []
     for (const network of opts.supportedNetworks) {
       switch (network.networkId) {

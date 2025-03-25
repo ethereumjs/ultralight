@@ -1,7 +1,7 @@
 import { bigIntToHex, bytesToHex, intToHex } from '@ethereumjs/util'
 
 import type { Block } from '@ethereumjs/block'
-import type { JsonTx, TypedTransaction } from '@ethereumjs/tx'
+import type { JSONTx, TypedTransaction } from '@ethereumjs/tx'
 import type { Address } from '@ethereumjs/util'
 import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
 import type { Log } from 'portalnetwork/src/networks/index.js'
@@ -54,7 +54,7 @@ export type JsonRpcTx = {
   maxFeePerGas?: string // QUANTITY - max total fee per gas provided by the sender in wei.
   maxPriorityFeePerGas?: string // QUANTITY - max priority fee per gas provided by the sender in wei.
   type: string // QUANTITY - EIP-2718 Typed Transaction type
-  accessList?: JsonTx['accessList'] // EIP-2930 access list
+  accessList?: JSONTx['accessList'] // EIP-2930 access list
   chainId?: string // Chain ID that this transaction is valid on.
   hash: string // DATA, 32 Bytes - hash of the transaction.
   input: string // DATA - the data send along with the transaction.
@@ -103,8 +103,8 @@ export type JsonRpcLog = {
 export const jsonRpcTx = (tx: TypedTransaction, block?: Block, txIndex?: number): JsonRpcTx => {
   const txJSON = tx.toJSON()
   return {
-    blockHash: block ? bytesToHex(block.hash()) : null,
-    blockNumber: block ? bigIntToHex(block.header.number) : null,
+    blockHash: block !== undefined ? bytesToHex(block.hash()) : null,
+    blockNumber: block !== undefined ? bigIntToHex(block.header.number) : null,
     from: tx.getSenderAddress().toString(),
     gas: txJSON.gasLimit!,
     gasPrice: txJSON.gasPrice ?? txJSON.maxFeePerGas!,
@@ -177,9 +177,9 @@ export const jsonRpcLog = async (
   removed: false, // TODO implement
   logIndex: logIndex !== undefined ? intToHex(logIndex) : null,
   transactionIndex: txIndex !== undefined ? intToHex(txIndex) : null,
-  transactionHash: tx ? bytesToHex(tx.hash()) : null,
-  blockHash: block ? bytesToHex(block.hash()) : null,
-  blockNumber: block ? bigIntToHex(block.header.number) : null,
+  transactionHash: tx !== undefined ? bytesToHex(tx.hash()) : null,
+  blockHash: block !== undefined ? bytesToHex(block.hash()) : null,
+  blockNumber: block !== undefined ? bigIntToHex(block.header.number) : null,
   address: bytesToHex(log[0]),
   topics: log[1].map((t) => bytesToHex(t as Uint8Array)),
   data: bytesToHex(log[2]),
