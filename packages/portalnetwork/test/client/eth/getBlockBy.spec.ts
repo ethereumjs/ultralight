@@ -1,11 +1,11 @@
 import { assert, describe, it } from 'vitest'
 import { hexToBytes } from '@ethereumjs/util'
-import { PortalNetwork } from '../../../src/client/client.js'
+import { createPortalNetwork } from '../../../src/client/index.js'
 import { NetworkId } from '../../../src/networks/types.js'
 
 import type { HistoryNetwork } from '../../../src/networks/history/history.js'
 describe('getBlockByHash', async () => {
-    const ultralight = await PortalNetwork.create({
+    const ultralight = await createPortalNetwork({
         bindAddress: '127.0.0.1',
     })
     it('should not find a block by hash', async () => {

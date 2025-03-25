@@ -7,7 +7,7 @@ import {
   HistoryNetwork,
   HistoryNetworkContentType,
   NetworkId,
-  PortalNetwork,
+  createPortalNetwork,
   decodeHistoryNetworkContentKey,
 } from '../../../src/index.js'
 
@@ -30,7 +30,7 @@ describe('Retrieve Block Header By Number', async () => {
       keyOpt: 207686n,
     })
   })
-  const client = await PortalNetwork.create({})
+  const client = await createPortalNetwork({})
   const history = new HistoryNetwork({
     client,
     networkId: NetworkId.HistoryNetwork,

@@ -7,9 +7,9 @@ import {
   HistoryNetworkContentType,
   HistoryRadius,
   PingPongPayloadExtensions,
-  PortalNetwork,
   getContentKey,
   getEphemeralHeaderDbKey,
+  createPortalNetwork,
 } from '../../../src/index.js'
 import latestBlocks from './testData/latest3Blocks.json'
 
@@ -29,7 +29,7 @@ describe('ephemeral header handling', () => {
     })
   })
   it('should be able to store a valid ephemeral header payload', async () => {
-    const node = await PortalNetwork.create({})
+    const node = await createPortalNetwork({})
     const network = node.network()['0x500b']
 
     await network!.store(contentKey, headerPayload)
@@ -41,7 +41,7 @@ describe('ephemeral header handling', () => {
     )
   })
   it('should produce the correct HISTORY_RADIUS ping payload', async () => {
-    const node = await PortalNetwork.create({})
+    const node = await createPortalNetwork({})
     const network = node.network()['0x500b']
     await network?.store(contentKey, headerPayload)
     const payload = network!.pingPongPayload(PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD)

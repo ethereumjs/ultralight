@@ -9,9 +9,9 @@ import {
   NetworkId,
   // Packet,
   PacketType,
-  PortalNetwork,
   PortalNetworkUTP,
   UtpSocketType,
+  createPortalNetwork,
 } from '../../../src/index.js'
 import { createUtpSocket } from '../../../src/wire/utp/Socket/index.js'
 
@@ -26,7 +26,7 @@ const readId = 1111
 const writeId = 2222
 
 const _read = async (networkId: NetworkId): Promise<ReadSocket> => {
-  const client = await PortalNetwork.create({ bindAddress: '127.0.0.1' })
+  const client = await createPortalNetwork({ bindAddress: '127.0.0.1' })
   return createUtpSocket({
     utp: new PortalNetworkUTP(client),
     networkId,
@@ -40,7 +40,7 @@ const _read = async (networkId: NetworkId): Promise<ReadSocket> => {
   }) as ReadSocket
 }
 const _write = async (networkId: NetworkId, seqNr?: number): Promise<WriteSocket> => {
-  const client = await PortalNetwork.create({ bindAddress: '127.0.0.1' })
+  const client = await createPortalNetwork({ bindAddress: '127.0.0.1' })
   return createUtpSocket({
     utp: new PortalNetworkUTP(client),
     networkId,

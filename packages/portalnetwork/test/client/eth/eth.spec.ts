@@ -1,13 +1,13 @@
 import { assert, describe, it } from 'vitest'
 
-import { PortalNetwork } from '../../../src/client/client.js'
+import { createPortalNetwork } from '../../../src/client/index.js'
 import { NetworkId } from '../../../src/networks/types.js'
 
 import type { HistoryNetwork } from '../../../src/networks/history/history.js'
 import type { StateNetwork } from '../../../src/networks/state/state.js'
 
 describe('ETH class base level API checks', async () => {
-  const ultralight = await PortalNetwork.create({
+  const ultralight = await createPortalNetwork({
     bindAddress: '127.0.0.1',
     supportedNetworks: [
       { networkId: NetworkId.HistoryNetwork },

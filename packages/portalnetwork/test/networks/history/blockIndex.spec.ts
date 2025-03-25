@@ -5,7 +5,7 @@ import {
   BlockHeaderWithProof,
   HistoryNetworkContentType,
   NetworkId,
-  PortalNetwork,
+  createPortalNetwork,
   getContentKey,
 } from '../../../src/index.js'
 
@@ -25,7 +25,7 @@ const header = BlockHeader.fromRLPSerializedHeader(serializedHeader.header, { se
 const hash = bytesToHex(header.hash())
 
 describe('BlockIndex', async () => {
-  const ultralight = await PortalNetwork.create({
+  const ultralight = await createPortalNetwork({
     bindAddress: '127.0.0.1',
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
   })
@@ -48,7 +48,7 @@ describe('BlockIndex', async () => {
     assert.deepEqual(stored, expected)
   })
 
-  const ultralight2 = await PortalNetwork.create({
+  const ultralight2 = await createPortalNetwork({
     bindAddress: '127.0.0.1',
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     db: ultralight.db.db,

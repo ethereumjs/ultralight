@@ -4,7 +4,7 @@ import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, expect, it } from 'vitest'
 
-import { UltralightProvider } from '../../src/client/provider.js'
+import { createUltralightProvider } from '../../src/client/provider.js'
 import { TransportLayer } from '../../src/index.js'
 import { NetworkId } from '../../src/networks/types.js'
 import { hexToBytes } from 'ethereum-cryptography/utils'
@@ -16,7 +16,7 @@ describe('Test provider functionality', () => {
     const privateKey = await keys.generateKeyPair('secp256k1')
     const enr = SignableENR.createFromPrivateKey(privateKey)
     enr.setLocationMultiaddr(ma)
-    const provider = await UltralightProvider.create({
+    const provider = await createUltralightProvider({
       bindAddress: '0.0.0.0.0',
       transport: TransportLayer.NODE,
       config: {
@@ -135,7 +135,7 @@ describe('Test provider functionality', () => {
     await provider.portal.stop()
   })
   it('should instantiate provider with default network settings', async () => {
-    const provider = await UltralightProvider.create({})
+    const provider = await createUltralightProvider({})
     assert.ok(provider.portal.bootnodes.length > 0)
     assert.ok(provider.portal.discv5.bindAddrs[0].toString().includes('0.0.0.0'))
   })

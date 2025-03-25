@@ -7,7 +7,6 @@ import {
   NetworkId,
   Packet,
   PacketType,
-  PortalNetwork,
   PortalNetworkUTP,
   ReadSocket,
   RequestCode,
@@ -15,6 +14,7 @@ import {
   encodeWithVariantPrefix,
   randUint16,
   startingNrs,
+  createPortalNetwork,
 } from '../../../src/index.js'
 import { ContentReader } from '../../../src/wire/utp/Socket/ContentReader.js'
 import { ContentWriter } from '../../../src/wire/utp/Socket/ContentWriter.js'
@@ -126,7 +126,7 @@ describe('uTP Reader/Writer tests', async () => {
 })
 
 describe('PortalNetworkUTP test', async () => {
-  const client = await PortalNetwork.create({
+  const client = await createPortalNetwork({
     bindAddress: enr.getLocationMultiaddr('udp')!.nodeAddress().address,
   })
   const utp = new PortalNetworkUTP(client)
@@ -217,7 +217,7 @@ describe('PortalNetworkUTP test', async () => {
 })
 describe('RequestManager', () => {
   it('should order packets correctly', async () => {
-    const client = await PortalNetwork.create({
+    const client = await createPortalNetwork({
       bindAddress: enr.getLocationMultiaddr('udp')!.nodeAddress().address,
     })
     const mgr = new RequestManager(enr.nodeId, debug('test'))
