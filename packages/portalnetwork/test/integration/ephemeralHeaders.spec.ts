@@ -1,7 +1,7 @@
 import { SignableENR } from '@chainsafe/enr'
-import type { BlockHeader, JSONRPCBlock } from '@ethereumjs/block'
-import { createBlockFromRPC } from '@ethereumjs/block'
-import { hexToBytes, randomBytes } from '@ethereumjs/util'
+import type { BlockHeader, HeaderData, JSONRPCBlock } from '@ethereumjs/block'
+import { createBlockFromRPC, createBlockHeader } from '@ethereumjs/block'
+import { bytesToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, beforeAll, describe, it } from 'vitest'
@@ -13,6 +13,7 @@ import {
   getContentKey,
 } from '../../src/index.js'
 import latestBlocks from '../networks/history/testData/latest3Blocks.json'
+import optimisticUpdate from './testdata/optimisticUpdate.json'
 
 describe('should be able to retrieve ephemeral headers from a peer', () => {
   let headers: BlockHeader[]
@@ -123,5 +124,35 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     } else {
       assert.fail('Expected content in response')
     }
+  })
+})
+
+describe('should store execution payload header from optimistic update as ephemeral header', () => {
+  it('should extract EL header from optimistic update', async () => {
+    const convertExecutionPayloadToBlockHeaderData = (execution): HeaderData => {
+      return {
+        parentHash: hexToBytes(execution.parent_hash),
+        coinbase: hexToBytes(execution.fee_recipient),
+        stateRoot: hexToBytes(execution.state_root),
+        receiptTrie: hexToBytes(execution.receipts_root),
+        logsBloom: hexToBytes(execution.logs_bloom),
+        mixHash: hexToBytes(execution.prev_randao),
+        number: BigInt(execution.block_number),
+        gasLimit: BigInt(execution.gas_limit),
+        gasUsed: BigInt(execution.gas_used),
+        timestamp: BigInt(execution.timestamp),
+        extraData: hexToBytes(execution.extra_data),
+        baseFeePerGas: BigInt(execution.base_fee_per_gas),
+        transactionsTrie: hexToBytes(execution.transactions_root),
+        withdrawalsRoot: hexToBytes(execution.withdrawals_root),
+      }
+    }
+
+    const blockHeaderData = convertExecutionPayloadToBlockHeaderData(
+      optimisticUpdate.attested_header.execution,
+    )
+    const header = createBlockHeader(blockHeaderData, { setHardfork: true })
+
+    assert.equal(bytesToHex(header.hash()), optimisticUpdate.attested_header.execution.block_hash)
   })
 })
