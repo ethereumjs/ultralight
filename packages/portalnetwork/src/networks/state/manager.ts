@@ -1,6 +1,6 @@
 import { RLP } from '@ethereumjs/rlp'
 import { MerklePatriciaTrie as Trie } from '@ethereumjs/mpt'
-import { Account, bytesToHex, createAccountFromRLP } from '@ethereumjs/util'
+import { bytesToHex, createAccountFromRLP } from '@ethereumjs/util'
 
 import { ContentLookup } from '../contentLookup.js'
 
