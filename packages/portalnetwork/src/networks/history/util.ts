@@ -1,6 +1,11 @@
 import { digest } from '@chainsafe/as-sha256'
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import {
+  createBlock,
+  createBlockFromBytesArray,
+  createBlockFromRLP,
+  createBlockHeaderFromRLP,
+} from '@ethereumjs/block'
 import { RLP as rlp } from '@ethereumjs/rlp'
 import { bytesToHex, bytesToUnprefixedHex, equalsBytes, hexToBytes } from '@ethereumjs/util'
 import { ssz } from '@lodestar/types'
@@ -32,6 +37,7 @@ import type {
   VectorCompositeType,
 } from '@chainsafe/ssz'
 import type {
+  Block,
   BlockBytes,
   BlockHeaderBytes,
   TransactionsBytes,
@@ -39,9 +45,9 @@ import type {
 } from '@ethereumjs/block'
 import type { WithdrawalBytes } from '@ethereumjs/util'
 import type { ForkConfig } from '@lodestar/config'
+import type { EphemeralHeaderKeyValues } from '../history/types.js'
 import type { HistoryNetwork } from './history.js'
 import type { BlockBodyContent, Witnesses } from './types.js'
-import type { EphemeralHeaderKeyValues } from '../history/types.js'
 
 export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
   return Uint8Array.from([
@@ -194,7 +200,7 @@ export const decodeSszBlockBody = (
 export const sszEncodeBlockBody = (block: Block) => {
   const encodedSSZTxs = block.transactions.map((tx) => sszTransactionType.serialize(tx.serialize()))
   const encodedUncles = rlp.encode(block.uncleHeaders.map((uh) => uh.raw()))
-  if (block.withdrawals) {
+  if (block.withdrawals !== undefined) {
     const encodedWithdrawals = block.withdrawals.map((w) => rlp.encode(w.raw()))
     const sszWithdrawals = encodedWithdrawals.map((w) => SSZWithdrawal.serialize(w))
     return PostShanghaiBlockBody.serialize({
@@ -227,14 +233,14 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
     if ('allWithdrawals' in decodedBody) {
       valuesArray.push(decodedBody.allWithdrawals.map((w) => rlp.decode(w)) as WithdrawalBytes)
     }
-    const block = Block.fromValuesArray(valuesArray, { setHardfork: true })
+    const block = createBlockFromBytesArray(valuesArray, { setHardfork: true })
     return block
   } else {
-    const header = BlockHeader.fromRLPSerializedHeader(rawHeader, {
+    const header = createBlockHeaderFromRLP(rawHeader, {
       setHardfork: true,
       skipConsensusFormatValidation: false,
     })
-    const block = Block.fromBlockData({ header }, { setHardfork: true })
+    const block = createBlock({ header }, { setHardfork: true })
     return block
   }
 }
@@ -253,7 +259,7 @@ export const addRLPSerializedBlock = async (
   network: HistoryNetwork,
   proof: Uint8Array,
 ) => {
-  const block = Block.fromRLPSerializedBlock(hexToBytes(rlpHex), {
+  const block = createBlockFromRLP(hexToBytes(rlpHex), {
     setHardfork: true,
   })
   const header = block.header
@@ -340,10 +346,10 @@ export const verifyPreCapellaHeaderProof = (
     leaf: proof.beaconBlockRoot, // This should be the leaf value this proof is verifying
   })
   if (
-    !equalsBytes(
+    equalsBytes(
       reconstructedBatch.hashTreeRoot(),
       hexToBytes(historicalRoots[Number(slotToHistoricalBatch(proof.slot))]),
-    )
+    ) === false
   )
     return false
 
@@ -359,7 +365,7 @@ export const verifyPreCapellaHeaderProof = (
     leaf: elBlockHash,
   })
 
-  if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot)) return false
+  if (equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot) === false) return false
   return true
 }
 
@@ -387,12 +393,12 @@ export const verifyPostCapellaHeaderProof = (
   })
 
   if (
-    !equalsBytes(
+    equalsBytes(
       reconstructedBatch.hashTreeRoot(),
       // The HistoricalSummaries array starts with era 758 so we have to subtract that from the actual
       // era in which a slot occurs when retrieving the index in the Historical Summaries Array
       historicalSummaries[Number(slotToHistoricalBatch(proof.slot)) - CAPELLA_ERA].blockSummaryRoot,
-    )
+    ) === false
   ) {
     return false
   }
@@ -408,7 +414,7 @@ export const verifyPostCapellaHeaderProof = (
     leaf: elBlockHash,
   })
 
-  if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot)) return false
+  if (equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot) === false) return false
   return true
 }
 

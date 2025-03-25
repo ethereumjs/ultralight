@@ -3,7 +3,7 @@ import { SignableENR } from '@chainsafe/enr'
 import { Chain, Common, Hardfork } from '@ethereumjs/common'
 import { getGenesis } from '@ethereumjs/genesis'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
-import { ExtensionNode, Trie, decodeNode } from '@ethereumjs/trie'
+import { ExtensionNode, Trie, decodeNode } from '@ethereumjs/mpt'
 import { bytesToHex, bytesToUnprefixedHex, hexToBytes, padToEven } from '@ethereumjs/util'
 import { VM } from '@ethereumjs/vm'
 import { privateKeyFromProtobuf } from '@libp2p/crypto/keys'
@@ -20,7 +20,7 @@ import {
 } from '../../src/index.js'
 import { mainnet } from '../../src/networks/state/genesis.js'
 
-import type { LeafNode } from '@ethereumjs/trie'
+import type { LeafNode } from '@ethereumjs/mpt'
 import type { StateNetwork, TAccountTrieNodeKey, TNibble } from '../../src'
 import type { StateDB } from '../../src/networks/state/statedb'
 

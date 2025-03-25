@@ -1,6 +1,6 @@
 import { RLP } from '@ethereumjs/rlp'
-import { Trie } from '@ethereumjs/trie'
-import { Account, bytesToHex } from '@ethereumjs/util'
+import { MerklePatriciaTrie as Trie } from '@ethereumjs/mpt'
+import { Account, bytesToHex, createAccountFromRLP } from '@ethereumjs/util'
 
 import { ContentLookup } from '../contentLookup.js'
 
@@ -30,7 +30,7 @@ export class StateManager {
     if (accountRLP === undefined) {
       return undefined
     }
-    const account = Account.fromRlpSerializedAccount(accountRLP)
+    const account = createAccountFromRLP(accountRLP)
     return account.balance
   }
   async getCodeHash(address: Uint8Array, stateroot: Uint8Array): Promise<Uint8Array | undefined> {
@@ -38,7 +38,7 @@ export class StateManager {
     if (accountRLP === undefined) {
       return undefined
     }
-    const account = Account.fromRlpSerializedAccount(accountRLP)
+    const account = createAccountFromRLP(accountRLP)
     return account.codeHash
   }
   async getNonce(address: Uint8Array, stateroot: Uint8Array): Promise<bigint | undefined> {
@@ -46,7 +46,7 @@ export class StateManager {
     if (accountRLP === undefined) {
       return undefined
     }
-    const account = Account.fromRlpSerializedAccount(accountRLP)
+    const account = createAccountFromRLP(accountRLP)
     return account.nonce
   }
   async getCode(address: Uint8Array, stateroot: Uint8Array): Promise<Uint8Array | undefined> {
@@ -71,7 +71,7 @@ export class StateManager {
     if (accountRLP === undefined) {
       return undefined
     }
-    const account = Account.fromRlpSerializedAccount(accountRLP)
+    const account = createAccountFromRLP(accountRLP)
     return account.storageRoot
   }
   async getStorageAt(

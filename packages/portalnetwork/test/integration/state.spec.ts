@@ -1,5 +1,5 @@
 import { SignableENR } from '@chainsafe/enr'
-import { Trie } from '@ethereumjs/trie'
+import { Trie } from '@ethereumjs/mpt'
 import { Account, bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'

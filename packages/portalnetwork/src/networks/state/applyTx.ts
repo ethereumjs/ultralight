@@ -1,7 +1,7 @@
 import { RLP } from '@ethereumjs/rlp'
-import { Trie } from '@ethereumjs/trie'
+import { MerklePatriciaTrie as Trie } from '@ethereumjs/mpt'
 import { KECCAK256_RLP } from '@ethereumjs/util'
-import { Bloom, encodeReceipt } from '@ethereumjs/vm'
+import { Bloom, encodeReceipt, runTx } from '@ethereumjs/vm'
 
 import type { Block } from '@ethereumjs/block'
 import type { RunBlockOpts, VM } from '@ethereumjs/vm'
@@ -34,7 +34,7 @@ export async function applyTransactions(this: VM, block: Block, opts: RunBlockOp
 
     let maxGasLimit
     if (this.common.isActivatedEIP(1559) === true) {
-      maxGasLimit = block.header.gasLimit * this.common.param('gasConfig', 'elasticityMultiplier')
+      maxGasLimit = block.header.gasLimit * this.common.param('elasticityMultiplier')
     } else {
       maxGasLimit = block.header.gasLimit
     }
@@ -47,7 +47,7 @@ export async function applyTransactions(this: VM, block: Block, opts: RunBlockOp
     // Run the tx through the VM
     const { skipBalance, skipNonce, skipHardForkValidation } = opts
 
-    const txRes = await this.runTx({
+    const txRes = await runTx(this, {
       tx,
       block,
       skipBalance,

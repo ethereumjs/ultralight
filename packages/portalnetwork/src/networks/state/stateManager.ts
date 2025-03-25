@@ -1,13 +1,20 @@
 import { AccountCache, CacheType, StorageCache } from '@ethereumjs/statemanager'
-import { Account, KECCAK256_NULL, KECCAK256_NULL_S, bytesToHex, hexToBytes } from '@ethereumjs/util'
+import {
+  Account,
+  KECCAK256_NULL,
+  KECCAK256_NULL_S,
+  bytesToHex,
+  createAccountFromRLP,
+  hexToBytes,
+} from '@ethereumjs/util'
 
 import { OriginalStorageCache } from './originalStorageCache/cache.js'
 
-import type { EVMStateManagerInterface, Proof, StorageDump, StorageRange } from '@ethereumjs/common'
+import type { Proof, StateManagerInterface, StorageDump, StorageRange } from '@ethereumjs/common'
 import type { Address } from '@ethereumjs/util'
 import type { StateNetwork } from './state.js'
 
-export class UltralightStateManager implements EVMStateManagerInterface {
+export class UltralightStateManager implements StateManagerInterface {
   protected _contractCache: Map<string, Uint8Array>
   protected _storageCache: StorageCache
   protected _accountCache: AccountCache
@@ -24,6 +31,31 @@ export class UltralightStateManager implements EVMStateManagerInterface {
     this.stateRoot = KECCAK256_NULL_S
     this.stateRootBytes = KECCAK256_NULL
     this.originalStorageCache = new OriginalStorageCache(this.getContractStorage.bind(this))
+  }
+  putCode(_address: Address, _value: Uint8Array): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+  getCode(_address: Address): Promise<Uint8Array> {
+    throw new Error('Method not implemented.')
+  }
+  getCodeSize(_address: Address): Promise<number> {
+    throw new Error('Method not implemented.')
+  }
+  getStorage(_address: Address, _key: Uint8Array): Promise<Uint8Array> {
+    throw new Error('Method not implemented.')
+  }
+  putStorage(_address: Address, _key: Uint8Array, _value: Uint8Array): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+  clearStorage(_address: Address): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+
+  checkChunkWitnessPresent?(_contract: Address, _programCounter: number): Promise<boolean> {
+    throw new Error('Method not implemented.')
+  }
+  getAppliedKey?(_address: Uint8Array): Uint8Array {
+    throw new Error('Method not implemented.')
   }
 
   clearCaches(): void {
@@ -52,15 +84,13 @@ export class UltralightStateManager implements EVMStateManagerInterface {
   getProof(_address: Address, _storageSlots?: Uint8Array[] | undefined): Promise<Proof> {
     throw new Error('Method not implemented.')
   }
-  shallowCopy(): EVMStateManagerInterface {
+  shallowCopy(): StateManagerInterface {
     return new UltralightStateManager(this.state)
   }
   getAccount = async (address: Address): Promise<Account | undefined> => {
     const elem = this._accountCache?.get(address)
     if (elem !== undefined) {
-      return elem.accountRLP !== undefined
-        ? Account.fromRlpSerializedAccount(elem.accountRLP)
-        : undefined
+      return elem.accountRLP !== undefined ? createAccountFromRLP(elem.accountRLP) : undefined
     }
     let account: Account | undefined
     const accountRLP = await this.state.manager.getAccount(
@@ -68,7 +98,7 @@ export class UltralightStateManager implements EVMStateManagerInterface {
       hexToBytes(this.stateRoot),
     )
     if (accountRLP !== undefined) {
-      account = Account.fromRlpSerializedAccount(accountRLP)
+      account = createAccountFromRLP(accountRLP)
       this._accountCache?.put(address, account)
     }
     return account
@@ -89,7 +119,7 @@ export class UltralightStateManager implements EVMStateManagerInterface {
   ): Promise<void> => {
     let account: Account | undefined
     // let account = await this.getAccount(address)
-    if (!account) {
+    if (account === undefined) {
       account = new Account()
     }
     account.nonce = accountFields.nonce ?? account.nonce
@@ -141,7 +171,7 @@ export class UltralightStateManager implements EVMStateManagerInterface {
   }
 
   clearContractStorage = async (address: Address): Promise<void> => {
-    this._storageCache.clearContractStorage(address)
+    this._storageCache.clearStorage(address)
   }
   checkpoint = async (): Promise<void> => {
     this._accountCache.checkpoint()

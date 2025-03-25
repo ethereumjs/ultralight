@@ -9,7 +9,7 @@ import {
   intToBytes,
   utf8ToBytes,
 } from '@ethereumjs/util'
-import { VM } from '@ethereumjs/vm'
+import { createVM, runTx } from '@ethereumjs/vm'
 
 import { Bloom, reassembleBlock } from '../index.js'
 
@@ -70,13 +70,13 @@ export function decodeReceipts(value: Uint8Array) {
 }
 
 export async function saveReceipts(block: Block): Promise<Uint8Array> {
-  const vm = await VM.create({
+  const vm = await createVM({
     common: block.common,
     setHardfork: true,
   })
   const receipts: TxReceiptType[] = []
   for (const tx of block.transactions) {
-    const txResult = await vm.runTx({
+    const txResult = await runTx(vm, {
       tx,
       skipBalance: true,
       skipBlockGasLimitValidation: true,
@@ -153,7 +153,7 @@ export async function getLogs(
             // If null then can match any
           } else {
             // If a value is specified then it must match
-            if (!equalsBytes(topic, l.log[1][i])) return false
+            if (equalsBytes(topic, l.log[1][i]) === false) return false
           }
           return true
         }

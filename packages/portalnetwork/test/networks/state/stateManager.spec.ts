@@ -1,7 +1,7 @@
 // import { SignableENR } from '@chainsafe/discv5/enr'
 // import { hexToBytes, bytesToHex } from '@chainsafe/ssz'
 // import { EVM } from '@ethereumjs/evm'
-// import { Trie } from '@ethereumjs/trie'
+// import { Trie } from '@ethereumjs/mpt'
 // import {
 //   Account,
 //   Address,
