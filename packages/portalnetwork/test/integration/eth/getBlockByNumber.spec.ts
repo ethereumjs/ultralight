@@ -15,9 +15,9 @@ import {
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
   NetworkId,
-  PortalNetwork,
   TransportLayer,
   addRLPSerializedBlock,
+  createPortalNetwork,
   generatePreMergeHeaderProof,
   getBeaconContentKey,
 } from '../../../src/index.js'
