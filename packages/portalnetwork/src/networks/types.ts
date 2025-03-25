@@ -1,5 +1,4 @@
 import { ByteVectorType } from '@chainsafe/ssz'
-import { zeros } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 import type { ENR, NodeId } from '@chainsafe/enr'
@@ -62,7 +61,7 @@ export class Bloom {
    */
   constructor(bitvector?: Uint8Array) {
     if (!bitvector) {
-      this.bitvector = zeros(BYTE_SIZE)
+      this.bitvector = new Uint8Array(BYTE_SIZE)
     } else {
       if (bitvector.length !== BYTE_SIZE) {
         throw new Error('bitvectors must be 2048 bits long')

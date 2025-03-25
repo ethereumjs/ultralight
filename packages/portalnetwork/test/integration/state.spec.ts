@@ -1,6 +1,6 @@
 import { SignableENR } from '@chainsafe/enr'
-import { Trie } from '@ethereumjs/trie'
-import { Account, bytesToHex, hexToBytes } from '@ethereumjs/util'
+import { MerklePatriciaTrie as Trie } from '@ethereumjs/mpt'
+import { bytesToHex, createAccountFromRLP, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, expect, it } from 'vitest'
@@ -196,7 +196,7 @@ describe('getAccount via network', async () => {
     })
     return
   }
-  const foundAccount = Account.fromRlpSerializedAccount(found)
+  const foundAccount = createAccountFromRLP(found)
   it('should find account data', async () => {
     assert.deepEqual(foundAccount.balance, BigInt('0x3636cd06e2db3a8000'), 'account data found')
   })

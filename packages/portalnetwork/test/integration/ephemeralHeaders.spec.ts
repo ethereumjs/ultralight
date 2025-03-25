@@ -1,6 +1,6 @@
 import { SignableENR } from '@chainsafe/enr'
-import type { BlockHeader, JsonRpcBlock } from '@ethereumjs/block'
-import { Block } from '@ethereumjs/block'
+import type { BlockHeader, JSONRPCBlock } from '@ethereumjs/block'
+import { createBlockFromRPC } from '@ethereumjs/block'
 import { hexToBytes, randomBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -20,9 +20,15 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
   let contentKey: Uint8Array
   beforeAll(() => {
     headers = []
-    headers.push(Block.fromRPC(latestBlocks[0] as JsonRpcBlock, [], { setHardfork: true }).header)
-    headers.push(Block.fromRPC(latestBlocks[1] as JsonRpcBlock, [], { setHardfork: true }).header)
-    headers.push(Block.fromRPC(latestBlocks[2] as JsonRpcBlock, [], { setHardfork: true }).header)
+    headers.push(
+      createBlockFromRPC(latestBlocks[0] as JSONRPCBlock, [], { setHardfork: true }).header,
+    )
+    headers.push(
+      createBlockFromRPC(latestBlocks[1] as JSONRPCBlock, [], { setHardfork: true }).header,
+    )
+    headers.push(
+      createBlockFromRPC(latestBlocks[2] as JSONRPCBlock, [], { setHardfork: true }).header,
+    )
     headerPayload = EphemeralHeaderPayload.serialize(headers.map((h) => h.serialize()))
     contentKey = getContentKey(HistoryNetworkContentType.EphemeralHeader, {
       blockHash: headers[0].hash(),

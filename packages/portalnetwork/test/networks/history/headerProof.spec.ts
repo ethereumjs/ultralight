@@ -1,12 +1,12 @@
-import { readFileSync } from 'fs'
-import { createRequire } from 'module'
-import { resolve } from 'path'
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
-import { BlockHeader } from '@ethereumjs/block'
+import { createBlockHeaderFromRLP } from '@ethereumjs/block'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { createChainForkConfig } from '@lodestar/config'
 import { ssz } from '@lodestar/types'
+import { readFileSync } from 'fs'
 import yaml from 'js-yaml'
+import { createRequire } from 'module'
+import { resolve } from 'path'
 import { assert, beforeAll, describe, it } from 'vitest'
 
 import {
@@ -49,7 +49,7 @@ describe('Pre-Merge Header Record Proof tests', () => {
   }
   const historicalEpochs = HistoricalEpochsType.deserialize(hexToBytes(accumulator))
   const epoch = EpochAccumulator.deserialize(hexToBytes(epoch_hex))
-  const header = BlockHeader.fromRLPSerializedHeader(hexToBytes(block1000.rawHeader), {
+  const header = createBlockHeaderFromRLP(hexToBytes(block1000.rawHeader), {
     setHardfork: true,
   })
   it('Test Data is valid', () => {

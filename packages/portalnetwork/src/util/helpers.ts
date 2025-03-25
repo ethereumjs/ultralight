@@ -1,5 +1,5 @@
-import { Block, BlockHeader } from '@ethereumjs/block'
-import { TransactionFactory } from '@ethereumjs/tx'
+import { createBlock, createBlockHeaderFromRPC } from '@ethereumjs/block'
+
 import {
   TypeOutput,
   bigIntToHex,
@@ -9,17 +9,17 @@ import {
   toBytes,
   toType,
 } from '@ethereumjs/util'
-import { VM } from '@ethereumjs/vm'
+import { createVM, runTx } from '@ethereumjs/vm'
 import debug from 'debug'
 import { ethers } from 'ethers'
 
-import type { BlockOptions, JsonRpcBlock, Block as ethJsBlock } from '@ethereumjs/block'
-import type {
-  AccessListEIP2930Transaction,
-  FeeMarketEIP1559Transaction,
-  LegacyTransaction,
-  TypedTransaction,
-  TypedTxData,
+import type { Block, BlockOptions, JSONRPCBlock, Block as ethJsBlock } from '@ethereumjs/block'
+import {
+  type EIP2930CompatibleTx,
+  type TypedTransaction,
+  type TypedTxData,
+  accessListBytesToJSON,
+  createTx,
 } from '@ethereumjs/tx'
 import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt } from '@ethereumjs/vm'
 import type { Log, TxReceiptType } from '../networks/index.js'
@@ -28,13 +28,13 @@ export async function getBlockReceipts(
   block: Block,
   provider: ethers.JsonRpcProvider,
 ): Promise<ethers.TransactionReceipt[]> {
-  const vm = await VM.create({
+  const vm = await createVM({
     common: block.common,
     setHardfork: true,
   })
   const receipts: TxReceiptType[] = []
   for (const tx of block.transactions) {
-    const txResult = await vm.runTx({
+    const txResult = await runTx(vm, {
       tx,
       skipBalance: true,
       skipBlockGasLimitValidation: true,
@@ -78,9 +78,7 @@ export async function getBlockReceipts(
         logs,
         blockNumber: Number(block.header.number),
         effectiveGasPrice:
-          block.transactions[idx].type === 0
-            ? (block.transactions[idx] as LegacyTransaction).gasPrice
-            : null,
+          block.transactions[idx].type === 0 ? block.transactions[idx].gasPrice : null,
         type: block.transactions[idx].type,
         status: (r as PostByzantiumTxReceipt).status ?? undefined,
       },
@@ -162,17 +160,17 @@ export const ethJsBlockToEthersBlockWithTxs = async (
         gasLimit: tx.gasLimit,
         data: bytesToHex(tx.data),
         value: tx.value,
-        gasPrice: tx.type === 0 ? (tx as LegacyTransaction).gasPrice : 0n,
-        maxFeePerGas: tx.type === 2 ? (tx as FeeMarketEIP1559Transaction).maxFeePerGas : null,
-        maxPriorityFeePerGas:
-          tx.type === 2 ? (tx as FeeMarketEIP1559Transaction).maxPriorityFeePerGas : null,
+        gasPrice: tx.type === 0 ? tx.gasPrice : 0n,
+        maxFeePerGas: tx.type === 2 ? tx.maxFeePerGas : null,
+        maxPriorityFeePerGas: tx.type === 2 ? tx.maxPriorityFeePerGas : null,
         blockHash: bytesToHex(block.hash()),
         blockNumber: Number(block.header.number),
         index: txns.length,
         type: tx.type,
         to: tx.to?.toString() ?? null,
-        accessList:
-          ethers.accessListify((tx as AccessListEIP2930Transaction)?.AccessListJSON) ?? null,
+        accessList: ethers.accessListify(
+          accessListBytesToJSON((tx as EIP2930CompatibleTx)?.accessList),
+        ),
       },
       provider,
     )
@@ -220,59 +218,6 @@ export function normalizeTxParams(_txParams: any) {
 }
 
 /**
- * Creates a new block header object from Ethereum JSON RPC.
- *
- * @param blockParams - Ethereum JSON RPC of block (eth_getBlockByNumber)
- * @param options - An object describing the blockchain
- */
-export function blockHeaderFromRpc(blockParams: JsonRpcBlock, options?: BlockOptions) {
-  const {
-    parentHash,
-    sha3Uncles,
-    miner,
-    stateRoot,
-    transactionsRoot,
-    receiptsRoot,
-    logsBloom,
-    difficulty,
-    number,
-    gasLimit,
-    gasUsed,
-    timestamp,
-    extraData,
-    mixHash,
-    nonce,
-    baseFeePerGas,
-    withdrawalsRoot,
-  } = blockParams
-
-  const blockHeader = BlockHeader.fromHeaderData(
-    {
-      parentHash,
-      uncleHash: sha3Uncles,
-      coinbase: miner,
-      stateRoot,
-      transactionsTrie: transactionsRoot,
-      receiptTrie: receiptsRoot,
-      logsBloom,
-      difficulty,
-      number,
-      gasLimit,
-      gasUsed,
-      timestamp,
-      extraData,
-      mixHash,
-      nonce,
-      baseFeePerGas,
-      withdrawalsRoot,
-    },
-    { ...options, setHardfork: true },
-  )
-
-  return blockHeader
-}
-
-/**
  * Creates a new block object from Ethereum JSON RPC.
  *
  * @param blockParams - Ethereum JSON RPC of block (eth_getBlockByNumber)
@@ -280,26 +225,23 @@ export function blockHeaderFromRpc(blockParams: JsonRpcBlock, options?: BlockOpt
  * @param options - An object describing the blockchain
  */
 export function blockFromRpc(
-  blockParams: JsonRpcBlock,
+  blockParams: JSONRPCBlock,
   uncles: any[] = [],
   options?: BlockOptions,
 ) {
-  const header = blockHeaderFromRpc(blockParams, options)
+  const header = createBlockHeaderFromRPC(blockParams, options)
 
   const transactions: TypedTransaction[] = []
   const opts = { common: header.common, setHardfork: true }
   for (const _txParams of blockParams.transactions ?? []) {
     const txParams = normalizeTxParams(_txParams)
-    const tx = TransactionFactory.fromTxData(txParams as TypedTxData, opts)
+    const tx = createTx(txParams as TypedTxData, opts)
     transactions.push(tx)
   }
 
-  const uncleHeaders = uncles.map((uh) => blockHeaderFromRpc(uh, options))
+  const uncleHeaders = uncles.map((uh) => createBlockHeaderFromRPC(uh, options))
 
-  return Block.fromBlockData(
-    { header, transactions, uncleHeaders },
-    { ...options, setHardfork: true },
-  )
+  return createBlock({ header, transactions, uncleHeaders }, { ...options, setHardfork: true })
 }
 
 export function formatBlockResponse(block: Block, includeTransactions: boolean) {
@@ -316,6 +258,7 @@ export function formatBlockResponse(block: Block, includeTransactions: boolean) 
       : {}
 
   const transactions = block.transactions.map((tx, txIndex) =>
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     includeTransactions ? toJSONRPCTx(tx, block, txIndex) : bytesToHex(tx.hash()),
   )
 
@@ -348,7 +291,7 @@ export function formatBlockResponse(block: Block, includeTransactions: boolean) 
       excessBlobGas: header.excessBlobGas,
       parentBeaconBlockRoot: header.parentBeaconBlockRoot,
       requestsRoot: header.requestsRoot,
-      requests: block.requests?.map((req) => bytesToHex(req.serialize())),
+      withdrawals: block.withdrawals?.map((req) => req.raw()),
     },
   }
 }
@@ -356,8 +299,8 @@ export function formatBlockResponse(block: Block, includeTransactions: boolean) 
 export function toJSONRPCTx(tx: TypedTransaction, block?: Block, txIndex?: number) {
   const txJSON = tx.toJSON()
   return {
-    blockHash: block ? bytesToHex(block.hash()) : null,
-    blockNumber: block ? bigIntToHex(block.header.number) : null,
+    blockHash: block !== undefined ? bytesToHex(block.hash()) : null,
+    blockNumber: block !== undefined ? bigIntToHex(block.header.number) : null,
     from: tx.getSenderAddress().toString(),
     gas: txJSON.gasLimit!,
     gasPrice: txJSON.gasPrice ?? txJSON.maxFeePerGas!,

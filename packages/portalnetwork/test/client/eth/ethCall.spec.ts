@@ -1,7 +1,7 @@
 // import { SignableENR } from '@chainsafe/discv5'
 // import { hexToBytes, bytesToHex } from '@chainsafe/ssz'
 // import { Block } from '@ethereumjs/block'
-// import { Trie } from '@ethereumjs/trie'
+// import { Trie } from '@ethereumjs/mpt'
 // import { Account, Address, bytesToInt, bytesToUtf8, randomBytes } from '@ethereumjs/util'
 // import { multiaddr } from '@multiformats/multiaddr'
 // import { keccak256 } from 'ethereum-cryptography/keccak.js'

@@ -53,7 +53,7 @@ describe('API tests', async () => {
   it('stores and retrieves bootstrap', async () => {
     const bootstrap = specTestVectors.bootstrap['6718368']
 
-    await network.store(bootstrap.content_key, hexToBytes(bootstrap.content_value))
+    await network.store(hexToBytes(bootstrap.content_key), hexToBytes(bootstrap.content_value))
     const retrievedBootstrap = await network.findContentLocally(hexToBytes(bootstrap.content_key))
 
     assert.equal(
@@ -178,7 +178,10 @@ describe('API tests', async () => {
 
   it('stores and retrieves a batch of LightClientUpdates', async () => {
     const updatesByRange = specTestVectors.updateByRange['6684738']
-    await network.store(updatesByRange.content_key, hexToBytes(updatesByRange.content_value))
+    await network.store(
+      hexToBytes(updatesByRange.content_key),
+      hexToBytes(updatesByRange.content_value),
+    )
 
     const reconstructedRange = await network['constructLightClientRange'](
       hexToBytes(updatesByRange.content_key).slice(1),

@@ -1,4 +1,4 @@
-import { BranchNode, LeafNode, Trie } from '@ethereumjs/trie'
+import { BranchMPTNode, LeafMPTNode, MPTNode, MerklePatriciaTrie as Trie } from '@ethereumjs/mpt'
 import { bytesToUnprefixedHex } from '@ethereumjs/util'
 import { bytesToHex } from 'ethereum-cryptography/utils'
 
@@ -9,7 +9,7 @@ import { PortalTrieDB } from './portalTrieDB.js'
 import { AccountTrieNodeRetrieval, StorageTrieNodeRetrieval } from './types.js'
 import { AccountTrieNodeContentKey, StorageTrieNodeContentKey } from './util.js'
 
-import type { Path } from '@ethereumjs/trie'
+import type { Path } from '@ethereumjs/mpt'
 import type { Debugger } from 'debug'
 import type { StateManager } from './manager.js'
 import type { StateNetwork } from './state.js'
@@ -74,7 +74,7 @@ export class PortalTrie {
     // Find Account via trie walk
     let accountPath = await lookupTrie.findPath(lookupTrie['hash'](address))
 
-    while (!accountPath.node) {
+    while (accountPath.node === null) {
       const nextPath = await this._findNextAccountPath(
         accountPath,
         addressPath,
@@ -97,17 +97,17 @@ export class PortalTrie {
   ) {
     const consumedNibbles = accountPath.stack
       .slice(1)
-      .map((n) => (n instanceof BranchNode ? 1 : n.keyLength()))
+      .map((n) => (n instanceof BranchMPTNode ? 1 : n.keyLength()))
       .reduce((a, b) => a + b, 0)
     const nodePath = addressPath.slice(0, consumedNibbles + 1)
     this.logger.extend('findPath')(`consumed nibbles: ${consumedNibbles}`)
     this.logger.extend('findPath')(`Looking for next node in path [${nodePath}]`)
     const current = accountPath.stack[accountPath.stack.length - 1]
-    if (current instanceof LeafNode) {
+    if (current instanceof LeafMPTNode) {
       return { ...accountPath }
     }
     const nextNodeHash =
-      current instanceof BranchNode
+      current instanceof BranchMPTNode
         ? current.getBranch(parseInt(addressPath[consumedNibbles], 16))
         : current.value()
 
@@ -155,7 +155,7 @@ export class PortalTrie {
     // Find Account via trie walk
     let contractPath = await lookupTrie.findPath(lookupTrie['hash'](slot))
 
-    while (!contractPath.node) {
+    while (contractPath.node === null) {
       const nextPath = await this._findNextContractPath(
         contractPath,
         addressPath,
@@ -180,17 +180,17 @@ export class PortalTrie {
   ) {
     const consumedNibbles = contractPath.stack
       .slice(1)
-      .map((n) => (n instanceof BranchNode ? 1 : n.keyLength()))
+      .map((n) => (n instanceof BranchMPTNode ? 1 : n.keyLength()))
       .reduce((a, b) => a + b, 0)
     const nodePath = addressPath.slice(0, consumedNibbles + 1)
     this.logger.extend('findPath')(`consumed nibbles: ${consumedNibbles}`)
     this.logger.extend('findPath')(`Looking for next node in path [${nodePath}]`)
     const current = contractPath.stack[contractPath.stack.length - 1]
-    if (current instanceof LeafNode) {
+    if (current instanceof LeafMPTNode) {
       return { ...contractPath }
     }
     const nextNodeHash =
-      current instanceof BranchNode
+      current instanceof BranchMPTNode
         ? current.getBranch(parseInt(addressPath[consumedNibbles], 16))
         : current.value()
 

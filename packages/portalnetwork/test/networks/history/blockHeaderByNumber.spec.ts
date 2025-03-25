@@ -12,14 +12,13 @@ import {
 } from '../../../src/index.js'
 
 import testdata from './testData/block207686.json'
-import { BlockHeader } from '@ethereumjs/block'
+import { createBlockHeaderFromRLP } from '@ethereumjs/block'
 
 describe('Retrieve Block Header By Number', async () => {
   const HWP207686 = hexToBytes(testdata.header)
   const serializedHeader207686 = BlockHeaderWithProof.deserialize(HWP207686).header
 
-
-  const header207868 = BlockHeader.fromRLPSerializedHeader(serializedHeader207686, { setHardfork: true })
+  const header207868 = createBlockHeaderFromRLP(serializedHeader207686, { setHardfork: true })
   const hash207686 = bytesToHex(header207868.hash())
 
   const contentKey207686 = BlockHeaderByNumberKey(207686n)
@@ -53,7 +52,6 @@ describe('Retrieve Block Header By Number', async () => {
     const block = await history.getBlockFromDB({ blockNumber: 207686n }, false)
     assert.deepEqual(block.header.serialize(), serializedHeader207686)
   })
-
 
   it('Should retrieve locally via eth_getBlockByNumber', async () => {
     const block = await client.ETH.getBlockByNumber(207686n, false)

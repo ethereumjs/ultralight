@@ -1,11 +1,11 @@
-import { EventEmitter } from 'events'
-import { readFileSync } from 'fs'
-import { createRequire } from 'module'
 import { SignableENR } from '@chainsafe/enr'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import { createBlockFromRLP, createBlockHeaderFromRLP } from '@ethereumjs/block'
 import { bytesToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
+import { EventEmitter } from 'events'
+import { readFileSync } from 'fs'
+import { createRequire } from 'module'
 import { assert, describe, it } from 'vitest'
 
 import {
@@ -23,8 +23,8 @@ import {
   serializedContentKeyToContentId,
 } from '../../src/index.js'
 
-import type { HistoryNetwork } from '../../src/index.js'
 import { BitArray } from '@chainsafe/ssz'
+import type { HistoryNetwork } from '../../src/index.js'
 const require = createRequire(import.meta.url)
 
 const privateKeys = [
@@ -198,7 +198,7 @@ describe('FindContent', async () => {
     )
   })
 
-  const { stateRoot } = Block.fromRLPSerializedBlock(hexToBytes(testBlockData[29].rlp), {
+  const { stateRoot } = createBlockFromRLP(hexToBytes(testBlockData[29].rlp), {
     setHardfork: true,
   }).header
   const findStateRoot = await network1.getStateRoot(BigInt(testBlockData[29].number))
@@ -214,7 +214,7 @@ describe('FindContent', async () => {
     getContentKey(HistoryNetworkContentType.BlockHeaderByNumber, BigInt(testBlockData[29].number)),
   )
   const headerWithProof = BlockHeaderWithProof.deserialize(res!['content'] as Uint8Array)
-  const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
+  const header = createBlockHeaderFromRLP(headerWithProof.header, {
     setHardfork: true,
   })
 
