@@ -9,8 +9,8 @@ import {
   HistoryRadius,
   NetworkId,
   PingPongPayloadExtensions,
-  PortalNetwork,
   TransportLayer,
+  createPortalNetwork,
   encodeExtensionPayload,
 } from '../../src/index.js'
 
@@ -29,7 +29,7 @@ describe('PING/PONG', async () => {
   enr1.setLocationMultiaddr(initMa)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3099`)
   enr2.setLocationMultiaddr(initMa2)
-  const node1 = await PortalNetwork.create({
+  const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
@@ -41,7 +41,7 @@ describe('PING/PONG', async () => {
     },
   })
 
-  const node2 = await PortalNetwork.create({
+  const node2 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {

@@ -40,7 +40,7 @@ describe(
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3091`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
       config: {
@@ -52,7 +52,7 @@ describe(
       },
     })
 
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
       config: {
@@ -100,7 +100,7 @@ describe(
 //   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/31826`)
 //   enr1.setLocationMultiaddr(initMa)
 
-//   const node1 = await PortalNetwork.create({
+//   const node1 = await createPortalNetwork({
 //     transport: TransportLayer.NODE,
 //     supportedNetworks: [
 //       { networkId: NetworkId.BeaconChainNetwork },

@@ -2,7 +2,7 @@ import { execSync } from 'child_process'
 import http from 'http'
 import debug from 'debug'
 import jayson from 'jayson/promise/index.js'
-import { PortalNetwork, cliConfig } from 'portalnetwork'
+import { createPortalNetwork, cliConfig } from 'portalnetwork'
 import * as PromClient from 'prom-client'
 import { args } from './cliArgs.js'
 import { RPCManager } from './rpc/rpc.js'
@@ -34,7 +34,7 @@ const main = async () => {
   portalConfig.operatingSystemAndCpuArchitecture = args.arch
   portalConfig.shortCommit = args.commit ?? execSync('git rev-parse HEAD').toString().slice(0, 7)
   portalConfig.dbSize = dirSize
-  const portal = await PortalNetwork.create(portalConfig)
+  const portal = await createPortalNetwork(portalConfig)
 
   log(`discv5Config: ${JSON.stringify(portal.discv5['config'], null, 2)}`)
 

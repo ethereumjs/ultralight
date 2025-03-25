@@ -16,7 +16,7 @@ import {
   HistoryNetworkContentType,
   LightClientBootstrapKey,
   NetworkId,
-  PortalNetwork,
+  createPortalNetwork,
   getBeaconContentKey,
   getContentKey,
 } from '../../src/index.js'
@@ -33,7 +33,7 @@ describe('Block Bridge Data Test', () => {
     const enr1 = SignableENR.createFromPrivateKey(pk1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5033`)
 
-    const client = await PortalNetwork.create({
+    const client = await createPortalNetwork({
       supportedNetworks: [
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.BeaconChainNetwork },

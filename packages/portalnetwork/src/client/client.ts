@@ -1,24 +1,20 @@
 import { EventEmitter } from 'eventemitter3'
-import { Discv5, UDPTransportService } from '@chainsafe/discv5'
-import { ENR, SignableENR } from '@chainsafe/enr'
+import { Discv5 } from '@chainsafe/discv5'
+import { ENR } from '@chainsafe/enr'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
-import { keys } from '@libp2p/crypto'
 import type { Multiaddr } from '@multiformats/multiaddr'
-import { fromNodeAddress, multiaddr } from '@multiformats/multiaddr'
+import { fromNodeAddress } from '@multiformats/multiaddr'
 import debug from 'debug'
 import packageJson from '../../package.json' assert { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import { BeaconNetwork, NetworkId, StateNetwork, SyncStrategy } from '../networks/index.js'
-import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
-import { MEGABYTE } from '../util/index.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
 import { DBManager } from './dbManager.js'
 import { ETH } from './eth.js'
-import { TransportLayer } from './types.js'
 
-import type { IDiscv5CreateOptions, SignableENRInput } from '@chainsafe/discv5'
+import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { Debugger } from 'debug'
 import type { BaseNetwork } from '../networks/network.js'

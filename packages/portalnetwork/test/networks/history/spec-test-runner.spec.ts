@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, it } from 'vitest'
 import type { HistoryNetwork } from '../../../src/index.js'
 import {
   HistoryNetworkContentType,
-  PortalNetwork,
+  createPortalNetwork,
   decodeHistoryNetworkContentKey,
   getContentKey,
 } from '../../../src/index.js'
@@ -119,7 +119,7 @@ describe.skip('should run all spec tests', () => {
     // with serialized content keys and values
     // The basic idea of the test is can we deserialize the content, store it,
     // and then retrieve it using the original content key
-    const client = await PortalNetwork.create({})
+    const client = await createPortalNetwork({})
     const history = client.network()['0x500b']!
     for (const testData of Object.entries(networkFiles.history)) {
       // Some test vectors are parsed into a tuple of [file name, [test vector]]
