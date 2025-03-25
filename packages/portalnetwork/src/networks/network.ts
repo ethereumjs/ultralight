@@ -315,7 +315,7 @@ export abstract class BaseNetwork extends EventEmitter {
 
     const peerCapabilities = this.portal.enrCache.getPeerCapabilities(enr.nodeId)
 
-    if (peerCapabilities.has(extensionType) === false) {
+    if (extensionType !== 0 && peerCapabilities.has(extensionType) === false) {
       throw new Error(`Peer is not know to support extension type: ${extensionType}`)
     }
 
