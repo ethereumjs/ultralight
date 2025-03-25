@@ -186,7 +186,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       clientName: 'ultralight',
       clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
       operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture ?? '',
-      programmingLanguageAndVersion: `typescript_5.8.2`,
+      programmingLanguageAndVersion: `typescript_${packageJson.devDependencies.typescript}`,
     }
     this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
