@@ -424,8 +424,14 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
       return
     }
-
-    await network.handle(message, nodeAddress)
+    try {
+      await network.handle(message, nodeAddress)
+    } catch (err: any) {
+      this.logger.extend('error')(
+        `Error handling TALKREQ message from ${nodeAddress.nodeId}: ${err}.  `,
+      )
+      await this.sendPortalNetworkResponse(nodeAddress, message.id, new Uint8Array())
+    }
   }
 
   private onTalkResp = (_: INodeAddress, src: ENR | null, message: ITalkRespMessage) => {
