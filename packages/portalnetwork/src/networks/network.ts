@@ -505,21 +505,8 @@ export abstract class BaseNetwork extends EventEmitter {
       this.portal.metrics?.nodesMessagesReceived.inc()
       const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
       const enrs = decoded.enrs ?? []
-      try {
-        if (enrs.length > 0) {
-          const notIgnored = enrs.filter((e) => !this.routingTable.isIgnored(ENR.decode(e).nodeId))
-          // Ping node if not currently ignored by subnetwork routing table
-          await Promise.allSettled(
-            notIgnored.map((e) => {
-              const decodedEnr = ENR.decode(e)
-              return this.sendPing(decodedEnr)
-            }),
-          )
-
-          this.logger.extend(`NODES`)(`Received ${enrs.length} ENRs from ${shortId(enr.nodeId)}`)
-        }
-      } catch (err: any) {
-        this.logger(`Error processing NODES message: ${err.toString()}`)
+      if (enrs.length > 0) {
+        this.logger.extend(`NODES`)(`Received ${enrs.length} ENRs from ${shortId(enr.nodeId)}`)
       }
 
       return decoded
