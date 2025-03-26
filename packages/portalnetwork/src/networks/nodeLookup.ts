@@ -60,13 +60,15 @@ export class NodeLookup {
   }
 
   private selectClosestPending(): ENR[] {
-    return Array.from(this.pendingNodes.values())
-      // Skip nodes with active uTP requests
-      .filter((peer) => this.network.portal.uTP.hasRequests(peer.nodeId) === false)
-      .sort((a, b) =>
-        Number(distance(a.nodeId, this.nodeSought) - distance(b.nodeId, this.nodeSought)),
-      )
-      .slice(0, NodeLookup.CONCURRENT_LOOKUPS)
+    return (
+      Array.from(this.pendingNodes.values())
+        // Skip nodes with active uTP requests
+        .filter((peer) => this.network.portal.uTP.hasRequests(peer.nodeId) === false)
+        .sort((a, b) =>
+          Number(distance(a.nodeId, this.nodeSought) - distance(b.nodeId, this.nodeSought)),
+        )
+        .slice(0, NodeLookup.CONCURRENT_LOOKUPS)
+    )
   }
 
   private async queryPeer(peer: ENR): Promise<void> {
