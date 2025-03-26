@@ -17,7 +17,7 @@ export class NodeLookup {
   private static readonly CONCURRENT_LOOKUPS = 3 // Alpha (a) parameter from Kademlia
   private static readonly LOOKUP_TIMEOUT = 5000 // 5 seconds per peer
 
-  private foundNodes: Heap<ENR> // Heap of ENRs sorted by distance to target
+  private foundNodes: Heap<string> // Heap of ENRs sorted by distance to target
   private queriedNodes: Set<string>
   private pendingNodes: Map<string, ENR> // nodeId -> ENR
   private refresh: boolean
@@ -31,14 +31,16 @@ export class NodeLookup {
       .extend(log2Distance(this.network.enr.nodeId, this.nodeSought).toString())
     this.queriedNodes = new Set<string>()
     this.pendingNodes = new Map<string, ENR>() // nodeId -> ENR
-    this.foundNodes = new Heap<ENR>((a, b) =>
-      Number(distance(a.nodeId, this.nodeSought) - distance(b.nodeId, this.nodeSought)),
-    )
+    this.foundNodes = new Heap<string>((a, b) => {
+      const enrA = ENR.decodeTxt(a)
+      const enrB = ENR.decodeTxt(b)
+      return Number(distance(enrA.nodeId, this.nodeSought) - distance(enrB.nodeId, this.nodeSought))
+    })
     // Initialize with closest known peers
     const initialPeers = this.network.routingTable.nearest(this.nodeSought, 16)
     for (const peer of initialPeers) {
       this.pendingNodes.set(peer.nodeId, peer)
-      this.foundNodes.push(peer)
+      this.foundNodes.push(peer.encodeTxt())
     }
   }
 
