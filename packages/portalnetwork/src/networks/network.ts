@@ -968,7 +968,7 @@ export abstract class BaseNetwork extends EventEmitter {
       .reverse()
       .slice(0, 16)
       .filter((pair) => pair.bucket.size() < MAX_NODES_PER_BUCKET)
-      .slice(0, 4)
+      .slice(0, 3)
     this.logger.extend('bucketRefresh')(
       `Refreshing buckets: ${bucketsToRefresh.map((b) => b.distance).join(', ')}`,
     )
