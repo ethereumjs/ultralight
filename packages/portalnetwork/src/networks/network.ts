@@ -959,6 +959,7 @@ export abstract class BaseNetwork extends EventEmitter {
       this.refreshing = false
       return
     }
+    await this.livenessCheck()
     this.logger.extend('bucketRefresh')(`Starting bucket refresh with ${size} peers`)
     const bucketsToRefresh = this.routingTable.buckets
       .map((bucket, idx) => {
