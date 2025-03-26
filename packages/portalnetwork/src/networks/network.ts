@@ -939,7 +939,6 @@ export abstract class BaseNetwork extends EventEmitter {
       return
     }
     this.lastRefreshTime = now
-    await this.livenessCheck()
     const size = this.routingTable.size
     if (size === 0) {
       this.logger.extend('bucketRefresh')(`No peers in routing table.  Skipping bucket refresh and liveness check`)
