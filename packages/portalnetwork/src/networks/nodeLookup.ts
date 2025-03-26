@@ -160,14 +160,24 @@ export class NodeLookup {
         this.pendingNodes.delete(peer.nodeId)
       }
     }
+
+    const foundPeers: Set<string> = new Set()
+    while (this.foundNodes.peek() !== undefined && foundPeers.size < 16) {
+      const nextENR = ENR.decodeTxt(this.foundNodes.pop()!)
+      if (this.network.routingTable.getWithPending(nextENR.nodeId)) {
+        this.log(`Skipping ${nextENR.nodeId} because already in routing table`)
+        continue
+      }
+      const pong = await this.network.sendPing(nextENR)
+      if (pong) {
+        foundPeers.add(nextENR.encodeTxt())
+        this.log(`Found peer ${nextENR.nodeId} - found ${foundPeers.size} peers`)
+      }
+    }
     const finalSize = this.network.routingTable.buckets[bucket].size()
     this.log(
       `Finished lookup in bucket ${bucket} (${finalSize}/${MAX_NODES_PER_BUCKET} peers) +${finalSize - startingSize}`,
     )
-    const foundPeers: Set<string> = new Set()
-    while (this.foundNodes.peek() && foundPeers.size < 16) {
-      foundPeers.add(this.foundNodes.pop()!.encodeTxt())
-    }
     return Array.from(foundPeers)
   }
 }
