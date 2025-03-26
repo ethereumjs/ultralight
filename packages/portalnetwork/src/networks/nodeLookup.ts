@@ -78,7 +78,13 @@ export class NodeLookup {
 
       const queryPromise = async () => {
         const response = await this.network.sendFindNodes(peer, [distanceToTarget])
-        if (!response?.enrs) return
+        if (!response) {
+          this.network.routingTable.evictNode(peer.nodeId)
+          return
+        }
+        if (response.enrs.length === 0) {
+          return
+        }
 
         for (const enr of response.enrs) {
           const decodedEnr = ENR.decode(enr)
