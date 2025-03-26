@@ -88,7 +88,9 @@ export class NodeLookup {
 
         for (const enr of response.enrs) {
           const decodedEnr = ENR.decode(enr)
-          this.foundNodes.push(decodedEnr)
+          !this.network.routingTable.getWithPending(decodedEnr.nodeId) &&
+            !this.foundNodes.contains(decodedEnr.encodeTxt()) &&
+            this.foundNodes.push(decodedEnr.encodeTxt())
           const nodeId = decodedEnr.nodeId
           try {
             // Skip if we've already queried this node
