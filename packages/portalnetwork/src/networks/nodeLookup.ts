@@ -139,7 +139,7 @@ export class NodeLookup {
       // Select closest α nodes we haven't queried yet
       const currentBatch = this.selectClosestPending()
       if (currentBatch.length === 0) break
-
+      this.log(`Querying ${currentBatch.length} peers`)
       // Query selected nodes in parallel with timeout
       const lookupPromises = currentBatch.map((peer) => this.queryPeer(peer))
 
