@@ -80,6 +80,7 @@ export abstract class BaseNetwork extends EventEmitter {
   private lastRefreshTime: number = 0
   private nextRefreshTimeout: ReturnType<typeof setTimeout> | null = null
   private refreshInterval: number = 30000 // Start with 30s
+  private refreshing: boolean = false
   public pruning: boolean = false
   constructor({
     client,
@@ -940,6 +941,12 @@ export abstract class BaseNetwork extends EventEmitter {
    * 5. New nodes will be added to the routing table
    */
   public bucketRefresh = async () => {
+    if (this.refreshing) {
+      this.logger.extend('bucketRefresh')(`Bucket refresh already in progress`)
+      return
+    }
+    this.logger.extend('bucketRefresh')(`Starting bucket refresh`)
+    this.refreshing = true
     const now = Date.now()
     if (now - this.lastRefreshTime < this.getRefreshInterval()) {
       return
@@ -948,6 +955,8 @@ export abstract class BaseNetwork extends EventEmitter {
     await this.livenessCheck()
     const size = this.routingTable.size
     if (size === 0) {
+      this.logger.extend('bucketRefresh')(`No peers in routing table.  Skipping bucket refresh and liveness check`)
+      this.refreshing = false
       return
     }
     this.logger.extend('bucketRefresh')(`Starting bucket refresh with ${size} peers`)
@@ -974,6 +983,7 @@ export abstract class BaseNetwork extends EventEmitter {
     this.logger.extend('bucketRefresh')(
       `Finished bucket refresh with ${newSize} peers (${newSize - size} new peers)`,
     )
+    this.refreshing = false
   }
 
   /**
