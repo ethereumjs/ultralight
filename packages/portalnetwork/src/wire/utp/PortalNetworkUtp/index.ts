@@ -46,7 +46,10 @@ export class PortalNetworkUTP {
 
   openRequests(): number {
     return Object.keys(this.requestManagers).reduce((acc, nodeId) => {
-      return acc + Object.keys(this.requestManagers[nodeId].requestMap).length
+      return (
+        acc +
+        Object.values(this.requestManagers[nodeId].requestMap).filter((v) => v !== 'closed').length
+      )
     }, 0)
   }
 
