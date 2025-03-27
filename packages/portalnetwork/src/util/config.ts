@@ -8,7 +8,7 @@ import { NetworkId } from '../networks/types.js'
 
 import { setupMetrics } from './metrics.js'
 
-import type { NetworkConfig, PortalNetworkOpts } from '../client'
+import { type NetworkConfig, type PortalNetworkOpts, SupportedVersions } from '../client/index.js'
 import { DEFAULT_BOOTNODES } from './bootnodes.js'
 
 export type AsyncReturnType<T extends (...args: any) => Promise<any>> = T extends (
@@ -27,6 +27,7 @@ export interface PortalClientOpts {
   storage: string
   trustedBlockRoot?: string
   gossipCount?: number
+  supportedVersions?: number[]
 }
 
 export const NetworkStrings: Record<string, NetworkId> = {
@@ -54,7 +55,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
   const enr = SignableENR.createFromPrivateKey(privateKey)
   const initMa = multiaddr(`/ip4/${ip}/udp/${bindPort}`)
   enr.setLocationMultiaddr(initMa)
-
+  enr.set('pv', SupportedVersions.serialize(args.supportedVersions ?? [0]))
   let db
   if (args.dataDir !== undefined) {
     db = new Level<string, string>(args.dataDir)
@@ -113,6 +114,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
     trustedBlockRoot: args.trustedBlockRoot,
     bootnodes,
     gossipCount: args.gossipCount,
+    supportedVersions: args.supportedVersions,
   }
   return clientConfig
 }
