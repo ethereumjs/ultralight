@@ -13,6 +13,7 @@ import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
 import { DBManager } from './dbManager.js'
 import { ETH } from './eth.js'
+import { SupportedVersions } from './types.js'
 
 import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
@@ -26,7 +27,7 @@ import type {
 } from './types.js'
 import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
 import { type IClientInfo } from '../wire/payloadExtensions.js'
-import { RateLimiter } from '../transports/rateLimiter.js'
+import type { RateLimiter } from '../transports/rateLimiter.js'
 import { ENRCache } from './enrCache.js'
 
 export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
@@ -62,6 +63,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
     // cache signature to ensure ENR can be encoded on startup
     this.discv5.enr.encode()
+    this.discv5.enr.set('pv', SupportedVersions.serialize(opts.supportedVersions ?? [0]))
     this.enrCache = new ENRCache({})
     this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('Portal')
     this.networks = new Map()
