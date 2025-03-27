@@ -7,6 +7,7 @@ import { assert, describe, expect, it } from 'vitest'
 import { createUltralightProvider } from '../../src/client/provider.js'
 import { TransportLayer } from '../../src/index.js'
 import { NetworkId } from '../../src/networks/types.js'
+import { bytesToUnprefixedHex, hexToBytes } from '@ethereumjs/util'
 
 describe('Test provider functionality', () => {
   it('should test provider API', async () => {

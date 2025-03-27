@@ -20,7 +20,6 @@ import {
   HistoryRadius,
   MAX_UDP_PACKET_SIZE,
   MessageCodes,
-  PingPongPayloadExtensions,
   PortalWireMessageType,
   RequestCode,
   decodeHistoryNetworkContentKey,
@@ -34,7 +33,7 @@ import {
 } from '../../index.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
-
+import { PingPongPayloadExtensions } from '../../wire/payloadExtensions.js'
 import {
   AccumulatorProofType,
   BlockHeaderWithProof,

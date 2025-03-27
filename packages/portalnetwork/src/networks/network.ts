@@ -40,8 +40,6 @@ import {
   MessageCodes,
   NodeLookup,
   PingPongErrorCodes,
-  PingPongPayloadExtensions,
-  PortalNetworkRoutingTable,
   PortalWireMessageType,
   RequestCode,
   arrayByteLength,
@@ -54,14 +52,13 @@ import {
   shortId,
 } from '../index.js'
 import { FoundContent } from '../wire/types.js'
-
 import { NetworkDB } from './networkDB.js'
-
+import { PingPongPayloadExtensions } from '../wire/payloadExtensions.js'
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
 import type { SignableENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import { GossipManager } from './gossip.js'
-
+import { PortalNetworkRoutingTable } from '../client/routingTable.js'
 export abstract class BaseNetwork extends EventEmitter {
   public capabilities: number[] = [
     PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
@@ -119,8 +116,10 @@ export abstract class BaseNetwork extends EventEmitter {
     }
     this.gossipManager = new GossipManager(this, gossipCount)
     this.on('ContentAdded', () => {
-      if ((this.db.approximateSize / MEGABYTE) > this.maxStorage) {
-        this.logger(`Pruning due to size limit ${this.db.approximateSize / MEGABYTE} > ${this.maxStorage}`)
+      if (this.db.approximateSize / MEGABYTE > this.maxStorage) {
+        this.logger(
+          `Pruning due to size limit ${this.db.approximateSize / MEGABYTE} > ${this.maxStorage}`,
+        )
         void this.prune()
       }
     })
