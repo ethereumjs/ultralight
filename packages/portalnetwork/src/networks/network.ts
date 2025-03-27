@@ -42,6 +42,7 @@ import {
   PingPongErrorCodes,
   PortalWireMessageType,
   RequestCode,
+  SupportedVersions,
   arrayByteLength,
   decodeClientInfo,
   encodeClientInfo,
@@ -1097,5 +1098,18 @@ export abstract class BaseNetwork extends EventEmitter {
       return 10000 // Unhealthy table = shorter interval
     }
     return 30000
+  }
+  public async highestCommonVersion(peer: ENR | INodeAddress): Promise<number> {
+    const mySupportedVersions: number[] = SupportedVersions.deserialize(this.enr.kvs.get('pv')!)
+    const peerENR = peer instanceof ENR ? peer : this.findEnr(peer.nodeId)
+    if (peerENR === undefined) {
+      return 0
+    }
+    const pv = peerENR.kvs.get('pv')
+    if (pv === undefined) {
+      return 0
+    }
+    const peerSupportedVersions: number[] = SupportedVersions.deserialize(pv)
+    return peerSupportedVersions.filter((v) => mySupportedVersions.includes(v)).sort((a, b) => b - a)[0] || 0
   }
 }
