@@ -39,6 +39,7 @@ describe('PING/PONG', async () => {
       },
       privateKey: pk1,
     },
+    supportedVersions: [0, 1],
   })
 
   const node2 = await createPortalNetwork({
