@@ -126,4 +126,8 @@ describe('version conflict', async () => {
   it('should blacklist peer with version conflict', async () => {
     assert.isTrue(blacklisted)
   })
+  const compare = await node1.highestCommonVersion(node2.discv5.enr.toENR())
+  it('should compare versions', async () => {
+    assert.equal(compare, -1)
+  })
 })
