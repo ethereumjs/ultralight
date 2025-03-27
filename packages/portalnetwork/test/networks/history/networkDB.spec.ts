@@ -1,6 +1,6 @@
 import { assert, describe, expect, it } from 'vitest'
 import content from '../../testData/headersWithProofs.json'
-import { HistoryNetwork, NetworkId, PortalNetwork } from '../../../src/index.js'
+import { HistoryNetwork, NetworkId, createPortalNetwork } from '../../../src/index.js'
 import { keys } from '@libp2p/crypto'
 import { SignableENR } from '@chainsafe/enr'
 import { hexToBytes } from '@ethereumjs/util'
@@ -12,7 +12,7 @@ const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKey).slice(-36))
 const enr = SignableENR.createFromPrivateKey(pk1)
 
 describe('NetworkDB', async () => {
-  const client = await PortalNetwork.create({
+  const client = await createPortalNetwork({
     config: {
       privateKey: pk1,
       enr,

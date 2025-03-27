@@ -8,9 +8,9 @@ import { assert, describe, expect, it, vi } from 'vitest'
 
 import {
   NetworkId,
-  PortalNetwork,
   TransportLayer,
   getBeaconContentKey,
+  createPortalNetwork,
 } from '../../../src/index.js'
 import {
   BeaconNetworkContentType,
@@ -36,7 +36,7 @@ describe('API tests', async () => {
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
   enr1.setLocationMultiaddr(initMa)
 
-  const node1 = await PortalNetwork.create({
+  const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
     config: {
@@ -138,7 +138,7 @@ describe('API tests', async () => {
     const enr2 = SignableENR.createFromPrivateKey(pk2)
     const initMa2 = multiaddr(`/ip4/127.0.0.1/udp/3001`)
     enr2.setLocationMultiaddr(initMa2)
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -247,7 +247,7 @@ describe('constructor/initialization tests', async () => {
   enr1.setLocationMultiaddr(initMa)
 
   it('starts the bootstrap finder mechanism when no trusted block root is provided', async () => {
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -265,7 +265,7 @@ describe('constructor/initialization tests', async () => {
   })
 
   it('starts with a sync strategy of `trustedBootStrap` when a trusted block root is provided', async () => {
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -299,7 +299,7 @@ describe('constructor/initialization tests', async () => {
     })
     await import('@lodestar/light-client')
     const trustedBlockRoot = '0x8e4fc820d749f9cf352d074f784071f65483ea673d8e9b8188870e950125a582'
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {

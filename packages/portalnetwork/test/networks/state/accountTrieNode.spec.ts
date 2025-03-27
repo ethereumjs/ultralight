@@ -7,7 +7,7 @@ import {
   AccountTrieNodeContentKey,
   AccountTrieNodeOffer,
   NetworkId,
-  PortalNetwork,
+  createPortalNetwork,
   StateNetworkContentId,
   distance,
 } from '../../../src/index.js'
@@ -46,7 +46,7 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
     ),
     r: 254,
   }
-  const client = await PortalNetwork.create({
+  const client = await createPortalNetwork({
     bindAddress: '127.0.0.1',
     supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
     config: {

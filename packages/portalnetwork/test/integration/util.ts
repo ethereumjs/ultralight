@@ -16,6 +16,7 @@ import {
   NetworkId,
   PortalNetwork,
   TransportLayer,
+  createPortalNetwork,
   packNibbles,
 } from '../../src/index.js'
 import { mainnet } from '../../src/networks/state/genesis.js'
@@ -40,7 +41,7 @@ export const getClients = async (port: number) => {
       const enr = SignableENR.createV4(hexToBytes(pk))
       const initMa: any = multiaddr(`/ip4/172.17.0.1/udp/${port + i}`)
       enr.setLocationMultiaddr(initMa)
-      const node = await PortalNetwork.create({
+      const node = await createPortalNetwork({
         transport: TransportLayer.NODE,
         supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
         config: {

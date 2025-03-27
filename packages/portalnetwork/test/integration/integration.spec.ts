@@ -14,9 +14,9 @@ import {
   BlockHeaderWithProof,
   HistoryNetworkContentType,
   NetworkId,
-  PortalNetwork,
   TransportLayer,
   addRLPSerializedBlock,
+  createPortalNetwork,
   generateRandomNodeIdAtDistance,
   getContentKey,
   log2Distance,
@@ -46,7 +46,7 @@ describe('gossip test', async () => {
   enr1.setLocationMultiaddr(initMa)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5035`)
   enr2.setLocationMultiaddr(initMa2)
-  const node1 = await PortalNetwork.create({
+  const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
@@ -57,7 +57,7 @@ describe('gossip test', async () => {
       privateKey: pk1,
     },
   })
-  const node2 = await PortalNetwork.create({
+  const node2 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
@@ -120,7 +120,7 @@ describe('FindContent', async () => {
   enr1.setLocationMultiaddr(initMa)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3071`)
   enr2.setLocationMultiaddr(initMa2)
-  const node1 = await PortalNetwork.create({
+  const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
@@ -132,7 +132,7 @@ describe('FindContent', async () => {
     },
   })
 
-  const node2 = await PortalNetwork.create({
+  const node2 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
@@ -235,7 +235,7 @@ describe('eth_getBlockByHash', async () => {
   enr1.setLocationMultiaddr(initMa)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3081`)
   enr2.setLocationMultiaddr(initMa2)
-  const node1 = await PortalNetwork.create({
+  const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
@@ -247,7 +247,7 @@ describe('eth_getBlockByHash', async () => {
     },
   })
 
-  const node2 = await PortalNetwork.create({
+  const node2 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
@@ -293,7 +293,7 @@ describe('Offer/Accept', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3091`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
       config: {
@@ -305,7 +305,7 @@ describe('Offer/Accept', () => {
       },
     })
 
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
       config: {
@@ -334,7 +334,7 @@ describe('Offer/Accept', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3093`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
       config: {
@@ -346,7 +346,7 @@ describe('Offer/Accept', () => {
       },
     })
 
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
       config: {

@@ -3,9 +3,8 @@ import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, beforeAll, describe, it } from 'vitest'
-import { PortalNetwork } from '../../src/client/client.js'
 import { TransportLayer } from '../../src/client/types.js'
-import { getContentKey } from '../../src/index.js'
+import { createPortalNetwork, getContentKey, PortalNetwork } from '../../src/index.js'
 import {
   BlockHeaderWithProof,
   HistoryNetworkContentType,
@@ -29,7 +28,7 @@ describe('gossip tests', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5175`)
     enr2.setLocationMultiaddr(initMa2)
-    node1 = await PortalNetwork.create({
+    node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
       config: {
@@ -40,7 +39,7 @@ describe('gossip tests', () => {
         privateKey: pk1,
       },
     })
-    node2 = await PortalNetwork.create({
+    node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
       config: {

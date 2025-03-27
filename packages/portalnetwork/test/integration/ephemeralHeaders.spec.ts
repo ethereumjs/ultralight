@@ -9,7 +9,7 @@ import {
   EphemeralHeaderPayload,
   HistoryNetworkContentType,
   NetworkId,
-  PortalNetwork,
+  createPortalNetwork,
   getContentKey,
 } from '../../src/index.js'
 import latestBlocks from '../networks/history/testData/latest3Blocks.json'
@@ -49,7 +49,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3199`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       supportedNetworks: [
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.BeaconChainNetwork },
@@ -63,7 +63,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
       },
     })
 
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       supportedNetworks: [
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.BeaconChainNetwork },

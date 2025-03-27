@@ -16,12 +16,12 @@ import {
   HistoricalRootsBlockProof,
   HistoryNetworkContentType,
   NetworkId,
-  PortalNetwork,
   TransportLayer,
   generatePreMergeHeaderProof,
   getContentKey,
   reassembleBlock,
   sszEncodeBlockBody,
+  createPortalNetwork,
 } from '../../../src/index.js'
 
 import type { HistoryNetwork } from '../../../src/index.js'
@@ -40,7 +40,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
           encoding: 'hex',
         },
       )
-    const node = await PortalNetwork.create({
+    const node = await createPortalNetwork({
       bindAddress: '127.0.0.1',
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     })
@@ -69,7 +69,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
 })
 
 describe('store -- Block Bodies and Receipts', async () => {
-  const node = await PortalNetwork.create({
+  const node = await createPortalNetwork({
     bindAddress: '127.0.0.1',
     transport: TransportLayer.WEB,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
@@ -129,7 +129,7 @@ describe('store -- Block Bodies and Receipts', async () => {
 })
 
 describe('Header Tests', async () => {
-  const node = await PortalNetwork.create({
+  const node = await createPortalNetwork({
     bindAddress: '127.0.0.1',
     transport: TransportLayer.WEB,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],

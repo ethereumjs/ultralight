@@ -19,8 +19,8 @@ import {
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
   NetworkId,
-  PortalNetwork,
   TransportLayer,
+  createPortalNetwork,
   getBeaconContentKey,
 } from '../../src/index.js'
 
@@ -45,7 +45,7 @@ describe('Find Content tests', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -57,7 +57,7 @@ describe('Find Content tests', () => {
       },
       gossipCount: 1,
     })
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -105,7 +105,7 @@ describe('Find Content tests', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3003`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -116,7 +116,7 @@ describe('Find Content tests', () => {
         privateKey: pk1,
       },
     })
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -202,7 +202,7 @@ describe('Find Content tests', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3005`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -213,7 +213,7 @@ describe('Find Content tests', () => {
         privateKey: pk1,
       },
     })
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -271,7 +271,7 @@ describe('OFFER/ACCEPT tests', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30023`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -282,7 +282,7 @@ describe('OFFER/ACCEPT tests', () => {
         privateKey: pk1,
       },
     })
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -381,7 +381,7 @@ describe('OFFER/ACCEPT tests', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30026`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -392,7 +392,7 @@ describe('OFFER/ACCEPT tests', () => {
         privateKey: pk1,
       },
     })
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -471,7 +471,7 @@ describe('OFFER/ACCEPT tests', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30026`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -482,7 +482,7 @@ describe('OFFER/ACCEPT tests', () => {
         privateKey: pk1,
       },
     })
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -545,7 +545,7 @@ describe('beacon light client sync tests', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/31825`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -556,7 +556,7 @@ describe('beacon light client sync tests', () => {
         privateKey: pk1,
       },
     })
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -665,7 +665,7 @@ describe('beacon light client sync tests', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30026`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -676,7 +676,7 @@ describe('beacon light client sync tests', () => {
         privateKey: pk1,
       },
     })
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -775,7 +775,7 @@ describe('historicalSummaries verification', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30028`)
     enr2.setLocationMultiaddr(initMa2)
-    const node1 = await PortalNetwork.create({
+    const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
@@ -786,7 +786,7 @@ describe('historicalSummaries verification', () => {
         privateKey: pk1,
       },
     })
-    const node2 = await PortalNetwork.create({
+    const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
       config: {
