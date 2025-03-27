@@ -127,6 +127,7 @@ export async function createPortalNetwork(opts: Partial<PortalNetworkOpts>): Pro
     shouldRefresh: opts.shouldRefresh,
     operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture,
     shortCommit: opts.shortCommit,
+    supportedVersions: opts.supportedVersions,
   })
   for (const network of portal.networks.values()) {
     try {

@@ -78,7 +78,7 @@ describe('version conflict', async () => {
   enr1.setLocationMultiaddr(initMa)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5033`)
   enr2.setLocationMultiaddr(initMa2)
-  const node1 = await PortalNetwork.create({
+  const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
@@ -90,7 +90,7 @@ describe('version conflict', async () => {
     },
     supportedVersions: [2],
   })
-  const node2 = await PortalNetwork.create({
+  const node2 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     config: {
