@@ -42,7 +42,6 @@ import {
   PingPongErrorCodes,
   PortalWireMessageType,
   RequestCode,
-  SupportedVersions,
   arrayByteLength,
   decodeClientInfo,
   encodeClientInfo,

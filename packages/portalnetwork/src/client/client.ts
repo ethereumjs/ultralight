@@ -409,7 +409,11 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
   public updateENRCache = (enrs: ENR[]) => {
     for (const enr of enrs) {
-      this.enrCache.updateENR(enr)
+      this.highestCommonVersion(enr)
+        .catch(() => [this.addToBlackList(enr.getLocationMultiaddr('udp')!)])
+        .finally(() => {
+          this.enrCache.updateENR(enr)
+        })
     }
   }
 
@@ -440,13 +444,17 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     }
   }
   public async highestCommonVersion(peer: ENR): Promise<number> {
-    const mySupportedVersions: number[] = SupportedVersions.deserialize(this.discv5.enr.kvs.get('pv')!)
+    const mySupportedVersions: number[] = SupportedVersions.deserialize(
+      this.discv5.enr.kvs.get('pv')!,
+    )
     const pv = peer.kvs.get('pv')
     if (pv === undefined) {
       return 0
     }
     const peerSupportedVersions: number[] = SupportedVersions.deserialize(pv)
-    const highestCommonVersion = peerSupportedVersions.filter((v) => mySupportedVersions.includes(v)).sort((a, b) => b - a)[0]
+    const highestCommonVersion = peerSupportedVersions
+      .filter((v) => mySupportedVersions.includes(v))
+      .sort((a, b) => b - a)[0]
     if (highestCommonVersion === undefined) {
       throw new Error('No common version found')
     }
