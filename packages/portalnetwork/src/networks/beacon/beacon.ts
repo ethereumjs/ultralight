@@ -52,7 +52,8 @@ import type { Debugger } from 'debug'
 import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
 import type { ContentLookupResponse } from '../types.js'
 import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
-import type { INodeAddress } from '../../index.js'
+import { type INodeAddress, getEphemeralHeaderDbKey } from '../../index.js'
+import { createBlockHeader } from '@ethereumjs/block'
 
 export class BeaconNetwork extends BaseNetwork {
   networkId: NetworkId.BeaconChainNetwork
@@ -635,12 +636,28 @@ export class BeaconNetwork extends BaseNetwork {
         await this.storeUpdateRange(value)
         break
       case BeaconNetworkContentType.LightClientOptimisticUpdate:
-        // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
-        // optimistic update and this ensures we don't accidentally store multiple
-        await this.put(
-          hexToBytes(intToHex(BeaconNetworkContentType.LightClientOptimisticUpdate)),
-          bytesToHex(value),
-        )
+        {
+          // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
+          // optimistic update and this ensures we don't accidentally store multiple
+          await this.put(
+            hexToBytes(intToHex(BeaconNetworkContentType.LightClientOptimisticUpdate)),
+            bytesToHex(value),
+          )
+
+          // Store header in ephemeral headers in History Network
+          const history = this.portal.network()['0x500b']
+          if (history !== undefined) {
+            // TODO: Decode fork and select correct ssz types from fork
+            const update = ssz.deneb.LightClientOptimisticUpdate.deserialize(value.slice(4))
+            const header = createBlockHeader(update.attestedHeader.execution, { setHardfork: true })
+            const hash = history.ephemeralHeaderIndex.getByKey(header.number)
+            if (hash === undefined) {
+              const hashKey = getEphemeralHeaderDbKey(header.hash())
+              await history.put(hashKey, bytesToHex(header.serialize()))
+              history.ephemeralHeaderIndex.set(header.number, bytesToHex(header.hash()))
+            }
+          }
+        }
         break
       case BeaconNetworkContentType.LightClientFinalityUpdate:
         // We store the optimistic update by the content type rather than key since we only want to have one (the most recent)
