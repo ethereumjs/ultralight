@@ -439,4 +439,17 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       // No action
     }
   }
+  public async highestCommonVersion(peer: ENR): Promise<number> {
+    const mySupportedVersions: number[] = SupportedVersions.deserialize(this.discv5.enr.kvs.get('pv')!)
+    const pv = peer.kvs.get('pv')
+    if (pv === undefined) {
+      return 0
+    }
+    const peerSupportedVersions: number[] = SupportedVersions.deserialize(pv)
+    const highestCommonVersion = peerSupportedVersions.filter((v) => mySupportedVersions.includes(v)).sort((a, b) => b - a)[0]
+    if (highestCommonVersion === undefined) {
+      throw new Error('No common version found')
+    }
+    return highestCommonVersion
+  }
 }
