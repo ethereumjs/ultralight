@@ -57,6 +57,10 @@ describe('PING/PONG', async () => {
   await node2.start()
   const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+  it('should share common version of 0', async () => {
+    const commonVersion = await node1.highestCommonVersion(node2.discv5.enr.toENR())
+    assert.equal(commonVersion, 0)
+  })
   it('should exchange type 0 PING/PONG', async () => {
     const pingpong = await network1.sendPing(network2?.enr!.toENR(), 0)
     assert.exists(pingpong, 'should have received a pong')
