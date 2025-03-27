@@ -58,6 +58,7 @@ export interface PortalNetworkOpts {
   utpTimeout?: number
   shouldRefresh?: boolean
   gossipCount?: number
+  supportedVersions?: number[]
 }
 
 export type RoutingTable = PortalNetworkRoutingTable
