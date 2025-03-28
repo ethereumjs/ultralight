@@ -4,7 +4,7 @@ import type { Block } from '@ethereumjs/block'
 import type { JSONTx, TypedTransaction } from '@ethereumjs/tx'
 import type { Address } from '@ethereumjs/util'
 import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
-import type { Log } from 'portalnetwork/src/networks/index.js'
+import type { Log } from 'portalnetwork'
 
 export type GetLogsParams = {
   fromBlock?: string // QUANTITY, block number or "earliest" or "latest" (default: "latest")

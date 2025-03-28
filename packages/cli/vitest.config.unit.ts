@@ -5,4 +5,11 @@ export default defineConfig({
     silent: true,
     testTimeout: 180000,
   },
+  environments: {
+    ssr: {
+      resolve: {
+        conditions: ['typescript'],
+      },
+    },
+  },
 })
