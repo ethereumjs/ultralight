@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "type": "module",
   "exports": {
-    "default": "./dist/index.js",
-    "typescript": "./src/index.ts"
+    "typescript": "./src/index.ts",
+    "default": "./dist/index.js"
   },
   "engines": {
     "node": "^20"
