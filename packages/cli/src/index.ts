@@ -2,7 +2,7 @@ import { execSync } from 'child_process'
 import http from 'http'
 import debug from 'debug'
 import jayson from 'jayson/promise/index.js'
-import { createPortalNetwork, cliConfig } from 'portalnetwork'
+import { cliConfig, createPortalNetwork } from 'portalnetwork'
 import * as PromClient from 'prom-client'
 import { args } from './cliArgs.js'
 import { RPCManager } from './rpc/rpc.js'
@@ -28,7 +28,10 @@ const main = async () => {
   const portalConfig = await cliConfig({
     ...args,
     bindAddress: args.bindAddress ?? `${ip}:9000`,
-    bootnodeList: args.bootnodeList !== undefined ? readFileSync(args.bootnodeList, 'utf-8').split('\n') : undefined,
+    bootnodeList:
+      args.bootnodeList !== undefined
+        ? readFileSync(args.bootnodeList, 'utf-8').split('\n')
+        : undefined,
   })
   log(`portalConfig: ${JSON.stringify(args, null, 2)}`)
   portalConfig.operatingSystemAndCpuArchitecture = args.arch
@@ -76,11 +79,13 @@ const main = async () => {
           })
         } else {
           log(
-            `Received ${method} with params: ${params !== undefined &&
-            (params as any[]).map((p, idx) => {
-              return `${idx}: ${p.toString().slice(0, 64)}${p.toString().length > 64 ? '...' : ''
-                }`
-            })
+            `Received ${method} with params: ${
+              params !== undefined &&
+              (params as any[]).map((p, idx) => {
+                return p !== undefined && p !== null
+                  ? `${idx}: ${p.toString().slice(0, 64)}${p.toString().length > 64 ? '...' : ''}`
+                  : `${idx}: undefined`
+              })
             }`,
           )
           return this.getMethod(method)
