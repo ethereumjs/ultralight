@@ -4,6 +4,10 @@
   "description": "",
   "main": "dist/index.js",
   "type": "module",
+  "exports": {
+    "typescript": "./src/index.ts",
+    "default": "./dist/index.js"
+  },
   "engines": {
     "node": "^20"
   },
