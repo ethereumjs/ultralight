@@ -13,6 +13,7 @@ import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
 import { DBManager } from './dbManager.js'
 import { ETH } from './eth.js'
+import { SupportedVersions } from './types.js'
 
 import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
@@ -26,7 +27,7 @@ import type {
 } from './types.js'
 import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
 import { type IClientInfo } from '../wire/payloadExtensions.js'
-import { RateLimiter } from '../transports/rateLimiter.js'
+import type { RateLimiter } from '../transports/rateLimiter.js'
 import { ENRCache } from './enrCache.js'
 
 export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
@@ -62,6 +63,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
     // cache signature to ensure ENR can be encoded on startup
     this.discv5.enr.encode()
+    this.discv5.enr.set('pv', SupportedVersions.serialize(opts.supportedVersions ?? [0]))
     this.enrCache = new ENRCache({})
     this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('Portal')
     this.networks = new Map()
@@ -407,7 +409,9 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
   public updateENRCache = (enrs: ENR[]) => {
     for (const enr of enrs) {
-      this.enrCache.updateENR(enr)
+      this.highestCommonVersion(enr).finally(() => {
+        this.enrCache.updateENR(enr)
+      })
     }
   }
 
@@ -436,5 +440,23 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     } catch {
       // No action
     }
+  }
+  public async highestCommonVersion(peer: ENR): Promise<number> {
+    const mySupportedVersions: number[] = SupportedVersions.deserialize(
+      this.discv5.enr.kvs.get('pv')!,
+    )
+    const pv = peer.kvs.get('pv')
+    if (pv === undefined) {
+      return 0
+    }
+    const peerSupportedVersions: number[] = SupportedVersions.deserialize(pv)
+    const highestCommonVersion = peerSupportedVersions
+      .filter((v) => mySupportedVersions.includes(v))
+      .sort((a, b) => b - a)[0]
+    if (highestCommonVersion === undefined) {
+      this.addToBlackList(peer.getLocationMultiaddr('udp')!)
+      return -1
+    }
+    return highestCommonVersion
   }
 }

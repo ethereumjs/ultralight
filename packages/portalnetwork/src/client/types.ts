@@ -5,6 +5,7 @@ import type { AbstractLevel } from 'abstract-level'
 import type { NetworkId } from '../index.js'
 import type { PortalNetworkRoutingTable } from './routingTable.js'
 import type { Multiaddr } from '@multiformats/multiaddr'
+import { ListBasicType, UintNumberType } from '@chainsafe/ssz'
 
 /** A representation of an unsigned contactable node. */
 export interface INodeAddress {
@@ -57,6 +58,7 @@ export interface PortalNetworkOpts {
   utpTimeout?: number
   shouldRefresh?: boolean
   gossipCount?: number
+  supportedVersions?: number[]
 }
 
 export type RoutingTable = PortalNetworkRoutingTable
@@ -106,3 +108,6 @@ export interface RpcTx {
   maxFeePerGas?: string
   type?: string
 }
+
+export const ProtocolVersion = new UintNumberType(1)
+export const SupportedVersions = new ListBasicType(ProtocolVersion, 8)
