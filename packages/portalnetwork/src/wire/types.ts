@@ -130,10 +130,18 @@ export type AcceptMessage<V extends Version> = V extends 0
       }
     : never
 
-export const AcceptMessageType = new ContainerType({
-  connectionId: Bytes2,
-  contentKeys: new BitListType(64),
-})
+export const AcceptCodesType = new ByteListType(64)
+
+export const AcceptMessageType: Record<Version, ContainerType<any>> = {
+  0: new ContainerType({
+    connectionId: Bytes2,
+    contentKeys: new BitListType(64),
+  }),
+  1: new ContainerType({
+    connectionId: Bytes2,
+    contentKeys: AcceptCodesType,
+  }),
+}
 
 export type MessageTypeUnion = [
   | PingMessage
