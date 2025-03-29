@@ -128,6 +128,11 @@ describe('version conflict', async () => {
   })
   const compare = await node1.highestCommonVersion(node2.discv5.enr.toENR())
   it('should compare versions', async () => {
-    assert.equal(compare, -1)
+    try {
+      await node1.highestCommonVersion(node2.discv5.enr.toENR())
+      assert.fail('should have thrown')
+    } catch (e) {
+      assert.equal(e.message, `No common version found with ${enr2.nodeId}`)
+    }
   })
 })
