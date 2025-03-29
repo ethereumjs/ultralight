@@ -176,3 +176,11 @@ export const PortalWireMessageType: Record<Version, UnionType<any>> = {
   ]),
 }
 
+export enum AcceptCode {
+  ACCEPT = 0,
+  GENERIC_DECLINE = 1,
+  CONTENT_ALREADY_STORED = 2,
+  CONTENT_OUT_OF_RADIUS = 3,
+  RATE_LIMITED = 4,
+  CONTENT_ID_LIMITED = 5,
+}
