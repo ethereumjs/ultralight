@@ -25,6 +25,7 @@ import type {
   PortalNetworkMetrics,
   PortalNetworkOpts,
 } from './types.js'
+import type { Version } from '../wire/types.js'
 import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
 import { type IClientInfo } from '../wire/payloadExtensions.js'
 import type { RateLimiter } from '../transports/rateLimiter.js'
@@ -346,6 +347,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     payload: Uint8Array,
     networkId: NetworkId,
     utpMessage?: boolean,
+    version: Version = 0,
   ): Promise<Uint8Array> => {
     const messageNetwork = utpMessage !== undefined ? NetworkId.UTPNetwork : networkId
     const remote =
@@ -363,7 +365,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
           `Error sending uTP TALKREQ message using ${enr instanceof ENR ? 'ENR' : 'MultiAddr'}: ${err.message}`,
         )
       } else {
-        const messageType = PortalWireMessageType.deserialize(payload).selector
+        const messageType = PortalWireMessageType[version].deserialize(payload).selector
         throw new Error(
           `Error sending TALKREQ ${MessageCodes[messageType]} message using ${enr instanceof ENR ? 'ENR' : 'MultiAddr'}: ${err}.  NetworkId: ${networkId} NodeId: ${enr.nodeId} MultiAddr: ${enr instanceof ENR ? enr.getLocationMultiaddr('udp')?.toString() : enr.socketAddr.toString()}`,
         )
