@@ -28,6 +28,7 @@ import type {
   PingMessage,
   PongMessage,
   PortalNetwork,
+  Version,
 } from '../index.js'
 import {
   BasicRadius,
@@ -51,7 +52,7 @@ import {
   randUint16,
   shortId,
 } from '../index.js'
-import { FoundContent } from '../wire/types.js'
+import { AcceptCode, FoundContent } from '../wire/types.js'
 import { NetworkDB } from './networkDB.js'
 import { PingPongPayloadExtensions } from '../wire/payloadExtensions.js'
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
@@ -239,7 +240,15 @@ export abstract class BaseNetwork extends EventEmitter {
   public async handle(message: ITalkReqMessage, src: INodeAddress) {
     const id = message.id
     const request = message.request
-    const deserialized = PortalWireMessageType.deserialize(request)
+    const enr = this.findEnr(src.nodeId)!
+    let version: Version
+    try {
+      version = await this.portal.highestCommonVersion(enr)
+    } catch (e: any) {
+      this.logger.extend('error')(e.message)
+      return
+    }
+    const deserialized = PortalWireMessageType[version].deserialize(request)
     const decoded = deserialized.value
     const messageType = deserialized.selector
     this.logger.extend(MessageCodes[messageType])(
@@ -247,22 +256,22 @@ export abstract class BaseNetwork extends EventEmitter {
     )
     switch (messageType) {
       case MessageCodes.PING:
-        await this.handlePing(src, id, decoded as PingMessage)
+        await this.handlePing(src, id, decoded as PingMessage, version)
         break
       case MessageCodes.PONG:
         this.logger(`PONG message not expected in TALKREQ`)
         break
       case MessageCodes.FINDNODES:
         this.portal.metrics?.findNodesMessagesReceived.inc()
-        await this.handleFindNodes(src, id, decoded as FindNodesMessage)
+        await this.handleFindNodes(src, id, decoded as FindNodesMessage, version)
         break
       case MessageCodes.FINDCONTENT:
         this.portal.metrics?.findContentMessagesReceived.inc()
-        await this.handleFindContent(src, id, decoded as FindContentMessage)
+        await this.handleFindContent(src, id, decoded as FindContentMessage, version)
         break
       case MessageCodes.OFFER:
         this.portal.metrics?.offerMessagesReceived.inc()
-        void this.handleOffer(src, id, decoded as OfferMessage)
+        void this.handleOffer(src, id, decoded as OfferMessage, version)
         break
       case MessageCodes.NODES:
       case MessageCodes.CONTENT:
@@ -312,6 +321,13 @@ export abstract class BaseNetwork extends EventEmitter {
       return
     }
 
+    let version: Version
+    try {
+      version = await this.portal.highestCommonVersion(enr)
+    } catch (e: any) {
+      this.logger.extend('error')(e.message)
+      return
+    }
     const peerCapabilities = this.portal.enrCache.getPeerCapabilities(enr.nodeId)
 
     if (extensionType !== 0 && peerCapabilities.has(extensionType) === false) {
@@ -323,7 +339,7 @@ export abstract class BaseNetwork extends EventEmitter {
       return undefined
     }, 3000)
     try {
-      const pingMsg = PortalWireMessageType.serialize({
+      const pingMsg = PortalWireMessageType[version].serialize({
         selector: MessageCodes.PING,
         value: {
           enrSeq: this.enr.seq,
@@ -335,7 +351,7 @@ export abstract class BaseNetwork extends EventEmitter {
       const res = await this.sendMessage(enr, pingMsg, this.networkId)
       if (bytesToInt(res.subarray(0, 1)) === MessageCodes.PONG) {
         this.logger.extend('PONG')(`Received from ${shortId(enr)}`)
-        const decoded = PortalWireMessageType.deserialize(res)
+        const decoded = PortalWireMessageType[version].deserialize(res)
         const pongMessage = decoded.value as PongMessage
         // Received a PONG message so node is reachable, add to routing table
         this.updateRoutingTable(enr)
@@ -397,7 +413,7 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
-  handlePing = async (src: INodeAddress, id: bigint, pingMessage: PingMessage) => {
+  handlePing = async (src: INodeAddress, id: bigint, pingMessage: PingMessage, _version: Version) => {
     if (!this.routingTable.getWithPending(src.nodeId)?.value) {
       // Check to see if node is already in corresponding network routing table and add if not
       const enr = this.findEnr(src.nodeId)
@@ -470,12 +486,20 @@ export abstract class BaseNetwork extends EventEmitter {
     customPayload: Uint8Array,
     payloadType: number,
   ) => {
+    let version: Version
+    try {
+      const enr = this.findEnr(src.nodeId)!
+      version = await this.portal.highestCommonVersion(enr)
+    } catch (e: any) {
+      this.logger.extend('error')(e.message)
+      return
+    }
     const payload = {
       enrSeq: this.enr.seq,
       payloadType,
       customPayload,
     }
-    const pongMsg = PortalWireMessageType.serialize({
+    const pongMsg = PortalWireMessageType[version].serialize({
       selector: MessageCodes.PONG,
       value: payload,
     })
@@ -493,16 +517,23 @@ export abstract class BaseNetwork extends EventEmitter {
    * @returns a {@link `NodesMessage`} or undefined
    */
   public sendFindNodes = async (enr: ENR, distances: number[]) => {
+    let version
+    try {
+      version = await this.portal.highestCommonVersion(enr)
+    } catch (e: any) {
+      this.logger.extend('error')(e.message)
+      return
+    }
     this.portal.metrics?.findNodesMessagesSent.inc()
     const findNodesMsg: FindNodesMessage = { distances }
-    const payload = PortalWireMessageType.serialize({
+    const payload = PortalWireMessageType[version].serialize({
       selector: MessageCodes.FINDNODES,
       value: findNodesMsg,
     })
     const res = await this.sendMessage(enr, payload, this.networkId)
     if (bytesToInt(res.slice(0, 1)) === MessageCodes.NODES) {
       this.portal.metrics?.nodesMessagesReceived.inc()
-      const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
+      const decoded = PortalWireMessageType[version].deserialize(res).value as NodesMessage
       const enrs = decoded.enrs ?? []
       try {
         if (enrs.length > 0) {
@@ -529,6 +560,7 @@ export abstract class BaseNetwork extends EventEmitter {
     src: INodeAddress,
     requestId: bigint,
     payload: FindNodesMessage,
+    version: Version,
   ) => {
     if (payload.distances.length > 0) {
       const nodesPayload: NodesMessage = {
@@ -559,7 +591,7 @@ export abstract class BaseNetwork extends EventEmitter {
         }
       }
 
-      const encodedPayload = PortalWireMessageType.serialize({
+      const encodedPayload = PortalWireMessageType[version].serialize({
         selector: MessageCodes.NODES,
         value: nodesPayload,
       })
@@ -877,6 +909,7 @@ export abstract class BaseNetwork extends EventEmitter {
     src: INodeAddress,
     requestId: bigint,
     decodedContentMessage: FindContentMessage,
+    _version: Version,
   ) => {
     this.portal.metrics?.contentMessagesSent.inc()
 
