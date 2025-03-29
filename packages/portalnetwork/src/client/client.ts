@@ -411,9 +411,13 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
   public updateENRCache = (enrs: ENR[]) => {
     for (const enr of enrs) {
-      this.highestCommonVersion(enr).finally(() => {
-        this.enrCache.updateENR(enr)
-      })
+      this.highestCommonVersion(enr)
+        .catch((e: any) => {
+          this.logger.extend('error')(e.message)
+        })
+        .finally(() => {
+          this.enrCache.updateENR(enr)
+        })
     }
   }
 
@@ -443,7 +447,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       // No action
     }
   }
-  public async highestCommonVersion(peer: ENR): Promise<number> {
+  public async highestCommonVersion(peer: ENR): Promise<Version> {
     const mySupportedVersions: number[] = SupportedVersions.deserialize(
       this.discv5.enr.kvs.get('pv')!,
     )
@@ -457,8 +461,8 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       .sort((a, b) => b - a)[0]
     if (highestCommonVersion === undefined) {
       this.addToBlackList(peer.getLocationMultiaddr('udp')!)
-      return -1
+      throw new Error(`No common version found with ${peer.nodeId}`)
     }
-    return highestCommonVersion
+    return highestCommonVersion as Version
   }
 }
