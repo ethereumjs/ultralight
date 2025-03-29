@@ -1113,15 +1113,22 @@ export abstract class BaseNetwork extends EventEmitter {
     const offerMsg: OfferMessage = {
       contentKeys: [contentKey],
     }
-    const payload = PortalWireMessageType.serialize({
-      selector: MessageCodes.OFFER,
-      value: offerMsg,
-    })
     const offered = await Promise.allSettled(
       peers.map(async (peer) => {
         this.logger.extend(`gossipContent`)(
           `Offering ${bytesToHex(contentKey)} to ${shortId(peer.nodeId)}`,
         )
+        let version
+        try {
+          version = await this.portal.highestCommonVersion(peer)
+        } catch (e: any) {
+          this.logger.extend('error')(e.message)
+          return
+        }
+        const payload = PortalWireMessageType[version].serialize({
+          selector: MessageCodes.OFFER,
+          value: offerMsg,
+        })
         const res = await this.sendMessage(peer, payload, this.networkId)
         this.routingTable.markContentKeyAsKnownToPeer(peer.nodeId, contentKey)
         return [peer, res]
@@ -1133,24 +1140,49 @@ export abstract class BaseNetwork extends EventEmitter {
         const [enr, res] = offer.value as [ENR, Uint8Array]
         if (res.length > 0) {
           try {
-            const decoded = PortalWireMessageType.deserialize(res)
+            const version = await this.portal.highestCommonVersion(enr)
+            const decoded = PortalWireMessageType[version].deserialize(res)
             if (decoded.selector === MessageCodes.ACCEPT) {
-              const msg = decoded.value as AcceptMessage
-              if (msg.contentKeys.get(0) === true) {
-                this.logger.extend(`gossipContent`)(
-                  `${bytesToHex(contentKey)} accepted by ${shortId(enr.nodeId)}`,
-                )
-                accepted++
-                this.logger.extend(`gossipContent`)(`accepted: ${accepted}`)
-                const id = new DataView(msg.connectionId.buffer).getUint16(0, false)
-                void this.handleNewRequest({
-                  networkId: this.networkId,
-                  contentKeys: [contentKey],
-                  enr,
-                  connectionId: id,
-                  requestCode: RequestCode.OFFER_WRITE,
-                  contents: encodeWithVariantPrefix([content]),
-                })
+              const msg = decoded.value as AcceptMessage<Version>
+              switch (version) {
+                case 0: {
+                  if ((<AcceptMessage<0>>msg).contentKeys.get(0) === true) {
+                    this.logger.extend(`gossipContent`)(
+                      `${bytesToHex(contentKey)} accepted by ${shortId(enr.nodeId)}`,
+                    )
+                    accepted++
+                    this.logger.extend(`gossipContent`)(`accepted: ${accepted}`)
+                    const id = new DataView(msg.connectionId.buffer).getUint16(0, false)
+                    void this.handleNewRequest({
+                      networkId: this.networkId,
+                      contentKeys: [contentKey],
+                      enr,
+                      connectionId: id,
+                      requestCode: RequestCode.OFFER_WRITE,
+                      contents: encodeWithVariantPrefix([content]),
+                    })
+                  }
+                  break
+                }
+                case 1: {
+                  if ((<AcceptMessage<1>>msg).contentKeys[0] === AcceptCode.ACCEPT) {
+                    this.logger.extend(`gossipContent`)(
+                      `${bytesToHex(contentKey)} accepted by ${shortId(enr.nodeId)}`,
+                    )
+                    accepted++
+                    this.logger.extend(`gossipContent`)(`accepted: ${accepted}`)
+                    const id = new DataView(msg.connectionId.buffer).getUint16(0, false)
+                    void this.handleNewRequest({
+                      networkId: this.networkId,
+                      contentKeys: [contentKey],
+                      enr,
+                      connectionId: id,
+                      requestCode: RequestCode.OFFER_WRITE,
+                      contents: encodeWithVariantPrefix([content]),
+                    })
+                  }
+                  break
+                }
               }
             }
           } catch {
