@@ -151,15 +151,28 @@ export type MessageTypeUnion = [
   | FindContentMessage
   | ContentMessage
   | OfferMessage
-  | AcceptMessage,
+  | AcceptMessage<Version>,
 ]
-export const PortalWireMessageType = new UnionType([
-  PingMessageType,
-  PongMessageType,
-  FindNodesMessageType,
-  NodesMessageType,
-  FindContentMessageType,
-  ContentMessageType,
-  OfferMessageType,
-  AcceptMessageType,
-])
+export const PortalWireMessageType: Record<Version, UnionType<any>> = {
+  0: new UnionType([
+    PingMessageType,
+    PongMessageType,
+    FindNodesMessageType,
+    NodesMessageType,
+    FindContentMessageType,
+    ContentMessageType,
+    OfferMessageType,
+    AcceptMessageType[0],
+  ]),
+  1: new UnionType([
+    PingMessageType,
+    PongMessageType,
+    FindNodesMessageType,
+    NodesMessageType,
+    FindContentMessageType,
+    ContentMessageType,
+    OfferMessageType,
+    AcceptMessageType[1],
+  ]),
+}
+
