@@ -118,6 +118,17 @@ export const OfferMessageType = new ContainerType({
 
 export type Version = 0 | 1
 
+export type AcceptMessage<V extends Version> = V extends 0
+  ? {
+      connectionId: Uint8Array
+      contentKeys: BitArray
+    }
+  : V extends 1
+    ? {
+        connectionId: Uint8Array
+        contentKeys: Uint8Array
+      }
+    : never
 
 export const AcceptMessageType = new ContainerType({
   connectionId: Bytes2,
