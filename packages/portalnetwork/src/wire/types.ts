@@ -116,10 +116,8 @@ export const OfferMessageType = new ContainerType({
   contentKeys: new ListCompositeType(ByteList, 64),
 })
 
-export type AcceptMessage = {
-  connectionId: Uint8Array
-  contentKeys: BitArray
-}
+export type Version = 0 | 1
+
 
 export const AcceptMessageType = new ContainerType({
   connectionId: Bytes2,
