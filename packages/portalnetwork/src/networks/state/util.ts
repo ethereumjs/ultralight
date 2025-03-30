@@ -1,6 +1,6 @@
 import { digest as sha256 } from '@chainsafe/as-sha256'
 import { distance } from '@chainsafe/discv5'
-import { BranchNode, ExtensionNode, decodeNode } from '@ethereumjs/trie'
+import { BranchMPTNode, ExtensionMPTNode, decodeMPTNode } from '@ethereumjs/mpt'
 import { bytesToHex, bytesToUnprefixedHex, equalsBytes, hexToBytes } from '@ethereumjs/util'
 
 import { packNibbles, unpackNibbles } from './nibbleEncoding.js'
@@ -17,7 +17,7 @@ import {
   StorageTrieNodeRetrieval,
 } from './types.js'
 
-import type { LeafNode } from '@ethereumjs/trie'
+import type { LeafMPTNode } from '@ethereumjs/mpt'
 import type {
   TAccountTrieNodeKey,
   TContractCodeKey,
@@ -137,7 +137,7 @@ export function calculateAddressRange(
 }
 
 export const compareDistance = (nodeId: string, nodeA: Uint8Array, nodeB: Uint8Array) => {
-  if (equalsBytes(nodeA, nodeB)) {
+  if (equalsBytes(nodeA, nodeB) === true) {
     return nodeA
   }
   const distanceA = distance(nodeId, nodeA.toString())
@@ -195,12 +195,12 @@ export function nextOffer(path: TNibbles, proof: Uint8Array[]) {
   const nibbles = unpackNibbles(path)
   const nodes = [...proof]
   nodes.pop()
-  const nextNode = decodeNode(nodes[nodes.length - 1])
+  const nextNode = decodeMPTNode(nodes[nodes.length - 1])
   const newpaths = nibbles.slice(
     0,
-    nextNode instanceof BranchNode
+    nextNode instanceof BranchMPTNode
       ? -1
-      : nextNode instanceof ExtensionNode
+      : nextNode instanceof ExtensionMPTNode
         ? -nextNode.key().length
         : 0,
   )
@@ -218,7 +218,7 @@ export function extractAccountProof(
   const addressPath = bytesToUnprefixedHex(addressHash).split('')
   const nodeRLP = accountProof.slice(-1)[0]
   const nodeHash = sha256(nodeRLP)
-  const accountNode = decodeNode(nodeRLP) as LeafNode
+  const accountNode = decodeMPTNode(nodeRLP) as LeafMPTNode
   const nodeNibbles = accountNode._nibbles.map((n) => n.toString(16))
   const nodePath = addressPath.slice(0, addressPath.length - nodeNibbles.length)
   const accountTrieNodeOffer = AccountTrieNodeOffer.serialize({

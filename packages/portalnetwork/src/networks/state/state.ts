@@ -1,5 +1,10 @@
 import { distance } from '@chainsafe/discv5'
-import { BranchNode, ExtensionNode, Trie, decodeNode } from '@ethereumjs/trie'
+import {
+  BranchMPTNode,
+  ExtensionMPTNode,
+  MerklePatriciaTrie as Trie,
+  decodeMPTNode,
+} from '@ethereumjs/mpt'
 import {
   bytesToHex,
   bytesToInt,
@@ -39,7 +44,6 @@ import {
   extractAccountProof,
   nextOffer,
 } from './util.js'
-
 import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
 import type { FindContentMessage } from '../../wire/types.js'
@@ -98,7 +102,7 @@ export class StateNetwork extends BaseNetwork {
             response = await new Promise((resolve, _reject) => {
               // TODO: Figure out how to clear this listener
               this.on('ContentAdded', (contentKey: Uint8Array, value) => {
-                if (equalsBytes(contentKey, key)) {
+                if (equalsBytes(contentKey, key) === true) {
                   this.logger.extend('FOUNDCONTENT')(`received content for uTP Connection ID ${id}`)
                   resolve({ content: value, utp: true })
                 }
@@ -206,11 +210,11 @@ export class StateNetwork extends BaseNetwork {
     let curRlp = nodes.pop()
     let i = 0
     while (curRlp) {
-      const curNode = decodeNode(curRlp)
+      const curNode = decodeMPTNode(curRlp)
       if (i > 0) {
-        if (curNode instanceof BranchNode) {
+        if (curNode instanceof BranchMPTNode) {
           newpaths.pop()
-        } else if (curNode instanceof ExtensionNode) {
+        } else if (curNode instanceof ExtensionMPTNode) {
           const consumed = newpaths.splice(-curNode._nibbles.length)
           this.logger.extend('storeInterestedNodes')(
             `Node nibbles (${curNode._nibbles.length}): [${consumed}].  Path: [${newpaths}]`,
@@ -242,6 +246,7 @@ export class StateNetwork extends BaseNetwork {
     }
     for (const { contentKey, dbContent } of interested) {
       await this.db.put(contentKey, dbContent)
+      this.emit('ContentAdded', contentKey, dbContent)
     }
     return { interested, notInterested }
   }
@@ -265,6 +270,7 @@ export class StateNetwork extends BaseNetwork {
       node: curRlp,
     })
     await this.db.put(contentKey, dbContent)
+    this.emit('ContentAdded', contentKey, dbContent)
   }
 
   async storeStorageTrieNode(contentKey: Uint8Array, content: Uint8Array) {
@@ -274,6 +280,7 @@ export class StateNetwork extends BaseNetwork {
       node: curRlp,
     })
     await this.db.put(contentKey, dbContent)
+    this.emit('ContentAdded', contentKey, dbContent)
   }
 
   async receiveStorageTrieNodeOffer(
@@ -307,11 +314,11 @@ export class StateNetwork extends BaseNetwork {
     let curRlp = nodes.pop()
     let i = 0
     while (curRlp) {
-      const curNode = decodeNode(curRlp)
+      const curNode = decodeMPTNode(curRlp)
       if (i > 0) {
-        if (curNode instanceof BranchNode) {
+        if (curNode instanceof BranchMPTNode) {
           newpaths.pop()
-        } else if (curNode instanceof ExtensionNode) {
+        } else if (curNode instanceof ExtensionMPTNode) {
           const consumed = newpaths.splice(-curNode._nibbles.length)
           this.logger.extend('storeInterestedStorageTrieNodes')(
             `Node nibbles (${curNode._nibbles.length}): [${consumed}].  Path: [${newpaths}]`,
@@ -344,6 +351,7 @@ export class StateNetwork extends BaseNetwork {
     }
     for (const { contentKey, dbContent } of interested) {
       await this.db.put(contentKey, dbContent)
+      this.emit('ContentAdded', contentKey, dbContent)
     }
     return { interested, notInterested }
   }
@@ -375,6 +383,7 @@ export class StateNetwork extends BaseNetwork {
     const codeContent = ContractRetrieval.serialize({ code })
     this.manager.trie.db.local.set(bytesToUnprefixedHex(codeHash), bytesToHex(contentKey))
     await this.db.put(contentKey, codeContent)
+    this.emit('ContentAdded', contentKey, codeContent)
     await this.receiveAccountTrieNodeOffer(
       ...extractAccountProof(addressHash, accountProof, blockHash),
     )

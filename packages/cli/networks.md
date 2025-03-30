@@ -23,32 +23,32 @@ To experiment with the Beacon Light Client Network, do the following:
 - Observe the logs.  If all goes well, you should see something like below eventually, which indicates that the embedded Lodestar light client has begun tracking the head of the chain and will continue to do so as long as new updates are piped in.
 
 ```sh
-  13527:Portal:BeaconLightClientNetwork:LightClientTransport Found LightClientBootstrap locally.  Initializing light client... +0ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG Syncing +0ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG { lastPeriod: 945, currentPeriod: 947 } +1ms
-  13527:Portal:BeaconLightClientNetwork:LightClientTransport requesting lightClientUpdatesByRange starting with period 945 and count 3 +15ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG Updated state.optimisticHeader +19ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG { slot: 7743724 } +0ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG processed sync update +0ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG { slot: 7743724 } +0ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG Updated state.optimisticHeader +21ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG { slot: 7749758 } +0ms
+  13527:Portal:Beacon:LightClientTransport Found LightClientBootstrap locally.  Initializing light client... +0ms
+  13527:Portal:Beacon:LightClient:DEBUG Syncing +0ms
+  13527:Portal:Beacon:LightClient:DEBUG { lastPeriod: 945, currentPeriod: 947 } +1ms
+  13527:Portal:Beacon:LightClientTransport requesting lightClientUpdatesByRange starting with period 945 and count 3 +15ms
+  13527:Portal:Beacon:LightClient:DEBUG Updated state.optimisticHeader +19ms
+  13527:Portal:Beacon:LightClient:DEBUG { slot: 7743724 } +0ms
+  13527:Portal:Beacon:LightClient:DEBUG processed sync update +0ms
+  13527:Portal:Beacon:LightClient:DEBUG { slot: 7743724 } +0ms
+  13527:Portal:Beacon:LightClient:DEBUG Updated state.optimisticHeader +21ms
+  13527:Portal:Beacon:LightClient:DEBUG { slot: 7749758 } +0ms
   ```
  ...
  ```sh
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG { slot: 7757824 } +0ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG processed sync update +0ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG { slot: 7757893 } +0ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG Synced +0ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG { currentPeriod: 947 } +0ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG Started tracking the head +1ms
+  13527:Portal:Beacon:LightClient:DEBUG { slot: 7757824 } +0ms
+  13527:Portal:Beacon:LightClient:DEBUG processed sync update +0ms
+  13527:Portal:Beacon:LightClient:DEBUG { slot: 7757893 } +0ms
+  13527:Portal:Beacon:LightClient:DEBUG Synced +0ms
+  13527:Portal:Beacon:LightClient:DEBUG { currentPeriod: 947 } +0ms
+  13527:Portal:Beacon:LightClient:DEBUG Started tracking the head +1ms
   ultralight Received portal_beaconStore with params: 0: 0x03f67e760000000000,1: 0xbba4da96ac000000ffffffffffff7fffffffffffffffffffffffffffffffff... +14s
-  13527:Portal:BeaconLightClientNetwork storing LightClientOptimisticUpdate content corresponding to 0x03f67e760000000000 +14s
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG Updated state.optimisticHeader +14s
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG { slot: 7765749 } +0ms
+  13527:Portal:Beacon storing LightClientOptimisticUpdate content corresponding to 0x03f67e760000000000 +14s
+  13527:Portal:Beacon:LightClient:DEBUG Updated state.optimisticHeader +14s
+  13527:Portal:Beacon:LightClient:DEBUG { slot: 7765749 } +0ms
   ultralight Received portal_beaconStore with params: 0: 0x02a07e760000000000,1: 0xbba4da9670010000ad040000f5b30300000000000000000000000000000000... +429ms
-  13527:Portal:BeaconLightClientNetwork storing LightClientFinalityUpdate content corresponding to 0x02a07e760000000000 +428ms
-  13527:Portal:BeaconLightClientNetwork:LightClient:DEBUG Updated state.finalizedHeader +429ms
+  13527:Portal:Beacon storing LightClientFinalityUpdate content corresponding to 0x02a07e760000000000 +428ms
+  13527:Portal:Beacon:LightClient:DEBUG Updated state.finalizedHeader +429ms
   ```
 
 You can also call the RPC methods `beacon_getHead` and `beacon_getFinalized` to get the latest Light Client Headers for `latest` and `finalized` blocks known to the light client.

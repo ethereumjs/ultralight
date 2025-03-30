@@ -2,11 +2,12 @@ import { execSync } from 'child_process'
 import http from 'http'
 import debug from 'debug'
 import jayson from 'jayson/promise/index.js'
-import { PortalNetwork, cliConfig } from 'portalnetwork'
+import { cliConfig, createPortalNetwork } from 'portalnetwork'
 import * as PromClient from 'prom-client'
 import { args } from './cliArgs.js'
 import { RPCManager } from './rpc/rpc.js'
 import { readFileSync } from 'fs'
+import { dirSize } from './util.js'
 
 const register = new PromClient.Registry()
 
@@ -27,13 +28,16 @@ const main = async () => {
   const portalConfig = await cliConfig({
     ...args,
     bindAddress: args.bindAddress ?? `${ip}:9000`,
-    bootnodeList: args.bootnodeList ? readFileSync(args.bootnodeList, 'utf-8').split('\n') : undefined,
+    bootnodeList:
+      args.bootnodeList !== undefined
+        ? readFileSync(args.bootnodeList, 'utf-8').split('\n')
+        : undefined,
   })
   log(`portalConfig: ${JSON.stringify(args, null, 2)}`)
   portalConfig.operatingSystemAndCpuArchitecture = args.arch
   portalConfig.shortCommit = args.commit ?? execSync('git rev-parse HEAD').toString().slice(0, 7)
-
-  const portal = await PortalNetwork.create(portalConfig)
+  portalConfig.dbSize = dirSize
+  const portal = await createPortalNetwork(portalConfig)
 
   log(`discv5Config: ${JSON.stringify(portal.discv5['config'], null, 2)}`)
 
@@ -75,11 +79,13 @@ const main = async () => {
           })
         } else {
           log(
-            `Received ${method} with params: ${params !== undefined &&
-            (params as any[]).map((p, idx) => {
-              return `${idx}: ${p.toString().slice(0, 64)}${p.toString().length > 64 ? '...' : ''
-                }`
-            })
+            `Received ${method} with params: ${
+              params !== undefined &&
+              (params as any[]).map((p, idx) => {
+                return p !== undefined && p !== null
+                  ? `${idx}: ${p.toString().slice(0, 64)}${p.toString().length > 64 ? '...' : ''}`
+                  : `${idx}: undefined`
+              })
             }`,
           )
           return this.getMethod(method)
@@ -113,3 +119,5 @@ main().catch((err) => {
   console.error('Encountered an error', err)
   console.error('Shutting down...')
 })
+
+export * from './util.js'

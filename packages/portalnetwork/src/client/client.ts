@@ -1,29 +1,21 @@
 import { EventEmitter } from 'eventemitter3'
-import { Discv5, UDPTransportService } from '@chainsafe/discv5'
-import { ENR, SignableENR } from '@chainsafe/enr'
+import { Discv5 } from '@chainsafe/discv5'
+import { ENR } from '@chainsafe/enr'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
-import { keys } from '@libp2p/crypto'
 import type { Multiaddr } from '@multiformats/multiaddr'
-import { fromNodeAddress, multiaddr } from '@multiformats/multiaddr'
+import { fromNodeAddress } from '@multiformats/multiaddr'
 import debug from 'debug'
 import packageJson from '../../package.json' assert { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
-import {
-  BeaconLightClientNetwork,
-  NetworkId,
-  StateNetwork,
-  SyncStrategy,
-} from '../networks/index.js'
-import { TauriUDPTransportService, WebSocketTransportService } from '../transports/index.js'
-import { MEGABYTE } from '../util/index.js'
+import { BeaconNetwork, NetworkId, StateNetwork, SyncStrategy } from '../networks/index.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
 import { DBManager } from './dbManager.js'
 import { ETH } from './eth.js'
-import { TransportLayer } from './types.js'
+import { SupportedVersions } from './types.js'
 
-import type { IDiscv5CreateOptions, SignableENRInput } from '@chainsafe/discv5'
+import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { Debugger } from 'debug'
 import type { BaseNetwork } from '../networks/network.js'
@@ -35,7 +27,7 @@ import type {
 } from './types.js'
 import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
 import { type IClientInfo } from '../wire/payloadExtensions.js'
-import { RateLimiter } from '../transports/rateLimiter.js'
+import type { RateLimiter } from '../transports/rateLimiter.js'
 import { ENRCache } from './enrCache.js'
 
 export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
@@ -53,136 +45,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   enrCache: ENRCache
   shouldRefresh: boolean = true
 
-  public static create = async (opts: Partial<PortalNetworkOpts>) => {
-    console.log('[portalclient] Creating portal network client', opts)
-    const defaultConfig: IDiscv5CreateOptions = {
-      enr: opts.config?.enr ?? ({} as SignableENRInput),
-      privateKey: opts.config?.privateKey ?? (await keys.generateKeyPair('secp256k1')),
-      bindAddrs: {
-        ip4: multiaddr(),
-      },
-      config: {
-        addrVotesToUpdateEnr: 5,
-        enrUpdate: true,
-        allowUnverifiedSessions: true,
-        requestTimeout: 3000,
-        sessionEstablishTimeout: 3000,
-        lookupTimeout: 3000,
-        sessionTimeout: 3000,
-        requestRetries: 2,
-      },
-    }
-    const config = { ...defaultConfig, ...opts.config }
-    config.config = { ...defaultConfig.config, ...opts.config?.config }
-    let bootnodes = opts.bootnodes
-    if (opts.rebuildFromMemory === true && opts.db) {
-      const prevEnrString = await opts.db.get('enr')
-      const prevPrivateKey = await opts.db.get('privateKey')
-      config.enr = SignableENR.decodeTxt(prevEnrString, hexToBytes(prevPrivateKey))
-      const prev_peers = JSON.parse(await opts.db.get('peers')) as string[]
-      bootnodes =
-        opts.bootnodes && opts.bootnodes.length > 0 ? opts.bootnodes.concat(prev_peers) : prev_peers
-    } else if (opts.config?.enr === undefined) {
-      config.enr = SignableENR.createV4(config.privateKey.raw)
-
-      bootnodes = opts.bootnodes
-    } else {
-      config.enr = opts.config.enr as SignableENR
-    }
-    let ma
-    if (opts.config?.bindAddrs?.ip4 === undefined) {
-      if (opts.bindAddress !== undefined) {
-        ma = multiaddr(`/ip4/${opts.bindAddress}/udp/${Math.floor(Math.random() * 990) + 9009}`)
-        config.enr.setLocationMultiaddr(ma)
-        config.bindAddrs.ip4 = ma
-      } else {
-        let ip = ''
-        try {
-          ip = await (await fetch('https://api.ipify.org')).text()
-        } catch (e) {
-          ip = '127.0.0.1'
-        }
-        ma = multiaddr(`/ip4/${ip}/udp/${Math.floor(Math.random() * 990) + 9009}`)
-        config.enr.setLocationMultiaddr(ma)
-        config.bindAddrs.ip4 = ma
-      }
-    } else {
-      ma = opts.config.bindAddrs.ip4
-    }
-
-    console.log('About db size calculation')
-    // Configure db size calculation
-    let dbSize
-    switch (opts.transport) {
-      case TransportLayer.WEB:
-        dbSize = async function () {
-          // eslint-disable-next-line no-undef
-          const sizeEstimate = await window.navigator.storage.estimate()
-          return sizeEstimate.usage !== undefined ? sizeEstimate.usage / MEGABYTE : 0
-        }
-        break
-      case TransportLayer.MOBILE:   
-      case TransportLayer.NODE:
-      default:
-    }
-
-    // Configure transport layer
-    switch (opts.transport) {
-      case TransportLayer.WEB: {
-        opts.proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
-        config.transport = new WebSocketTransportService(
-          ma,
-          config.enr.nodeId,
-          opts.proxyAddress,
-          new RateLimiter(),
-        )
-        break
-      }
-      case TransportLayer.MOBILE:
-        config.transport = new TauriUDPTransportService(
-          ma, 
-          config.enr.nodeId,
-        )
-        break
-      case TransportLayer.NODE:
-        config.transport = new UDPTransportService({
-          bindAddrs: config.bindAddrs,
-          nodeId: config.enr.nodeId,
-          rateLimiter: new RateLimiter(),
-        })
-        break
-    }
-
-    const portal = new PortalNetwork({
-      config,
-      bootnodes,
-      db: opts.db,
-      supportedNetworks: opts.supportedNetworks ?? [
-        { networkId: NetworkId.HistoryNetwork, maxStorage: 1024 },
-      ],
-      dbSize: dbSize as () => Promise<number>,
-      metrics: opts.metrics,
-      trustedBlockRoot: opts.trustedBlockRoot,
-      eventLog: opts.eventLog,
-      utpTimeout: opts.utpTimeout,
-      gossipCount: opts.gossipCount,
-      shouldRefresh: opts.shouldRefresh,
-      operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture,
-      shortCommit: opts.shortCommit,
-    })
-    for (const network of portal.networks.values()) {
-      try {
-        // Check for stored radius in db
-        const storedRadius = await network.db.db.get('radius')
-        await network.setRadius(BigInt(storedRadius))
-      } catch {
-        continue
-      }
-      await network.prune()
-    }
-    return portal
-  }
-
   /**
    *
    * Portal Network constructor
@@ -195,19 +57,25 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       clientName: 'ultralight',
       clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
       operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture ?? '',
-      programmingLanguageAndVersion: `typescript${packageJson.devDependencies.typescript}`,
+      programmingLanguageAndVersion: `typescript_${packageJson.devDependencies.typescript}`,
     }
     this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
     // cache signature to ensure ENR can be encoded on startup
     this.discv5.enr.encode()
+    this.discv5.enr.set('pv', SupportedVersions.serialize(opts.supportedVersions ?? [0]))
     this.enrCache = new ENRCache({})
     this.logger = debug(this.discv5.enr.nodeId.slice(0, 5)).extend('Portal')
     this.networks = new Map()
     this.bootnodes = opts.bootnodes ?? []
     this.uTP = new PortalNetworkUTP(this)
     this.utpTimout = opts.utpTimeout ?? 180000 // set default utpTimeout to 3 minutes
-    this.db = new DBManager(this.discv5.enr.nodeId, this.logger, opts.dbSize, opts.db) as DBManager
+    this.db = new DBManager(
+      this.discv5.enr.nodeId,
+      this.logger,
+      async () => opts.dbSize(opts.dataDir ?? './'),
+      opts.db,
+    ) as DBManager
     opts.supportedNetworks = opts.supportedNetworks ?? []
     for (const network of opts.supportedNetworks) {
       switch (network.networkId) {
@@ -221,6 +89,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
               maxStorage: network.maxStorage,
               db: network.db,
               gossipCount: opts.gossipCount,
+              dbSize: async () => opts.dbSize((opts.dataDir ?? '.') + '/history'),
             }),
           )
           break
@@ -233,6 +102,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
               maxStorage: network.maxStorage,
               db: network.db,
               gossipCount: opts.gossipCount,
+              dbSize: async () => opts.dbSize((opts.dataDir ?? '.') + '/state'),
             }),
           )
           break
@@ -244,7 +114,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
                 : SyncStrategy.PollNetwork
             this.networks.set(
               network.networkId,
-              new BeaconLightClientNetwork({
+              new BeaconNetwork({
                 client: this,
                 networkId: NetworkId.BeaconChainNetwork,
                 maxStorage: network.maxStorage,
@@ -252,6 +122,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
                 sync: syncStrategy,
                 db: network.db,
                 gossipCount: opts.gossipCount,
+                dbSize: async () => opts.dbSize((opts.dataDir ?? '.') + '/beacon'),
               }),
             )
           }
@@ -351,7 +222,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   public network = (): {
     [NetworkId.HistoryNetwork]: HistoryNetwork | undefined
     [NetworkId.StateNetwork]: StateNetwork | undefined
-    [NetworkId.BeaconChainNetwork]: BeaconLightClientNetwork | undefined
+    [NetworkId.BeaconChainNetwork]: BeaconNetwork | undefined
   } => {
     const history = this.networks.get(NetworkId.HistoryNetwork)
       ? (this.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork)
@@ -360,7 +231,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       ? (this.networks.get(NetworkId.StateNetwork) as StateNetwork)
       : undefined
     const beacon = this.networks.get(NetworkId.BeaconChainNetwork)
-      ? (this.networks.get(NetworkId.BeaconChainNetwork) as BeaconLightClientNetwork)
+      ? (this.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork)
       : undefined
     return {
       [NetworkId.HistoryNetwork]: history,
@@ -433,8 +304,14 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
       return
     }
-
-    await network.handle(message, nodeAddress)
+    try {
+      await network.handle(message, nodeAddress)
+    } catch (err: any) {
+      this.logger.extend('error')(
+        `Error handling TALKREQ message from ${nodeAddress.nodeId}: ${err}.  `,
+      )
+      await this.sendPortalNetworkResponse(nodeAddress, message.id, new Uint8Array())
+    }
   }
 
   private onTalkResp = (_: INodeAddress, src: ENR | null, message: ITalkRespMessage) => {
@@ -448,13 +325,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    * @param packetBuffer uTP packet encoded to Buffer
    */
   private handleUTP = async (src: INodeAddress, msg: ITalkReqMessage, packetBuffer: Uint8Array) => {
-    if (this.uTP.requestManagers[src.nodeId] === undefined) {
-      this.logger.extend('handleUTP').extend('error')(
-        `Received uTP packet from peer with no uTP stream history: ${src.nodeId}.  Blacklisting peer.`,
-      )
-      this.addToBlackList(src.socketAddr)
-      return
-    }
     await this.sendPortalNetworkResponse(src, msg.id, new Uint8Array())
     try {
       await this.uTP.handleUtpPacket(packetBuffer, src)
@@ -521,7 +391,8 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public addToBlackList = (ma: Multiaddr) => {
-    (<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).addToBlackList(
+    // eslint-disable-next-line no-extra-semi
+    ;(<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).addToBlackList(
       ma.nodeAddress().address,
     )
   }
@@ -533,14 +404,17 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public removeFromBlackList = (ma: Multiaddr) => {
-    (<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).removeFromBlackList(
+    // eslint-disable-next-line no-extra-semi
+    ;(<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).removeFromBlackList(
       ma.nodeAddress().address,
     )
   }
 
   public updateENRCache = (enrs: ENR[]) => {
     for (const enr of enrs) {
-      this.enrCache.updateENR(enr)
+      this.highestCommonVersion(enr).finally(() => {
+        this.enrCache.updateENR(enr)
+      })
     }
   }
 
@@ -569,5 +443,23 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     } catch {
       // No action
     }
+  }
+  public async highestCommonVersion(peer: ENR): Promise<number> {
+    const mySupportedVersions: number[] = SupportedVersions.deserialize(
+      this.discv5.enr.kvs.get('pv')!,
+    )
+    const pv = peer.kvs.get('pv')
+    if (pv === undefined) {
+      return 0
+    }
+    const peerSupportedVersions: number[] = SupportedVersions.deserialize(pv)
+    const highestCommonVersion = peerSupportedVersions
+      .filter((v) => mySupportedVersions.includes(v))
+      .sort((a, b) => b - a)[0]
+    if (highestCommonVersion === undefined) {
+      this.addToBlackList(peer.getLocationMultiaddr('udp')!)
+      return -1
+    }
+    return highestCommonVersion
   }
 }

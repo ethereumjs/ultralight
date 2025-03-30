@@ -1,5 +1,5 @@
 import { bytesToHex } from '@ethereumjs/util'
-import { HistoryNetworkContentType, NetworkId } from 'portalnetwork'
+import { HistoryNetworkContentType, NetworkId, PingPongCustomPayload } from 'portalnetwork'
 
 import { isValidEnr } from '../util.js'
 
@@ -506,4 +506,33 @@ export const validators = {
       }
     }
   },
+
+  get extension() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'number') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument must be a number`,
+        }
+      }
+      if (!(params[index] in PingPongCustomPayload)) {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument must be a supported PingPong payload type`,
+        }
+      }
+    }
+  },
+
+  get payload() {
+    return (params: any[], index: number) => {
+      if (typeof params[index] !== 'object') {
+        return {
+          code: INVALID_PARAMS,
+          message: `invalid argument ${index}: argument must be an object`,
+        }
+      }
+    }
+  },
 }
+

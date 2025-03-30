@@ -26,7 +26,7 @@ export const startRpc = async (opts?: cliConfig) => {
   ultralight.on('message', (msg) => {
     console.log(msg.toString())
   })
-  const rpc = Client.http({ host: ip, port: 8545 })
+  const rpc = Client.http({ host: ip, port: opts?.rpcPort })
   let done = false
   while (!done) {
     try {

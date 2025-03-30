@@ -7,7 +7,7 @@ import { ForkName } from '@lodestar/params'
 import { ssz } from '@lodestar/types'
 import jayson from 'jayson/promise/index.js'
 import {
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
@@ -35,7 +35,7 @@ const main = async () => {
     `Retrieved latest optimistic update for slot ${BigInt(optimisticUpdate.signatureSlot)}`,
   )
   const optimisticUpdateKey = getBeaconContentKey(
-    BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+    BeaconNetworkContentType.LightClientOptimisticUpdate,
     LightClientOptimisticUpdateKey.serialize({
       signatureSlot: BigInt(optimisticUpdate.signatureSlot),
     }),
@@ -59,7 +59,7 @@ const main = async () => {
   }
   const serializedRange = LightClientUpdatesByRange.serialize(range)
   const rangeKey = getBeaconContentKey(
-    BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+    BeaconNetworkContentType.LightClientUpdatesByRange,
     LightClientUpdatesByRangeKey.serialize({ startPeriod: BigInt(oldPeriod), count: 3n }),
   )
   const bootstrapSlot = updatesByRange[0].data.finalized_header.beacon.slot
@@ -78,7 +78,7 @@ const main = async () => {
   )
   const res = await ultralight.request('portal_beaconStore', [
     getBeaconContentKey(
-      BeaconLightClientNetworkContentType.LightClientBootstrap,
+      BeaconNetworkContentType.LightClientBootstrap,
       LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) }),
     ),
     bytesToHex(
@@ -122,7 +122,7 @@ const main = async () => {
         .data,
     )
     const optimisticUpdateKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+      BeaconNetworkContentType.LightClientOptimisticUpdate,
       LightClientOptimisticUpdateKey.serialize({
         signatureSlot: BigInt(optimisticUpdate.signatureSlot),
       }),
@@ -144,7 +144,7 @@ const main = async () => {
       (await (await fetch(beaconNode + 'eth/v1/beacon/light_client/finality_update')).json()).data,
     )
     const finalityUpdateKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.LightClientFinalityUpdate,
+      BeaconNetworkContentType.LightClientFinalityUpdate,
       LightClientFinalityUpdateKey.serialize({
         finalitySlot: BigInt(finalityUpdate.finalizedHeader.beacon.slot),
       }),

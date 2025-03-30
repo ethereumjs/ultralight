@@ -1,10 +1,11 @@
-import { PortalNetwork } from './client.js'
+import type { PortalNetwork } from './client.js'
 
 import type { PortalNetworkOpts } from './types'
 import { hexToBytes } from '@ethereumjs/util'
 
 import { formatBlockResponse, formatResponse } from '../util/helpers.js'
 import { DEFAULT_OPTS } from '../util/config.js'
+import { createPortalNetwork } from './constructor.js'
 
 const ERROR_CODES = {
   UNSUPPORTED_METHOD: 4200,
@@ -32,16 +33,6 @@ export class UltralightProvider {
 
   constructor(portal: PortalNetwork) {
     this.portal = portal
-  }
-
-  static async create(opts: Partial<PortalNetworkOpts>): Promise<UltralightProvider> {
-    const finalOpts = {
-      ...DEFAULT_OPTS,
-      ...opts,
-    }
- 
-    const portal = await PortalNetwork.create(finalOpts)
-    return new UltralightProvider(portal)
   }
 
   async request({ method, params = [] }: RequestArguments): Promise<unknown> {
@@ -189,7 +180,6 @@ export class UltralightProvider {
   }
 
   private async getBalance(balanceAddress: string, balanceBlock: bigint) {
-
     const balance = await this.portal.ETH.getBalance(hexToBytes(balanceAddress), balanceBlock)
     return formatResponse('0x' + (balance !== undefined ? balance.toString(16) : ''))
   }
@@ -210,7 +200,19 @@ export class UltralightProvider {
 
   private createError(code: number, message: string) {
     const error = new Error(message)
-      ; (error as any).code = code
+    ;(error as any).code = code
     return error
   }
+}
+
+export async function createUltralightProvider(
+  opts: Partial<PortalNetworkOpts>,
+): Promise<UltralightProvider> {
+  const finalOpts = {
+    ...DEFAULT_OPTS,
+    ...opts,
+  }
+
+  const portal = await createPortalNetwork(finalOpts)
+  return new UltralightProvider(portal)
 }

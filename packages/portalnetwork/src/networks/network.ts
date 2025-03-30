@@ -22,6 +22,7 @@ import type {
   FindNodesMessage,
   INewRequest,
   INodeAddress,
+  NetworkId,
   NodesMessage,
   OfferMessage,
   PingMessage,
@@ -34,13 +35,11 @@ import {
   ContentMessageType,
   ErrorPayload,
   HistoryRadius,
-  MAX_PACKET_SIZE,
+  MAX_UDP_PACKET_SIZE,
+  MEGABYTE,
   MessageCodes,
-  NetworkId,
   NodeLookup,
   PingPongErrorCodes,
-  PingPongPayloadExtensions,
-  PortalNetworkRoutingTable,
   PortalWireMessageType,
   RequestCode,
   arrayByteLength,
@@ -48,19 +47,18 @@ import {
   encodeClientInfo,
   encodeWithVariantPrefix,
   generateRandomNodeIdAtDistance,
+  getTalkReqOverhead,
   randUint16,
   shortId,
 } from '../index.js'
 import { FoundContent } from '../wire/types.js'
-
 import { NetworkDB } from './networkDB.js'
-
+import { PingPongPayloadExtensions } from '../wire/payloadExtensions.js'
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
 import type { SignableENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
-import type * as PromClient from 'prom-client'
 import { GossipManager } from './gossip.js'
-
+import { PortalNetworkRoutingTable } from '../client/routingTable.js'
 export abstract class BaseNetwork extends EventEmitter {
   public capabilities: number[] = [
     PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
@@ -82,8 +80,7 @@ export abstract class BaseNetwork extends EventEmitter {
   private lastRefreshTime: number = 0
   private nextRefreshTimeout: ReturnType<typeof setTimeout> | null = null
   private refreshInterval: number = 30000 // Start with 30s
-  public ephemeralHeadersCount: number = 0
-
+  public pruning: boolean = false
   constructor({
     client,
     networkId,
@@ -92,6 +89,7 @@ export abstract class BaseNetwork extends EventEmitter {
     maxStorage,
     bridge,
     gossipCount,
+    dbSize,
   }: BaseNetworkConfig) {
     super()
     this.bridge = bridge ?? false
@@ -109,6 +107,7 @@ export abstract class BaseNetwork extends EventEmitter {
       contentId: this.contentKeyToId,
       db,
       logger: this.logger,
+      dbSize,
     })
     if (this.portal.metrics) {
       this.portal.metrics.knownHistoryNodes.collect = () => {
@@ -116,6 +115,14 @@ export abstract class BaseNetwork extends EventEmitter {
       }
     }
     this.gossipManager = new GossipManager(this, gossipCount)
+    this.on('ContentAdded', () => {
+      if (this.db.approximateSize / MEGABYTE > this.maxStorage) {
+        this.logger(
+          `Pruning due to size limit ${this.db.approximateSize / MEGABYTE} > ${this.maxStorage}`,
+        )
+        void this.prune()
+      }
+    })
   }
 
   public routingTableInfo = async () => {
@@ -176,28 +183,47 @@ export abstract class BaseNetwork extends EventEmitter {
   }
 
   public async prune(newMaxStorage?: number) {
+    if (this.pruning) {
+      return
+    }
+    this.pruning = true
     const MB = 1000000
+    const toDelete: [string, string][] = []
+    let size = this.db.approximateSize
     try {
       if (newMaxStorage !== undefined) {
         this.maxStorage = newMaxStorage
       }
-      let size = await this.db.size()
-      const toDelete: [string, string][] = []
+      size = await this.db.size()
       while (size > this.maxStorage * MB) {
+        this.logger.extend('prune')(`Size too large: ${size} > ${this.maxStorage * MB}`)
+        this.logger.extend('prune')(`old radius: ${this.nodeRadius}`)
         const radius = this.nodeRadius / 2n
+        this.logger.extend('prune')(`new radius: ${radius}`)
+        await this.setRadius(radius)
         const pruned = await this.db.prune(radius)
         toDelete.push(...pruned)
-        await this.setRadius(radius)
         size = await this.db.size()
+        this.logger.extend('prune')(`pruned ${pruned.length} more items`)
+        this.logger.extend('prune')(`Size after pruning: ${size}`)
+        if (radius === 0n) {
+          this.logger.extend('prune')(`Radius is 0, stopping pruning`)
+          break
+        }
       }
       for (const [key, val] of toDelete) {
+        this.logger.extend('prune')(`Gossiping ${key}`)
         void this.gossipContent(hexToBytes(key), hexToBytes(val))
       }
     } catch (err: any) {
-      this.logger(`Error pruning content: ${err.message}`)
+      this.logger.extend('prune')(`Error pruning content: ${err.message}`)
       return `Error pruning content: ${err.message}`
+    } finally {
+      this.logger.extend('prune')(`Pruning complete`)
+      this.pruning = false
     }
-    return this.db.size()
+    this.logger.extend('prune')(`Pruned ${toDelete.length} items.  New size: ${size}`)
+    return size
   }
 
   public streamingKey(contentKey: Uint8Array) {
@@ -212,7 +238,6 @@ export abstract class BaseNetwork extends EventEmitter {
 
   public async handle(message: ITalkReqMessage, src: INodeAddress) {
     const id = message.id
-    const network = message.protocol
     const request = message.request
     const deserialized = PortalWireMessageType.deserialize(request)
     const decoded = deserialized.value
@@ -233,7 +258,7 @@ export abstract class BaseNetwork extends EventEmitter {
         break
       case MessageCodes.FINDCONTENT:
         this.portal.metrics?.findContentMessagesReceived.inc()
-        await this.handleFindContent(src, id, network, decoded as FindContentMessage)
+        await this.handleFindContent(src, id, decoded as FindContentMessage)
         break
       case MessageCodes.OFFER:
         this.portal.metrics?.offerMessagesReceived.inc()
@@ -262,16 +287,6 @@ export abstract class BaseNetwork extends EventEmitter {
         payload = BasicRadius.serialize({ dataRadius: this.nodeRadius })
         break
       }
-      case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
-        if (this.networkId !== NetworkId.HistoryNetwork) {
-          throw new Error('HISTORY_RADIUS extension not supported on this network')
-        }
-        payload = HistoryRadius.serialize({
-          dataRadius: this.nodeRadius,
-          ephemeralHeadersCount: this.ephemeralHeadersCount ?? 0,
-        })
-        break
-      }
       default: {
         throw new Error(`Unsupported PING extension type: ${extensionType}`)
       }
@@ -282,25 +297,29 @@ export abstract class BaseNetwork extends EventEmitter {
   /**
    * Sends a Portal Network Wire Network PING message to a specified node
    * @param dstId the nodeId of the peer to send a ping to
-   * @param payload custom payload to be sent in PING message
-   * @param networkId subnetwork ID
+   * @param extensionType ping extension type to be sent in PING message
+   * @param payload serialized ping extension payload to be sent in PING message
    * @returns the PING payload specified by the subnetwork or undefined
    */
-  public sendPing = async (enr: ENR, extensionType: number = 0) => {
+  public sendPing = async (enr: ENR, extensionType: number = 0, payload?: Uint8Array) => {
     if (enr.nodeId === this.portal.discv5.enr.nodeId) {
       // Don't ping ourselves
       return undefined
     }
-    // 3000ms tolerance for ping timeout
+
     if (!enr.nodeId) {
       this.logger(`Invalid ENR provided. PING aborted`)
       return
     }
+
     const peerCapabilities = this.portal.enrCache.getPeerCapabilities(enr.nodeId)
-    if (peerCapabilities.has(extensionType) === false) {
+
+    if (extensionType !== 0 && peerCapabilities.has(extensionType) === false) {
       throw new Error(`Peer is not know to support extension type: ${extensionType}`)
     }
+
     const timeout = setTimeout(() => {
+      // 3000ms tolerance for ping timeout
       return undefined
     }, 3000)
     try {
@@ -309,7 +328,7 @@ export abstract class BaseNetwork extends EventEmitter {
         value: {
           enrSeq: this.enr.seq,
           payloadType: extensionType,
-          customPayload: this.pingPongPayload(extensionType),
+          customPayload: payload ?? this.pingPongPayload(extensionType),
         },
       })
       this.logger.extend(`PING`)(`Sent to ${shortId(enr)}`)
@@ -325,6 +344,7 @@ export abstract class BaseNetwork extends EventEmitter {
             const { ClientInfo, Capabilities, DataRadius } = ClientInfoAndCapabilities.deserialize(
               pongMessage.customPayload,
             )
+
             this.logger.extend('PONG')(
               `Client ${shortId(enr.nodeId)} is ${decodeClientInfo(ClientInfo).clientName} node with capabilities: ${Capabilities}`,
             )
@@ -389,7 +409,9 @@ export abstract class BaseNetwork extends EventEmitter {
     if (this.capabilities.includes(pingMessage.payloadType)) {
       switch (pingMessage.payloadType) {
         case PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES: {
-          const { DataRadius, Capabilities, ClientInfo } = ClientInfoAndCapabilities.deserialize(pingMessage.customPayload)
+          const { DataRadius, Capabilities, ClientInfo } = ClientInfoAndCapabilities.deserialize(
+            pingMessage.customPayload,
+          )
           this.routingTable.updateRadius(src.nodeId, DataRadius)
           this.portal.enrCache.updateNodeFromPing(src, this.networkId, {
             capabilities: Capabilities,
@@ -689,20 +711,6 @@ export abstract class BaseNetwork extends EventEmitter {
     } catch {
       this.logger(`Error Processing OFFER msg`)
     }
-    if (this.portal.metrics !== undefined) {
-      const totalOffers = (
-        await (this.portal.metrics.offerMessagesReceived as PromClient.Counter).get()
-      ).values[0]
-      this.logger.extend('METRICS')({ totalOffers })
-      if (totalOffers.value % 50 === 0) {
-        void this.prune()
-      }
-    } else if (Math.random() * 50 <= 1) {
-      const size = await this.db.size()
-      if (size > this.maxStorage) {
-        void this.prune()
-      }
-    }
   }
 
   protected sendAccept = async (
@@ -759,7 +767,6 @@ export abstract class BaseNetwork extends EventEmitter {
   protected handleFindContent = async (
     src: INodeAddress,
     requestId: bigint,
-    network: Uint8Array,
     decodedContentMessage: FindContentMessage,
   ) => {
     this.portal.metrics?.contentMessagesSent.inc()
@@ -773,7 +780,10 @@ export abstract class BaseNetwork extends EventEmitter {
     const value = await this.findContentLocally(decodedContentMessage.contentKey)
     if (!value) {
       await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
-    } else if (value instanceof Uint8Array && value.length < MAX_PACKET_SIZE) {
+    } else if (
+      value instanceof Uint8Array &&
+      value.length < MAX_UDP_PACKET_SIZE - getTalkReqOverhead(hexToBytes(this.networkId).byteLength)
+    ) {
       this.logger(
         'Found value for requested content ' +
           bytesToHex(decodedContentMessage.contentKey) +
@@ -829,7 +839,11 @@ export abstract class BaseNetwork extends EventEmitter {
     if (encodedEnrs.length > 0) {
       this.logger.extend('FINDCONTENT')(`Found ${encodedEnrs.length} closer to content`)
       // TODO: Add capability to send multiple TALKRESP messages if # ENRs exceeds packet size
-      while (encodedEnrs.length > 0 && arrayByteLength(encodedEnrs) > MAX_PACKET_SIZE) {
+      while (
+        encodedEnrs.length > 0 &&
+        arrayByteLength(encodedEnrs) >
+          MAX_UDP_PACKET_SIZE - getTalkReqOverhead(hexToBytes(this.networkId).byteLength)
+      ) {
         // Remove ENRs until total ENRs less than 1200 bytes
         encodedEnrs.pop()
       }

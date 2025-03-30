@@ -1,8 +1,13 @@
-import { readFileSync } from 'fs'
-import { createRequire } from 'module'
-import { Block, type BlockBytes, BlockHeader } from '@ethereumjs/block'
+import {
+  type BlockBytes,
+  createBlockFromBytesArray,
+  createBlockHeaderFromRLP,
+  createBlockHeaderFromRPC,
+} from '@ethereumjs/block'
 import * as RLP from '@ethereumjs/rlp'
 import { bytesToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
+import { readFileSync } from 'fs'
+import { createRequire } from 'module'
 import { assert, describe, it } from 'vitest'
 
 import {
@@ -11,13 +16,12 @@ import {
   HistoricalRootsBlockProof,
   HistoryNetworkContentType,
   NetworkId,
-  PortalNetwork,
   TransportLayer,
-  blockHeaderFromRpc,
   generatePreMergeHeaderProof,
   getContentKey,
   reassembleBlock,
   sszEncodeBlockBody,
+  createPortalNetwork,
 } from '../../../src/index.js'
 
 import type { HistoryNetwork } from '../../../src/index.js'
@@ -36,7 +40,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
           encoding: 'hex',
         },
       )
-    const node = await PortalNetwork.create({
+    const node = await createPortalNetwork({
       bindAddress: '127.0.0.1',
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     })
@@ -57,7 +61,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
 
     const val = await network.get(contentKey)
     const headerWith = BlockHeaderWithProof.deserialize(hexToBytes(val))
-    const header = BlockHeader.fromRLPSerializedHeader(headerWith.header, {
+    const header = createBlockHeaderFromRLP(headerWith.header, {
       setHardfork: true,
     })
     assert.equal(header.number, 1n, 'retrieved block header based on content key')
@@ -65,7 +69,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
 })
 
 describe('store -- Block Bodies and Receipts', async () => {
-  const node = await PortalNetwork.create({
+  const node = await createPortalNetwork({
     bindAddress: '127.0.0.1',
     transport: TransportLayer.WEB,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
@@ -73,7 +77,7 @@ describe('store -- Block Bodies and Receipts', async () => {
   const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const serializedBlock = testBlocks.block207686
   const blockRlp = RLP.decode(hexToBytes(serializedBlock.blockRlp))
-  const block = Block.fromValuesArray(blockRlp as BlockBytes, { setHardfork: true })
+  const block = createBlockFromBytesArray(blockRlp as BlockBytes, { setHardfork: true })
   const epoch =
     '0x' +
     readFileSync(
@@ -125,7 +129,7 @@ describe('store -- Block Bodies and Receipts', async () => {
 })
 
 describe('Header Tests', async () => {
-  const node = await PortalNetwork.create({
+  const node = await createPortalNetwork({
     bindAddress: '127.0.0.1',
     transport: TransportLayer.WEB,
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
@@ -134,7 +138,7 @@ describe('Header Tests', async () => {
 
   it('should validate and store a post merge header proof', async () => {
     const headerJson = require('./testData/mergeBlockHeader.json')
-    const header = blockHeaderFromRpc(headerJson, { setHardfork: true })
+    const header = createBlockHeaderFromRPC(headerJson, { setHardfork: true })
     const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, header.hash())
     const headerProofJson = require('./testData/mergeBlockHeaderProof.json')
     const headerProof = HistoricalRootsBlockProof.fromJson(headerProofJson)
@@ -178,7 +182,7 @@ describe('Header Tests', async () => {
   })
   it('should not store pre-Capella headers with various errors', async () => {
     const headerJson = require('./testData/mergeBlockHeader.json')
-    const header = blockHeaderFromRpc(headerJson, { setHardfork: true })
+    const header = createBlockHeaderFromRPC(headerJson, { setHardfork: true })
     const fakeHeaderKey = getContentKey(HistoryNetworkContentType.BlockHeader, randomBytes(32))
     const headerProofJson = require('./testData/mergeBlockHeaderProof.json')
     const headerProof = HistoricalRootsBlockProof.serialize(

@@ -91,4 +91,9 @@ export const args: ClientOpts = yargs(hideBin(process.argv))
     string: true,
     optional: true,
   })
+  .option('supportedVersions', {
+    describe: 'supported versions',
+    string: true,
+    optional: true,
+  })
   .strict().argv as ClientOpts

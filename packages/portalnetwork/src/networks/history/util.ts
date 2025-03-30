@@ -1,6 +1,11 @@
 import { digest } from '@chainsafe/as-sha256'
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
-import { Block, BlockHeader } from '@ethereumjs/block'
+import {
+  createBlock,
+  createBlockFromBytesArray,
+  createBlockFromRLP,
+  createBlockHeaderFromRLP,
+} from '@ethereumjs/block'
 import { RLP as rlp } from '@ethereumjs/rlp'
 import { bytesToHex, bytesToUnprefixedHex, equalsBytes, hexToBytes } from '@ethereumjs/util'
 import { ssz } from '@lodestar/types'
@@ -8,11 +13,11 @@ import { ssz } from '@lodestar/types'
 import { historicalEpochs } from './data/epochHashes.js'
 import { historicalRoots } from './data/historicalRoots.js'
 import {
-  AccumulatorProofType,
   BlockBodyContentType,
   BlockHeaderWithProof,
   BlockNumberKey,
   CAPELLA_ERA,
+  EphemeralHeaderKey,
   EpochAccumulator,
   HistoryNetworkContentType,
   MERGE_BLOCK,
@@ -32,6 +37,7 @@ import type {
   VectorCompositeType,
 } from '@chainsafe/ssz'
 import type {
+  Block,
   BlockBytes,
   BlockHeaderBytes,
   TransactionsBytes,
@@ -39,6 +45,7 @@ import type {
 } from '@ethereumjs/block'
 import type { WithdrawalBytes } from '@ethereumjs/util'
 import type { ForkConfig } from '@lodestar/config'
+import type { EphemeralHeaderKeyValues } from '../history/types.js'
 import type { HistoryNetwork } from './history.js'
 import type { BlockBodyContent, Witnesses } from './types.js'
 
@@ -57,22 +64,34 @@ export const BlockHeaderByNumberKey = (blockNumber: bigint) => {
  */
 export const getContentKey = (
   contentType: HistoryNetworkContentType,
-  key: Uint8Array | bigint,
+  key: Uint8Array | bigint | EphemeralHeaderKeyValues,
 ): Uint8Array => {
   let encodedKey
   switch (contentType) {
     case HistoryNetworkContentType.BlockHeader:
     case HistoryNetworkContentType.BlockBody:
-    case HistoryNetworkContentType.Receipt:
-    case HistoryNetworkContentType.HeaderProof: {
+    case HistoryNetworkContentType.Receipt: {
       if (!(key instanceof Uint8Array))
-        throw new Error('block hash is required to generate contentId')
+        throw new Error('block hash is required to generate contentKey')
       encodedKey = Uint8Array.from([contentType, ...key])
       break
     }
     case HistoryNetworkContentType.BlockHeaderByNumber: {
-      if (typeof key !== 'bigint') throw new Error('block number is required to generate contentId')
+      if (typeof key !== 'bigint')
+        throw new Error('block number is required to generate contentKey')
       encodedKey = BlockHeaderByNumberKey(key)
+      break
+    }
+    case HistoryNetworkContentType.EphemeralHeader: {
+      if (typeof key !== 'object' || !('blockHash' in key) || !('ancestorCount' in key))
+        throw new Error('block hash and ancestor count are required to generate contentKey')
+      encodedKey = Uint8Array.from([
+        contentType,
+        ...EphemeralHeaderKey.serialize({
+          blockHash: key.blockHash,
+          ancestorCount: key.ancestorCount,
+        }),
+      ])
       break
     }
     default:
@@ -81,6 +100,14 @@ export const getContentKey = (
   return encodedKey
 }
 
+/**
+ * Generates a database key for an ephemeral header being stored in the DB
+ * @param blockHash hash for ephemeral header being stored
+ * @returns database key for ephemeral header
+ */
+export const getEphemeralHeaderDbKey = (blockHash: Uint8Array) => {
+  return Uint8Array.from([HistoryNetworkContentType.EphemeralHeader, ...blockHash])
+}
 /**
  * Generates the contentId from a serialized History Network Content Key used to calculate the distance between a node ID and the content key
  * @param contentType the type of content (block header, block body, receipt, header_by_number)
@@ -100,25 +127,39 @@ export const decodeHistoryNetworkContentKey = (
         | HistoryNetworkContentType.BlockHeader
         | HistoryNetworkContentType.BlockBody
         | HistoryNetworkContentType.Receipt
-        | HistoryNetworkContentType.HeaderProof
       keyOpt: Uint8Array
     }
   | {
       contentType: HistoryNetworkContentType.BlockHeaderByNumber
       keyOpt: bigint
+    }
+  | {
+      contentType: HistoryNetworkContentType.EphemeralHeader
+      keyOpt: EphemeralHeaderKeyValues
     } => {
   const contentType: HistoryNetworkContentType = contentKey[0]
-  if (contentType === HistoryNetworkContentType.BlockHeaderByNumber) {
-    const blockNumber = BlockNumberKey.deserialize(contentKey.slice(1)).blockNumber
-    return {
-      contentType,
-      keyOpt: blockNumber,
+  switch (contentType) {
+    case HistoryNetworkContentType.BlockHeaderByNumber: {
+      const blockNumber = BlockNumberKey.deserialize(contentKey.slice(1)).blockNumber
+      return {
+        contentType,
+        keyOpt: blockNumber,
+      }
     }
-  }
-  const blockHash = contentKey.slice(1)
-  return {
-    contentType,
-    keyOpt: blockHash,
+    case HistoryNetworkContentType.EphemeralHeader: {
+      const key = EphemeralHeaderKey.deserialize(contentKey.slice(1))
+      return {
+        contentType,
+        keyOpt: key,
+      }
+    }
+    default: {
+      const blockHash = contentKey.slice(1)
+      return {
+        contentType,
+        keyOpt: blockHash,
+      }
+    }
   }
 }
 
@@ -159,7 +200,7 @@ export const decodeSszBlockBody = (
 export const sszEncodeBlockBody = (block: Block) => {
   const encodedSSZTxs = block.transactions.map((tx) => sszTransactionType.serialize(tx.serialize()))
   const encodedUncles = rlp.encode(block.uncleHeaders.map((uh) => uh.raw()))
-  if (block.withdrawals) {
+  if (block.withdrawals !== undefined) {
     const encodedWithdrawals = block.withdrawals.map((w) => rlp.encode(w.raw()))
     const sszWithdrawals = encodedWithdrawals.map((w) => SSZWithdrawal.serialize(w))
     return PostShanghaiBlockBody.serialize({
@@ -192,14 +233,14 @@ export const reassembleBlock = (rawHeader: Uint8Array, rawBody?: Uint8Array) => 
     if ('allWithdrawals' in decodedBody) {
       valuesArray.push(decodedBody.allWithdrawals.map((w) => rlp.decode(w)) as WithdrawalBytes)
     }
-    const block = Block.fromValuesArray(valuesArray, { setHardfork: true })
+    const block = createBlockFromBytesArray(valuesArray, { setHardfork: true })
     return block
   } else {
-    const header = BlockHeader.fromRLPSerializedHeader(rawHeader, {
+    const header = createBlockHeaderFromRLP(rawHeader, {
       setHardfork: true,
       skipConsensusFormatValidation: false,
     })
-    const block = Block.fromBlockData({ header }, { setHardfork: true })
+    const block = createBlock({ header }, { setHardfork: true })
     return block
   }
 }
@@ -218,7 +259,7 @@ export const addRLPSerializedBlock = async (
   network: HistoryNetwork,
   proof: Uint8Array,
 ) => {
-  const block = Block.fromRLPSerializedBlock(hexToBytes(rlpHex), {
+  const block = createBlockFromRLP(hexToBytes(rlpHex), {
     setHardfork: true,
   })
   const header = block.header
@@ -305,10 +346,10 @@ export const verifyPreCapellaHeaderProof = (
     leaf: proof.beaconBlockRoot, // This should be the leaf value this proof is verifying
   })
   if (
-    !equalsBytes(
+    equalsBytes(
       reconstructedBatch.hashTreeRoot(),
       hexToBytes(historicalRoots[Number(slotToHistoricalBatch(proof.slot))]),
-    )
+    ) === false
   )
     return false
 
@@ -324,7 +365,7 @@ export const verifyPreCapellaHeaderProof = (
     leaf: elBlockHash,
   })
 
-  if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot)) return false
+  if (equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot) === false) return false
   return true
 }
 
@@ -352,12 +393,12 @@ export const verifyPostCapellaHeaderProof = (
   })
 
   if (
-    !equalsBytes(
+    equalsBytes(
       reconstructedBatch.hashTreeRoot(),
       // The HistoricalSummaries array starts with era 758 so we have to subtract that from the actual
       // era in which a slot occurs when retrieving the index in the Historical Summaries Array
       historicalSummaries[Number(slotToHistoricalBatch(proof.slot)) - CAPELLA_ERA].blockSummaryRoot,
-    )
+    ) === false
   ) {
     return false
   }
@@ -373,7 +414,7 @@ export const verifyPostCapellaHeaderProof = (
     leaf: elBlockHash,
   })
 
-  if (!equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot)) return false
+  if (equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot) === false) return false
   return true
 }
 

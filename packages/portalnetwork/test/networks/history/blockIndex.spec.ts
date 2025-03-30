@@ -1,31 +1,28 @@
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
-import { assert, describe, it } from 'vitest'
 import { readFileSync } from 'fs'
+import { assert, describe, it } from 'vitest'
 import {
   BlockHeaderWithProof,
   HistoryNetworkContentType,
   NetworkId,
-  PortalNetwork,
+  createPortalNetwork,
   getContentKey,
 } from '../../../src/index.js'
 
-import type { HistoryNetwork } from '../../../src/index.js'
+import { createBlockHeaderFromRLP } from '@ethereumjs/block'
 import path from 'path'
-import { BlockHeader } from '@ethereumjs/block'
+import type { HistoryNetwork } from '../../../src/index.js'
 
-
-const headerWithProof =
-  JSON.parse(readFileSync(
-    path.join(__dirname, './testData/block207686.json'),
-    'utf-8',
-  ))
+const headerWithProof = JSON.parse(
+  readFileSync(path.join(__dirname, './testData/block207686.json'), 'utf-8'),
+)
 
 const serializedHeader = BlockHeaderWithProof.deserialize(hexToBytes(headerWithProof.header))
-const header = BlockHeader.fromRLPSerializedHeader(serializedHeader.header, { setHardfork: true })
+const header = createBlockHeaderFromRLP(serializedHeader.header, { setHardfork: true })
 const hash = bytesToHex(header.hash())
 
 describe('BlockIndex', async () => {
-  const ultralight = await PortalNetwork.create({
+  const ultralight = await createPortalNetwork({
     bindAddress: '127.0.0.1',
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
   })
@@ -48,7 +45,7 @@ describe('BlockIndex', async () => {
     assert.deepEqual(stored, expected)
   })
 
-  const ultralight2 = await PortalNetwork.create({
+  const ultralight2 = await createPortalNetwork({
     bindAddress: '127.0.0.1',
     supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
     db: ultralight.db.db,

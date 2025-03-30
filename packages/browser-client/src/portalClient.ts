@@ -68,14 +68,14 @@ export async function createNodeFromScratch(state: AppState): Promise<Ultralight
         bootnodes: bns,
         db: state.LDB as any,
         transport: TransportLayer.MOBILE,
-        supportedNetworks: [NetworkId.HistoryNetwork, NetworkId.BeaconLightClientNetwork],
+        supportedNetworks: [NetworkId.HistoryNetwork, NetworkId.BeaconNetwork],
       })
     : await UltralightProvider.create('', {
         proxyAddress: state.proxy,
         bootnodes: bns,
         db: state.LDB as any,
         transport: TransportLayer.WEB,
-        supportedNetworks: [NetworkId.HistoryNetwork, NetworkId.BeaconLightClientNetwork],
+        supportedNetworks: [NetworkId.HistoryNetwork, NetworkId.BeaconNetwork],
       })
   await startUp(provider)
   return provider
@@ -88,7 +88,7 @@ export async function createNodeFromStorage(state: AppState): Promise<Ultralight
         db: state.LDB as any,
         rebuildFromMemory: true,
         transport: TransportLayer.MOBILE,
-        supportedNetworks: [NetworkId.HistoryNetwork, NetworkId.BeaconLightClientNetwork],
+        supportedNetworks: [NetworkId.HistoryNetwork, NetworkId.BeaconNetwork],
       })
     : await UltralightProvider.create('', {
         proxyAddress: state.proxy,
@@ -96,7 +96,7 @@ export async function createNodeFromStorage(state: AppState): Promise<Ultralight
         db: state.LDB as any,
         rebuildFromMemory: true,
         transport: TransportLayer.WEB,
-        supportedNetworks: [NetworkId.HistoryNetwork, NetworkId.BeaconLightClientNetwork],
+        supportedNetworks: [NetworkId.HistoryNetwork, NetworkId.BeaconNetwork],
       })
   await startUp(provider)
   return provider

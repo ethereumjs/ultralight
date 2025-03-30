@@ -1,15 +1,11 @@
 import { readFileSync } from 'fs'
 import { ContainerType } from '@chainsafe/ssz'
-import { BlockHeader } from '@ethereumjs/block'
+import { createBlockHeaderFromRLP } from '@ethereumjs/block'
 import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 
 import { historicalEpochs } from '../../../src/networks/history/data/epochHashes.js'
-import {
-  ContentKeyType,
-  Receipt,
-  getContentId,
-} from '../../../src/networks/history/index.js'
+import { ContentKeyType, Receipt, getContentId } from '../../../src/networks/history/index.js'
 import {
   BlockHeaderWithProof,
   EpochAccumulator,
@@ -19,7 +15,11 @@ import {
 
 import testData from './testData/headerWithProof.json' assert { type: 'json' }
 
-import { AccumulatorProofType, generatePreMergeHeaderProof, verifyPreMergeHeaderProof } from '../../../dist/index.js'
+import {
+  AccumulatorProofType,
+  generatePreMergeHeaderProof,
+  verifyPreMergeHeaderProof,
+} from '../../../dist/index.js'
 import type { TxReceiptType } from '../../../src/networks/history/index.js'
 
 describe('History Subnetwork contentKey serialization/deserialization', () => {
@@ -235,10 +235,9 @@ describe('Header With Proof serialization/deserialization tests', async () => {
       { encoding: 'hex' },
     )
 
-
   const serializedBlock1 = hexToBytes(testData[1000001].content_value)
   const headerWithProof = BlockHeaderWithProof.deserialize(serializedBlock1)
-  const header = BlockHeader.fromRLPSerializedHeader(headerWithProof.header, {
+  const header = createBlockHeaderFromRLP(headerWithProof.header, {
     skipConsensusFormatValidation: true,
     setHardfork: true,
   })
@@ -255,15 +254,22 @@ describe('Header With Proof serialization/deserialization tests', async () => {
     )
   })
 
-  const blockHeaderWithProof =
-    BlockHeaderWithProof.serialize({
-      header: header.serialize(),
-      proof: AccumulatorProofType.serialize(proof),
-    })
+  const blockHeaderWithProof = BlockHeaderWithProof.serialize({
+    header: header.serialize(),
+    proof: AccumulatorProofType.serialize(proof),
+  })
   const deserializedBlockHeaderWithProof = BlockHeaderWithProof.deserialize(blockHeaderWithProof)
-  assert.ok(verifyPreMergeHeaderProof(proof, bytesToHex(header.hash()), header.number), `proof is valid`)
-  assert.equal(BlockHeader.fromRLPSerializedHeader(deserializedBlockHeaderWithProof.header, { setHardfork: true }).number, header.number, `header number matches`)
-
+  assert.ok(
+    verifyPreMergeHeaderProof(proof, bytesToHex(header.hash()), header.number),
+    `proof is valid`,
+  )
+  assert.equal(
+    createBlockHeaderFromRLP(deserializedBlockHeaderWithProof.header, {
+      setHardfork: true,
+    }).number,
+    header.number,
+    `header number matches`,
+  )
 
   it('should match epoch hash', async () => {
     assert.equal(
@@ -273,4 +279,3 @@ describe('Header With Proof serialization/deserialization tests', async () => {
     )
   })
 })
-

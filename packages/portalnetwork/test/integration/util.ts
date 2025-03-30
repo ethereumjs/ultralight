@@ -3,7 +3,7 @@ import { SignableENR } from '@chainsafe/enr'
 import { Chain, Common, Hardfork } from '@ethereumjs/common'
 import { getGenesis } from '@ethereumjs/genesis'
 import { DefaultStateManager } from '@ethereumjs/statemanager'
-import { ExtensionNode, Trie, decodeNode } from '@ethereumjs/trie'
+import { ExtensionNode, Trie, decodeNode } from '@ethereumjs/mpt'
 import { bytesToHex, bytesToUnprefixedHex, hexToBytes, padToEven } from '@ethereumjs/util'
 import { VM } from '@ethereumjs/vm'
 import { privateKeyFromProtobuf } from '@libp2p/crypto/keys'
@@ -16,11 +16,12 @@ import {
   NetworkId,
   PortalNetwork,
   TransportLayer,
+  createPortalNetwork,
   packNibbles,
 } from '../../src/index.js'
 import { mainnet } from '../../src/networks/state/genesis.js'
 
-import type { LeafNode } from '@ethereumjs/trie'
+import type { LeafNode } from '@ethereumjs/mpt'
 import type { StateNetwork, TAccountTrieNodeKey, TNibble } from '../../src'
 import type { StateDB } from '../../src/networks/state/statedb'
 
@@ -40,7 +41,7 @@ export const getClients = async (port: number) => {
       const enr = SignableENR.createV4(hexToBytes(pk))
       const initMa: any = multiaddr(`/ip4/172.17.0.1/udp/${port + i}`)
       enr.setLocationMultiaddr(initMa)
-      const node = await PortalNetwork.create({
+      const node = await createPortalNetwork({
         transport: TransportLayer.NODE,
         supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
         config: {

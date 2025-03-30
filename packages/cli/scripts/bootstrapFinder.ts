@@ -6,7 +6,7 @@ import { computeSyncPeriodAtSlot } from '@lodestar/light-client/utils'
 import { ssz } from '@lodestar/types'
 import jayson from 'jayson/promise/index.js'
 import {
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   LightClientBootstrapKey,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
@@ -37,7 +37,7 @@ const main = async () => {
   console.log('Retrieving bootstrap and updates from Beacon node...')
   const optimisticUpdate = (await api.lightclient.getOptimisticUpdate()).response!
   const optimisticUpdateKey = getBeaconContentKey(
-    BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+    BeaconNetworkContentType.LightClientOptimisticUpdate,
     LightClientOptimisticUpdateKey.serialize({
       signatureSlot: BigInt(optimisticUpdate.data.attestedHeader.beacon.slot),
     }),
@@ -61,7 +61,7 @@ const main = async () => {
   }
   const serializedRange = LightClientUpdatesByRange.serialize(range)
   const rangeKey = getBeaconContentKey(
-    BeaconLightClientNetworkContentType.LightClientUpdatesByRange,
+    BeaconNetworkContentType.LightClientUpdatesByRange,
     LightClientUpdatesByRangeKey.serialize({ startPeriod: BigInt(oldPeriod), count: 4n }),
   )
   for (let x = 0; x < 4; x++) {
@@ -73,7 +73,7 @@ const main = async () => {
     const bootstrap = (await api.lightclient.getBootstrap(bootstrapRoot)).response!
     await ultralights[Math.floor(Math.random() * 10)].request('portal_beaconStore', [
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientBootstrap,
+        BeaconNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) }),
       ),
       bytesToHex(
@@ -140,7 +140,7 @@ const main = async () => {
     const optimisticUpdate = (await api.lightclient.getOptimisticUpdate()).response!
     console.log('new update')
     const optimisticUpdateKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+      BeaconNetworkContentType.LightClientOptimisticUpdate,
       LightClientOptimisticUpdateKey.serialize({
         signatureSlot: BigInt(optimisticUpdate.data.attestedHeader.beacon.slot),
       }),

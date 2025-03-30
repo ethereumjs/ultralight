@@ -1,3 +1,4 @@
+import type { PrefixedHexString } from '@ethereumjs/util'
 import { bigIntToHex, hexToBytes, intToHex, toBytes } from '@ethereumjs/util'
 import { GET_LOGS_BLOCK_RANGE_LIMIT, NetworkId, getLogs } from 'portalnetwork'
 
@@ -273,7 +274,7 @@ export class eth {
         } else if (Array.isArray(t)) {
           return t.map((x) => toBytes(x))
         } else {
-          return toBytes(t)
+          return toBytes(t as PrefixedHexString)
         }
       })
       let addrs
@@ -281,7 +282,7 @@ export class eth {
         if (Array.isArray(address)) {
           addrs = address.map((a) => toBytes(a))
         } else {
-          addrs = [toBytes(address)]
+          addrs = [toBytes(address as PrefixedHexString)]
         }
       }
       const blocks = Promise.all(

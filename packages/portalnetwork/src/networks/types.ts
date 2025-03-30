@@ -1,12 +1,11 @@
 import { ByteVectorType } from '@chainsafe/ssz'
-import { zeros } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 import type { ENR, NodeId } from '@chainsafe/enr'
 import type { PrefixedHexString } from '@ethereumjs/util'
 import type { AbstractLevel } from 'abstract-level'
 import type { PortalNetwork } from '../client'
-import type { BeaconLightClientNetwork } from './beacon'
+import type { BeaconNetwork } from './beacon'
 import type { HistoryNetwork } from './history'
 import type { StateNetwork } from './state'
 
@@ -18,6 +17,7 @@ export interface BaseNetworkConfig {
   maxStorage?: number
   bridge?: boolean
   gossipCount?: number
+  dbSize?: () => Promise<number>
 }
 
 const BYTE_SIZE = 256
@@ -48,9 +48,9 @@ export type SubNetwork<T extends NetworkId> = T extends '0x500a'
       : T extends '0x504b'
         ? StateNetwork
         : T extends '0x500c'
-          ? BeaconLightClientNetwork
+          ? BeaconNetwork
           : T extends '0x504c'
-            ? BeaconLightClientNetwork
+            ? BeaconNetwork
             : never
 
 export class Bloom {
@@ -61,7 +61,7 @@ export class Bloom {
    */
   constructor(bitvector?: Uint8Array) {
     if (!bitvector) {
-      this.bitvector = zeros(BYTE_SIZE)
+      this.bitvector = new Uint8Array(BYTE_SIZE)
     } else {
       if (bitvector.length !== BYTE_SIZE) {
         throw new Error('bitvectors must be 2048 bits long')

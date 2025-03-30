@@ -4,7 +4,7 @@ import { Common } from '@ethereumjs/common'
 import { ssz, sszTypesFor } from '@lodestar/types'
 import jayson from 'jayson/promise/index.js'
 import {
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   BlockHeaderWithProof,
   getBeaconContentKey,
   getContentKey,
@@ -55,7 +55,7 @@ const main = async () => {
     `Retrieved latest optimistic update for slot ${BigInt(optimisticUpdate.signatureSlot)}`,
   )
   const optimisticUpdateKey = getBeaconContentKey(
-    BeaconLightClientNetworkContentType.LightClientOptimisticUpdate,
+    BeaconNetworkContentType.LightClientOptimisticUpdate,
     LightClientOptimisticUpdateKey.serialize({
       signatureSlot: BigInt(optimisticUpdate.signatureSlot),
     }),
@@ -86,7 +86,7 @@ const main = async () => {
   let res = await ultralight.request('portal_beaconStore', [
     bytesToHex(
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.LightClientBootstrap,
+        BeaconNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) }),
       ),
     ),
@@ -126,7 +126,7 @@ const main = async () => {
   res = await ultralight.request('portal_beaconStore', [
     bytesToHex(
       getBeaconContentKey(
-        BeaconLightClientNetworkContentType.HistoricalSummaries,
+        BeaconNetworkContentType.HistoricalSummaries,
         HistoricalSummariesKey.serialize({ epoch: BigInt(finalityEpoch) }),
       ),
     ),

@@ -1,7 +1,7 @@
-import { LeafNode, Trie } from '@ethereumjs/trie'
+import { LeafMPTNode, MerklePatriciaTrie as Trie } from '@ethereumjs/mpt'
 import {
-  Account,
   bytesToHex,
+  createAccount,
   equalsBytes,
   hexToBytes,
   parseGethGenesisState,
@@ -9,7 +9,7 @@ import {
 
 import genesis from './mainnet.json' assert { type: 'json' }
 
-import type { Proof, TrieNode } from '@ethereumjs/trie'
+import type { MPTNode, Proof } from '@ethereumjs/mpt'
 import type { AccountState } from '@ethereumjs/util'
 
 const genesisAccounts = () => {
@@ -18,7 +18,7 @@ const genesisAccounts = () => {
   const accounts: [string, Uint8Array][] = Object.entries(gState).map(([address, [balance]]) => {
     return [
       address,
-      Account.fromAccountData({
+      createAccount({
         balance: BigInt(balance),
       }).serialize(),
     ]
@@ -31,7 +31,7 @@ export const genesisStateTrie = async () => {
   for (const account of genesisAccounts()) {
     await trie.put(hexToBytes(account[0]), account[1])
   }
-  if (!equalsBytes(trie.root(), hexToBytes(genesis.genesisStateRoot))) {
+  if (equalsBytes(trie.root(), hexToBytes(genesis.genesisStateRoot)) === true) {
     throw new Error('Invalid genesis state root')
   }
   return trie
@@ -42,10 +42,10 @@ export const generateAccountTrieProofs = async (): Promise<{
   leafProofs: Record<string, { path: string[]; proof: Proof }>
 }> => {
   const trie = await genesisStateTrie()
-  const nodes: [TrieNode, number[]][] = []
-  const leafNodes: [TrieNode, number[]][] = []
+  const nodes: [MPTNode, number[]][] = []
+  const leafNodes: [MPTNode, number[]][] = []
   await trie.walkAllNodes(async (node, key) => {
-    node instanceof LeafNode ? leafNodes.push([node, key]) : nodes.push([node, key])
+    node instanceof LeafMPTNode ? leafNodes.push([node, key]) : nodes.push([node, key])
   })
   const leafProofs = await Promise.all(
     leafNodes.map(async ([node, path]) => {

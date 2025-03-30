@@ -10,15 +10,15 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { readFileSync } from 'fs'
 import { assert, describe, it, vi } from 'vitest'
 import {
-  BeaconLightClientNetworkContentType,
+  BeaconNetworkContentType,
   HistoricalSummariesKey,
   HistoricalSummariesWithProof,
   HistoryNetworkContentType,
   LightClientBootstrapKey,
   NetworkId,
-  PortalNetwork,
+  createPortalNetwork,
   getBeaconContentKey,
-  getContentKey
+  getContentKey,
 } from '../../src/index.js'
 
 describe('Block Bridge Data Test', () => {
@@ -33,7 +33,7 @@ describe('Block Bridge Data Test', () => {
     const enr1 = SignableENR.createFromPrivateKey(pk1)
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5033`)
 
-    const client = await PortalNetwork.create({
+    const client = await createPortalNetwork({
       supportedNetworks: [
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.BeaconChainNetwork },
@@ -70,7 +70,7 @@ describe('Block Bridge Data Test', () => {
     // Store bootstrap
 
     const bootstrapKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.LightClientBootstrap,
+      BeaconNetworkContentType.LightClientBootstrap,
       LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) }),
     )
     const bootstrapValue = concatBytes(
@@ -95,7 +95,7 @@ describe('Block Bridge Data Test', () => {
       proof: historicalSummariesJson.proof,
     })
     const summariesKey = getBeaconContentKey(
-      BeaconLightClientNetworkContentType.HistoricalSummaries,
+      BeaconNetworkContentType.HistoricalSummaries,
       HistoricalSummariesKey.serialize({ epoch: BigInt(historicalSummariesEpoch) }),
     )
     const summariesValue = concatBytes(

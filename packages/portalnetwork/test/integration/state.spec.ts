@@ -1,6 +1,6 @@
 import { SignableENR } from '@chainsafe/enr'
-import { Trie } from '@ethereumjs/trie'
-import { Account, bytesToHex, hexToBytes } from '@ethereumjs/util'
+import { MerklePatriciaTrie as Trie } from '@ethereumjs/mpt'
+import { bytesToHex, createAccountFromRLP, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, expect, it } from 'vitest'
@@ -9,8 +9,8 @@ import {
   AccountTrieNodeOffer,
   AccountTrieNodeRetrieval,
   NetworkId,
-  PortalNetwork,
   TransportLayer,
+  createPortalNetwork,
 } from '../../src/index.js'
 import samples from '../networks/state/testdata/accountNodeSamples.json'
 
@@ -38,7 +38,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
   enr1.setLocationMultiaddr(initMa)
   const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3021`)
   enr2.setLocationMultiaddr(initMa2)
-  const node1 = await PortalNetwork.create({
+  const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
     config: {
@@ -49,7 +49,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
       privateKey: pk1,
     },
   })
-  const node2 = await PortalNetwork.create({
+  const node2 = await createPortalNetwork({
     transport: TransportLayer.NODE,
     supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
     config: {
@@ -114,7 +114,7 @@ describe('getAccount via network', async () => {
       const enr = SignableENR.createFromPrivateKey(pk)
       const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/${3022 + i}`)
       enr.setLocationMultiaddr(initMa)
-      const node = await PortalNetwork.create({
+      const node = await createPortalNetwork({
         transport: TransportLayer.NODE,
         supportedNetworks: [{ networkId: NetworkId.StateNetwork }],
         config: {
@@ -196,7 +196,7 @@ describe('getAccount via network', async () => {
     })
     return
   }
-  const foundAccount = Account.fromRlpSerializedAccount(found)
+  const foundAccount = createAccountFromRLP(found)
   it('should find account data', async () => {
     assert.deepEqual(foundAccount.balance, BigInt('0x3636cd06e2db3a8000'), 'account data found')
   })
