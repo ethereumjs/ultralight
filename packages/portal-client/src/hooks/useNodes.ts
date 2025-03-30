@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
+import { formatBlockResponse } from 'portalnetwork'
 
 interface RPCResponse {
   result?: any
@@ -54,7 +55,7 @@ export const useNodes = () => {
       }
 
       console.log('Request Result:', result)
-      setNode({ result })
+      setNode({ result: formatBlockResponse(result, params[1] ?? false) })
       return result
     } catch (err) {
 

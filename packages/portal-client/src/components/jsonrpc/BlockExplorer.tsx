@@ -13,9 +13,7 @@ const BlockExplorer: FC = () => {
   const { isLoading: isPortalNetworkLoading, isNetworkReady, error: portalNetworkError } = usePortalNetwork()
 
   const handleSubmit = async () => {
-    //@ts-ignore
     if (selectedMethod && methodRegistry[selectedMethod]) {
-      //@ts-ignore
       methodRegistry[selectedMethod].handler(inputValue, sendRequestHandle)
     }
   }
@@ -24,12 +22,12 @@ const BlockExplorer: FC = () => {
    <div className="w-full max-w-2xl mx-auto mt-4 p-4 bg-[#1C232A]">
      <div className="bg-[#2A323C] rounded-lg shadow-lg p-6">
        <h2 className="text-2xl font-bold mb-6 text-gray-200">JSON RPC Interface</h2>
-       {isLoading && <p>Loading client...</p>}
-       {!isPortalNetworkLoading && !isNetworkReady && <p>Client loaded, waiting for network...</p>}
-       {isNetworkReady && <p>Network is ready!</p>}
-       {portalNetworkError && <p>Error: {portalNetworkError.message}</p>}
+       {/* {isLoading && <p>Loading client...</p>} */}
+       {/* {!isPortalNetworkLoading && !isNetworkReady && <p>Client loaded, waiting for network...</p>} */}
+       {/* {isNetworkReady && <p>Network is ready!</p>} */}
+       {/* {portalNetworkError && <p>Error: {portalNetworkError.message}</p>} */}
        <div className="mb-6">
-         <label className="block text-sm font-medium text-gray-300 mb-2">Select Method</label>
+         {/* <label className="block text-sm font-medium text-gray-300 mb-2">Select Method</label> */}
          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
            {APPROVED_METHODS.map((method) => (
              <button

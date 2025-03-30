@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { ITransportService } from '@chainsafe/discv5'
 import { multiaddr as ma } from '@multiformats/multiaddr'
-import { encodeHeader, decodePacket } from '@chainsafe/discv5/packet'
+import { encodeHeader, decodePacket, encodePacket } from '@chainsafe/discv5/packet'
 import { getSocketAddressOnENR } from '@chainsafe/discv5'
 import { bind, send, unbind } from '@kuyoonjo/tauri-plugin-udp'
 import { listen } from '@tauri-apps/api/event'
@@ -110,12 +110,13 @@ export class TauriUDPTransportService
     
     try {
       const nodeAddr = to.toOptions()
-      const encodedHeader = await encodeHeader(toId, packet.maskingIv, packet.header)
+      const encodedHeader = encodeHeader(toId, packet.maskingIv, packet.header)
       console.log('message before send ', packet.message)
       const fullPacket = concatBytes(packet.maskingIv, encodedHeader, packet.message)
       const address = `${nodeAddr.host}:${nodeAddr.port}`
 
-      await send(this.socketId, address, Array.from(fullPacket))
+      await send(this.socketId, address, Array.from(encodePacket(toId, packet)))
+      // await send(this.socketId, address, Array.from(fullPacket))
       console.log(`Successfully sent packet to ${address} message: ${packet.message}`)
     } catch (error) {
       console.error('Failed to send packet:', error)

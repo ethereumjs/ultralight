@@ -15,7 +15,15 @@
       react(),
       tailwindcss(),
       nodePolyfills({
-        include: ['child_process', 'crypto', 'buffer', 'events', 'stream', 'os', 'path'],
+        include: [
+          'child_process', 
+          'crypto', 
+          'buffer', 
+          'events', 
+          'stream', 
+          'os', 
+          'path',
+        ],
         protocolImports: true,
         globals: {
           Buffer: true,
