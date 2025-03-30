@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { ITransportService } from '@chainsafe/discv5'
 import { multiaddr as ma } from '@multiformats/multiaddr'
-import { encodeHeader } from '@chainsafe/discv5/packet'
+import { encodeHeader, decodePacket } from '@chainsafe/discv5/packet'
 import { getSocketAddressOnENR } from '@chainsafe/discv5'
 import { bind, send, unbind } from '@kuyoonjo/tauri-plugin-udp'
 import { listen } from '@tauri-apps/api/event'
@@ -131,8 +131,9 @@ export class TauriUDPTransportService
     )
     
     try {
-      const dataCopy = new Uint8Array(data)  
-      const packet = await decodePacketAsync(this.srcId, dataCopy)
+      const dataCopy = new Uint8Array(data) 
+      const packet = decodePacket(this.srcId, dataCopy) 
+      // const packet = await decodePacketAsync(this.srcId, dataCopy)
       console.log('decoded packet ', packet)
    
       this.emit('packet', multiaddr, packet)

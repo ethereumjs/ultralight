@@ -13,7 +13,7 @@ export const createPortalClient = async (port: number): Promise<PortalNetwork> =
   try {
     const privateKey = await keys.generateKeyPair('secp256k1')
     const enr = SignableENR.createFromPrivateKey(privateKey)
-    const nodeAddr = multiaddr(`/ip4/0.0.0.0/udp/${port}`)
+    const nodeAddr = multiaddr(`/ip4/127.0.0.1/udp/${port}`)
     enr.setLocationMultiaddr(nodeAddr)
     const client = await PortalNetwork.create({
       transport: TransportLayer.MOBILE,
