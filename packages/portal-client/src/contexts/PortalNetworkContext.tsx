@@ -28,7 +28,6 @@ type PortalNetworkProviderProps = {
 
 export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   children,
-  // networkReadyTimeout = 600000,
 }) => {
   const [client, setClient] = useState<any | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -37,35 +36,6 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
 
   const udpPort = getConfigValue(ConfigId.UdpPort)
   const shouldAutoInitialize = false
-
-  //  const waitForNetwork = async (portalClient: any, timeout: number): Promise<boolean> => {
-  //    console.log('Waiting for network to start...')
-  //    setIsNetworkReady(false)
-
-  //    const startTime = Date.now()
-
-  //    while (Date.now() - startTime < timeout) {
-  //      try {
-  //        // Check if network is ready
-  //        if (
-  //          portalClient.network &&
-  //          portalClient.network()['0x500b']?.routingTable &&
-  //          portalClient.network()['0x500b']?.routingTable.values().length > 0
-  //        ) {
-  //          console.log('Network is ready!')
-  //          setIsNetworkReady(true)
-  //          return true
-  //        }
-  //        console.log('Waiting for network to start...')
-  //        await new Promise((resolve) => setTimeout(resolve, 5000))
-  //      } catch (error) {
-  //        console.log('Error while waiting for network to start:', error)
-  //      }
-  //    }
-
-  //    console.warn('Network readiness timeout reached')
-  //    return false
-  //  }
 
   const initialize = async (port: number): Promise<void> => {
 
@@ -76,14 +46,8 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     try {
       const portalClient = await createPortalClient(port)
       setClient(portalClient)
-      // waitForNetwork(portalClient, networkReadyTimeout)
-      //   .catch((err) => {
-      //     console.error('Error while waiting for network:', err)
-      //   })
-      //   .finally(() => {
-          setIsLoading(false)
-          setIsNetworkReady(true)
-      //   })
+      setIsLoading(false)
+      setIsNetworkReady(true)
     } catch (err) {
       console.error('Failed to initialize portal client:', err)
       setError(err instanceof Error ? err : new Error(String(err)))
@@ -114,27 +78,6 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
       });
     }
   }, [shouldAutoInitialize, udpPort])
-
-  // useEffect(() => {
-  //   if (autoInitialize) {
-  //     initialize().catch((err) => {
-  //       console.error('Auto-initialization failed:', err)
-  //     })
-  //   }
-
-  //   return () => {
-  //     if (client) {
-  //       try {
-  //         //@ts-ignore
-  //         client.stop().catch((err) => {
-  //           console.warn('Non-blocking error during client stop:', err)
-  //         })
-  //       } catch (error) {
-  //         console.warn('Error in cleanup:', error)
-  //       }
-  //     }
-  //   }
-  // }, [])
 
   const contextValue: PortalNetworkContextType = {
     client,

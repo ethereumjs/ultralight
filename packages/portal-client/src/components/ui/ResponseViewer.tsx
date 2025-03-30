@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import jsonRenderer from '@/components/common/jsonRenderer'
 
 interface ResponseViewerProps {
   data: any
@@ -36,11 +37,11 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({ data }) => {
 
       <div className="bg-[#2A323C] rounded-lg shadow p-4">
         {activeTab === 'pretty' ? (
-          <div className="space-y-1 overflow-auto">
+          <div className="space-y-1 font-mono text-sm overflow-auto max-h-[70vh]">
             {Object.entries(data).map(([key, value]) => (
-              <div key={key} className="flex space-x-2  ">
-                <span className="font-semibold">{key}:</span>
-                <span className="font-mono">{JSON.stringify(value, null, 2)}</span>
+              <div key={key} className="ml-4 flex items-start">
+                <span className="text-purple-400 mr-2">{key}:</span>
+                {jsonRenderer(value)}
               </div>
             ))}
           </div>

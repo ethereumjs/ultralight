@@ -34,7 +34,7 @@ export const createPortalClient = async (port: number): Promise<PortalNetwork> =
         privateKey,
       },
       // bootnodes: ['enr:-JG4QIr-TqfTiuOR4vqCcylmFbr7_fb4z8EjUiQfARVmgXwpaLIx4nS6H-wKMagfXR1xdxMSt-BZOoviqMK-khaDKtQGY4d1IDAuMC4xgmlkgnY0gmlwhH8AAAGCcHYAiXNlY3AyNTZrMaEDGUf9MP98h9jH_ywK0VFWJNJHlw-Ubv2ocuiEpDKrtjSDdWRwgiMo'],
-      bootnodes: DEFAULT_BOOTNODES.mainnet,
+      bootnodes: DEFAULT_BOOTNODES.mainnet.slice(0, 1),
     })
 
     await client.start()
