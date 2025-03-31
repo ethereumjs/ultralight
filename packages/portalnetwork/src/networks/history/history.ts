@@ -307,7 +307,14 @@ export class HistoryNetwork extends BaseNetwork {
   public sendFindContent = async (enr: ENR, key: Uint8Array) => {
     this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
-    const payload = PortalWireMessageType.serialize({
+    let version
+    try {
+      version = await this.portal.highestCommonVersion(enr)
+    } catch (e: any) {
+      this.logger.extend('error')(e.message)
+      return
+    }
+    const payload = PortalWireMessageType[version].serialize({
       selector: MessageCodes.FINDCONTENT,
       value: findContentMsg,
     })
