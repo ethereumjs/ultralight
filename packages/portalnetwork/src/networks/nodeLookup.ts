@@ -17,7 +17,7 @@ export class NodeLookup {
   private static readonly CONCURRENT_LOOKUPS = 3 // Alpha (a) parameter from Kademlia
   private static readonly LOOKUP_TIMEOUT = 5000 // 5 seconds per peer
 
-  private foundNodes: Heap<ENR> // Heap of ENRs sorted by distance to target
+  private foundNodes: Heap<string> // Heap of ENRs sorted by distance to target
   private queriedNodes: Set<string>
   private pendingNodes: Map<string, ENR> // nodeId -> ENR
   private refresh: boolean
@@ -31,14 +31,16 @@ export class NodeLookup {
       .extend(log2Distance(this.network.enr.nodeId, this.nodeSought).toString())
     this.queriedNodes = new Set<string>()
     this.pendingNodes = new Map<string, ENR>() // nodeId -> ENR
-    this.foundNodes = new Heap<ENR>((a, b) =>
-      Number(distance(a.nodeId, this.nodeSought) - distance(b.nodeId, this.nodeSought)),
-    )
+    this.foundNodes = new Heap<string>((a, b) => {
+      const enrA = ENR.decodeTxt(a)
+      const enrB = ENR.decodeTxt(b)
+      return Number(distance(enrA.nodeId, this.nodeSought) - distance(enrB.nodeId, this.nodeSought))
+    })
     // Initialize with closest known peers
     const initialPeers = this.network.routingTable.nearest(this.nodeSought, 16)
     for (const peer of initialPeers) {
       this.pendingNodes.set(peer.nodeId, peer)
-      this.foundNodes.push(peer)
+      this.foundNodes.push(peer.encodeTxt())
     }
   }
 
@@ -58,13 +60,15 @@ export class NodeLookup {
   }
 
   private selectClosestPending(): ENR[] {
-    return Array.from(this.pendingNodes.values())
-      // Skip nodes with active uTP requests
-      .filter((peer) => this.network.portal.uTP.hasRequests(peer.nodeId) === false)
-      .sort((a, b) =>
-        Number(distance(a.nodeId, this.nodeSought) - distance(b.nodeId, this.nodeSought)),
-      )
-      .slice(0, NodeLookup.CONCURRENT_LOOKUPS)
+    return (
+      Array.from(this.pendingNodes.values())
+        // Skip nodes with active uTP requests
+        .filter((peer) => this.network.portal.uTP.hasRequests(peer.nodeId) === false)
+        .sort((a, b) =>
+          Number(distance(a.nodeId, this.nodeSought) - distance(b.nodeId, this.nodeSought)),
+        )
+        .slice(0, NodeLookup.CONCURRENT_LOOKUPS)
+    )
   }
 
   private async queryPeer(peer: ENR): Promise<void> {
@@ -78,11 +82,19 @@ export class NodeLookup {
 
       const queryPromise = async () => {
         const response = await this.network.sendFindNodes(peer, [distanceToTarget])
-        if (!response?.enrs) return
+        if (!response) {
+          this.network.routingTable.evictNode(peer.nodeId)
+          return
+        }
+        if (response.enrs.length === 0) {
+          return
+        }
 
         for (const enr of response.enrs) {
           const decodedEnr = ENR.decode(enr)
-          this.foundNodes.push(decodedEnr)
+          !this.network.routingTable.getWithPending(decodedEnr.nodeId) &&
+            !this.foundNodes.contains(decodedEnr.encodeTxt()) &&
+            this.foundNodes.push(decodedEnr.encodeTxt())
           const nodeId = decodedEnr.nodeId
           try {
             // Skip if we've already queried this node
@@ -129,7 +141,7 @@ export class NodeLookup {
       // Select closest α nodes we haven't queried yet
       const currentBatch = this.selectClosestPending()
       if (currentBatch.length === 0) break
-
+      this.log(`Querying ${currentBatch.length} peers`)
       // Query selected nodes in parallel with timeout
       const lookupPromises = currentBatch.map((peer) => this.queryPeer(peer))
 
@@ -152,14 +164,24 @@ export class NodeLookup {
         this.pendingNodes.delete(peer.nodeId)
       }
     }
+
+    const foundPeers: Set<string> = new Set()
+    while (this.foundNodes.peek() !== undefined && foundPeers.size < 16) {
+      const nextENR = ENR.decodeTxt(this.foundNodes.pop()!)
+      if (this.network.routingTable.getWithPending(nextENR.nodeId)) {
+        this.log(`Skipping ${nextENR.nodeId} because already in routing table`)
+        continue
+      }
+      const pong = await this.network.sendPing(nextENR)
+      if (pong) {
+        foundPeers.add(nextENR.encodeTxt())
+        this.log(`Found peer ${nextENR.nodeId} - found ${foundPeers.size} peers`)
+      }
+    }
     const finalSize = this.network.routingTable.buckets[bucket].size()
     this.log(
       `Finished lookup in bucket ${bucket} (${finalSize}/${MAX_NODES_PER_BUCKET} peers) +${finalSize - startingSize}`,
     )
-    const foundPeers: Set<string> = new Set()
-    while (this.foundNodes.peek() && foundPeers.size < 16) {
-      foundPeers.add(this.foundNodes.pop()!.encodeTxt())
-    }
     return Array.from(foundPeers)
   }
 }
