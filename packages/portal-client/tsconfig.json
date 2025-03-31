@@ -30,7 +30,8 @@
       "portalnetwork/*": ["./ultralight/packages/portalnetwork/src/*"]
     }
   },
-  "include": ["./src"],
+  "include": ["./src", "./src/tests/vitest.setup.ts"],
   "exclude": ["./dist"],
-  "references": [{ "path": "../portalnetwork/tsconfig.json" }]
+  "references": [{ "path": "../portalnetwork/tsconfig.json" }],
+  "types": ["vitest/globals", "@testing-library/jest-dom"]
 }

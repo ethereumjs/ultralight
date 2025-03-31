@@ -34,6 +34,17 @@
       polyfillNode(),
       tsconfigPaths(),
     ],
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './__tests__/test-utils/vitest.setup.ts',
+      include: ['__tests__/**/*.{test,spec}.{ts,tsx}'],
+      coverage: {
+        include: ['__tests__/**/*.{ts,tsx}'],
+        exclude: ['**/integration/**', '**/e2e/**']
+      },
+      testTimeout: 100000,
+    },
     resolve: {
       alias: {
         fs: resolve(__dirname, 'src/utils/polyfills/fsBrowser.ts'),

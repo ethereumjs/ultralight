@@ -8,7 +8,10 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "clean": "bash ./scripts/cleanup.sh"
+    "clean": "bash ./scripts/cleanup.sh",
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@chainsafe/bls": "^8.1.0",
@@ -39,6 +42,8 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.7",
     "@tauri-apps/cli": "^2",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
@@ -46,6 +51,7 @@
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.1",
     "daisyui": "^5.0.0-beta.8",
+    "jsdom": "^26.0.0",
     "memfs": "^4.17.0",
     "prettier": "3.5.1",
     "process": "^0.11.10",
@@ -57,6 +63,7 @@
     "util": "^0.12.5",
     "vite": "^6.0.3",
     "vite-plugin-node-polyfills": "^0.23.0",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.0.9"
   }
 }
