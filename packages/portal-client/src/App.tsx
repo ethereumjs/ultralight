@@ -1,30 +1,17 @@
-import { FC, useEffect } from 'react'
+import { FC } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { PortalNetworkProvider } from '@/contexts/PortalNetworkContext'
+import { NotificationProvider } from '@/contexts/NotificationContext'
 import JsonRpc from '@/pages/JsonRpc'
 import Home from '@/pages/Home'
 import Config from '@/pages/Config'
 import PageNotFound from '@/pages/PageNotFound'
 import Header from '@/components/layout/Header'
-import ErrorBoundary from '@/components/ErrorBoundary'
-
-const setupErrorHandling = () => {
-  window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason);
-  })
-
-  window.addEventListener('error', (event) => {
-    console.error('Global error:', event.error)
-  });
-};
 
 const App: FC = () => {
-  useEffect(() => {
-    setupErrorHandling()
-  }, [])
   return (
-    <ErrorBoundary>
-      <PortalNetworkProvider>
+    <PortalNetworkProvider>
+        <NotificationProvider>
         <Router>
           <div className="grid grid-rows-[auto_1fr] h-screen">
             <Header />
@@ -42,8 +29,8 @@ const App: FC = () => {
             </main>
           </div>
         </Router>
+    </NotificationProvider>
       </PortalNetworkProvider>
-    </ErrorBoundary>
   )
 }
 

@@ -6,7 +6,6 @@ import { getSocketAddressOnENR } from '@chainsafe/discv5'
 import { bind, send, unbind } from '@kuyoonjo/tauri-plugin-udp'
 import { listen } from '@tauri-apps/api/event'
 import { concatBytes } from 'ethereum-cryptography/utils'
-import { decodePacketAsync } from '../util/portalClient/helpers.js'
 
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { IPacket } from '@chainsafe/discv5/packet'
@@ -134,7 +133,6 @@ export class TauriUDPTransportService
     try {
       const dataCopy = new Uint8Array(data) 
       const packet = decodePacket(this.srcId, dataCopy) 
-      // const packet = await decodePacketAsync(this.srcId, dataCopy)
       console.log('decoded packet ', packet)
    
       this.emit('packet', multiaddr, packet)

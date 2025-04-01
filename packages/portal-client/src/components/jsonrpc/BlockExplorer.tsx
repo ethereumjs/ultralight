@@ -5,13 +5,17 @@ import { ResponseViewer } from '@/components/ui/ResponseViewer'
 import Select from '@/components/ui/Select'
 import { methodRegistry, MethodType } from '@/utils/constants/methodRegistry'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
+import { useNotification } from '@/contexts/NotificationContext'
+
 import { APPROVED_METHODS } from '@/services/portalNetwork/types'
 
 const BlockExplorer: FC = () => {
   const [selectedMethod, setSelectedMethod] = useState<MethodType | ''>('')
   const [inputValue, setInputValue] = useState('')
-  const { result, isLoading, error, sendRequestHandle } = useJsonRpc()
-  const { error: portalNetworkError } = usePortalNetwork()
+  
+  const { result, setResult, sendRequestHandle } = useJsonRpc()
+  const { isLoading, setIsLoading } = usePortalNetwork()
+  const { notify } = useNotification()
 
   const methodOptions = APPROVED_METHODS.map((method) => ({
     value: method,
@@ -20,20 +24,28 @@ const BlockExplorer: FC = () => {
 
   const handleSubmit = async () => {
     if (selectedMethod && methodRegistry[selectedMethod]) {
-      methodRegistry[selectedMethod].handler(inputValue, sendRequestHandle)
+      try {
+        await methodRegistry[selectedMethod].handler(inputValue, sendRequestHandle)
+      } catch (err) {
+        notify({
+          message: err instanceof Error ? err.message : 'Request failed',
+          type: 'error',
+        })
+      }
     }
   }
 
   const handleSelectMethod = (method: MethodType) => {
     setSelectedMethod(method)
     setInputValue('')
+    setResult(null)
+    setIsLoading(false)
   }
 
  return (
    <div className="w-full max-w-2xl mx-auto mt-4 p-4 bg-[#1C232A]">
      <div className="bg-[#2A323C] rounded-lg shadow-lg p-6">
        <h2 className="text-2xl font-bold mb-6 text-gray-200">JSON RPC Interface</h2>
-        {portalNetworkError && <p>Error: {portalNetworkError.message}</p>}
        <div className="mb-6">
          <Select
            options={methodOptions}
@@ -56,12 +68,6 @@ const BlockExplorer: FC = () => {
        )}
 
        {isLoading && <div className="text-center text-gray-400">Loading...</div>}
-
-       {error && (
-         <div className="p-4 bg-red-900/30 text-red-400 border border-red-500 rounded-lg mb-4">
-           Error: {error.message}
-         </div>
-       )}
        {result && <ResponseViewer data={result.result} />}
      </div>
    </div>

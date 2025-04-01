@@ -1,5 +1,7 @@
+import { InputValue } from "@/utils/types"
+
 interface MethodInputProps {
-  value: string
+  value: InputValue
   onChange: (value: string) => void
   className?: string
   placeholder: string

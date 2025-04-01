@@ -1,24 +1,3 @@
-// import { MemoryLevel } from 'memory-level'
-
-// export function createDatabase(
-//   options: {
-//     version?: number,
-//     prefix?: string,
-//     keyEncoding?: string,
-//     valueEncoding?: string,
-//   } = {}
-// ) {
-//   const memoryDb = new MemoryLevel<string, string>({
-//     keyEncoding: options.keyEncoding || 'utf8',
-//     valueEncoding: options.valueEncoding || 'utf8',
-//   })
-
-//   const enhancedDb = memoryDb as any
-//   enhancedDb.nextTick = (fn: Function) => setTimeout(fn, 0)
-
-//   return enhancedDb
-// }
-
 import { BrowserLevel } from 'browser-level'
 
 export function createDatabase(

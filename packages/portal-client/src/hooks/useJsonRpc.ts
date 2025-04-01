@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
 import { formatBlockResponse } from 'portalnetwork'
-
 interface RPCResponse {
   result?: any
   error?: {
@@ -11,34 +10,25 @@ interface RPCResponse {
 }
 
 export const useJsonRpc = () => {
-  const { client, isLoading, setIsLoading, error, setError } = usePortalNetwork()
-  // const [isLoading, setIsLoading] = useState(false)
-  // const [error, setError] = useState<Error | null>(null)
+  const { client, setIsLoading } = usePortalNetwork()
   const [result, setResult] = useState<RPCResponse | null>(null)
 
   const sendRequestHandle = useCallback(async (method: string, params: any[] = []) => {
-    setIsLoading(true)
-    setError(null)
     setResult(null)
 
     if (!client) {
-      setError(new Error('Portal Network client is not initialized'))
-      setIsLoading(false)
-      return null
+      throw new Error('Portal Network client is not initialized')
     }
 
     try {
-
+      setIsLoading(true)
       let result
-      switch (method) {
-  
+      switch (method) { 
         case 'eth_getBlockByNumber':      
           result = await client.ETH.getBlockByNumber(params[0], params[1] ?? false)
           break
         case 'eth_getBlockByHash':
-          alert('getting block by hash')
           result = await client.ETH.getBlockByHash(params[0], params[1] ?? false)
-          alert('got block by hash')
           break
         case 'eth_getCode':
           result = await client.ETH.getCode(params[0], params[1])
@@ -55,24 +45,24 @@ export const useJsonRpc = () => {
         default:
           throw new Error(`Unsupported method: ${method}`)
       }
-
-      console.log('Request Result:', result)
+      if (result === undefined) {
+        throw new Error('No result returned from the request')
+      }
       setResult({ result: formatBlockResponse(result, params[1] ?? false) })
       return result
     } catch (err) {
 
-      const error = err instanceof Error 
-        ? err 
-        : new Error('An unknown error occurred')
+      const message = err instanceof Error 
+        ? err.message 
+        : 'An unknown error occurred'
       
       setIsLoading(false)
-      setError(error)
       setResult({ error: { 
         code: -32000, 
-        message: error.message 
+        message 
       }})
       
-      return null
+      throw new Error(message)
     } finally {
       setIsLoading(false)
     }
@@ -80,8 +70,7 @@ export const useJsonRpc = () => {
 
   return {
     result,
-    isLoading,
-    error,
+    setResult,
     sendRequestHandle
   }
 }

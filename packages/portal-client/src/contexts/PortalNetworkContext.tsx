@@ -7,8 +7,6 @@ type PortalNetworkContextType = {
   client: any | null
   isLoading: boolean
   setIsLoading: (loading: boolean) => void
-  error: Error | null
-  setError: (error: Error | null) => void
   initialize: (customPort: number) => Promise<void>
   isNetworkReady: boolean
   cleanup: () => Promise<void>
@@ -19,8 +17,6 @@ const PortalNetworkContext = createContext<PortalNetworkContextType>({
   isLoading: true,
   setIsLoading: () => {},
   isNetworkReady: false,
-  error: null,
-  setError: () => {},
   initialize: async () => {},
   cleanup: async () => {},
 })
@@ -35,7 +31,6 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
 }) => {
   const [client, setClient] = useState<any | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
   const [isNetworkReady, setIsNetworkReady] = useState(false)
 
   const udpPort = getConfigValue(ConfigId.UdpPort)
@@ -44,7 +39,6 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   const initialize = async (port: number): Promise<void> => {
 
     setIsLoading(true)
-    setError(null)
     setIsNetworkReady(false)
 
     try {
@@ -53,11 +47,9 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
       setIsLoading(false)
       setIsNetworkReady(true)
     } catch (err) {
-      console.error('Failed to initialize portal client:', err)
-      setError(err instanceof Error ? err : new Error(String(err)))
       setIsLoading(false)
       setIsNetworkReady(false)
-      throw err
+      throw new Error('Failed to initialize portal client')
     }
   }
 
@@ -70,7 +62,8 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
         setClient(null)
         setIsNetworkReady(false)
       } catch (err) {
-        console.error('Error during portal client cleanup:', err)
+        const message = err instanceof Error ? err.message : 'An unknown error occurred'
+        throw new Error(message)    
       }
     }
   }
@@ -88,8 +81,6 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     isLoading,
     setIsLoading,
     isNetworkReady,
-    error,
-    setError,
     initialize,
     cleanup,
   }
