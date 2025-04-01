@@ -6,8 +6,10 @@ import { ConfigId } from '@/utils/types'
 type PortalNetworkContextType = {
   client: any | null
   isLoading: boolean
+  setIsLoading: (loading: boolean) => void
   error: Error | null
-  initialize: (customPort: number, proxyAddress: string) => Promise<void>
+  setError: (error: Error | null) => void
+  initialize: (customPort: number) => Promise<void>
   isNetworkReady: boolean
   cleanup: () => Promise<void>
 }
@@ -15,8 +17,10 @@ type PortalNetworkContextType = {
 const PortalNetworkContext = createContext<PortalNetworkContextType>({
   client: null,
   isLoading: true,
+  setIsLoading: () => {},
   isNetworkReady: false,
   error: null,
+  setError: () => {},
   initialize: async () => {},
   cleanup: async () => {},
 })
@@ -82,8 +86,10 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   const contextValue: PortalNetworkContextType = {
     client,
     isLoading,
+    setIsLoading,
     isNetworkReady,
     error,
+    setError,
     initialize,
     cleanup,
   }

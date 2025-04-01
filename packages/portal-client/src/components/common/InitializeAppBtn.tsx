@@ -8,35 +8,25 @@ import { CONFIG_DEFAULTS } from '@/utils/constants/config'
 const InitializeAppBtn = () => {
   const { initialize, client, cleanup } = usePortalNetwork()
   const [udpPort, setUdpPort] = useState<number | undefined>()
-  const [wsa, setWsa] = useState<string | undefined>()
 
   const udpPortConfig = CONFIG_DEFAULTS.find((config) => config.id === ConfigId.UdpPort)
   const udpPortDefault = udpPortConfig?.defaultValue
 
-  const websocketAddress = CONFIG_DEFAULTS.find((config) => config.id === ConfigId.WebsocketAddress)
-  const websocketAddressDefault = websocketAddress?.defaultValue
-
   const handleClick = () => {
     const port = udpPort ?? Number(udpPortDefault)
-    const address = wsa ?? websocketAddressDefault
 
-    if (port === undefined || address === undefined) {
-      console.error('UDP port or websocket address is undefined');
+    if (port === undefined) {
+      console.error('UDP port is undefined');
       return;
     }
 
-    initialize(port, address);
+    initialize(port);
   }
 
   useEffect(() => {
     const savedValue = localStorage.getItem('udp-port')
     savedValue ? setUdpPort(Number(savedValue)) : setUdpPort(Number(udpPortDefault))  
   }, [udpPortDefault])
-
-  useEffect(() => {
-    const savedValue = localStorage.getItem('websocket-address')
-    savedValue ? setWsa(savedValue) : setWsa(websocketAddressDefault)
-  }, [websocketAddressDefault])
 
   return (
     <div onClick={client ? cleanup : handleClick} className="cursor-pointer">

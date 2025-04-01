@@ -1,16 +1,17 @@
 import { FC, useState } from 'react'
-import { useNodes } from '@/hooks/useNodes'
+import { useJsonRpc } from '@/hooks/useJsonRpc'
 import { MethodInput } from '@/components/ui/MethodInput'
 import { ResponseViewer } from '@/components/ui/ResponseViewer'
 import Select from '@/components/ui/Select'
 import { methodRegistry, MethodType } from '@/utils/constants/methodRegistry'
-// import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
+import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
 import { APPROVED_METHODS } from '@/services/portalNetwork/types'
 
 const BlockExplorer: FC = () => {
   const [selectedMethod, setSelectedMethod] = useState<MethodType | ''>('')
   const [inputValue, setInputValue] = useState('')
-  const { node, isLoading, error, sendRequestHandle } = useNodes()
+  const { result, isLoading, error, sendRequestHandle } = useJsonRpc()
+  const { error: portalNetworkError } = usePortalNetwork()
 
   const methodOptions = APPROVED_METHODS.map((method) => ({
     value: method,
@@ -23,15 +24,21 @@ const BlockExplorer: FC = () => {
     }
   }
 
+  const handleSelectMethod = (method: MethodType) => {
+    setSelectedMethod(method)
+    setInputValue('')
+  }
+
  return (
    <div className="w-full max-w-2xl mx-auto mt-4 p-4 bg-[#1C232A]">
      <div className="bg-[#2A323C] rounded-lg shadow-lg p-6">
        <h2 className="text-2xl font-bold mb-6 text-gray-200">JSON RPC Interface</h2>
+        {portalNetworkError && <p>Error: {portalNetworkError.message}</p>}
        <div className="mb-6">
          <Select
            options={methodOptions}
            value={selectedMethod}
-           onChange={(e) => setSelectedMethod(e.target.value as MethodType | '')}
+           onChange={(e) => handleSelectMethod(e.target.value as MethodType)}
            placeholder="Select a method"
          />
        </div>
@@ -55,7 +62,7 @@ const BlockExplorer: FC = () => {
            Error: {error.message}
          </div>
        )}
-       {node && <ResponseViewer data={node.result} />}
+       {result && <ResponseViewer data={result.result} />}
      </div>
    </div>
  )

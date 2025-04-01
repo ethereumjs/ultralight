@@ -12,7 +12,7 @@ import { createDatabase } from './db'
 import type { PortalNetwork } from 'portalnetwork'
 // const isBrowser = () => !window.__TAURI__
 
-const db = createDatabase('helloworld', {prefix: 'portalclient_history'})
+const db = createDatabase('network_db', { prefix: 'portalclient_' })
 
 export const createPortalClient = async (port: number): Promise<PortalNetwork> => {
   try {
@@ -27,14 +27,14 @@ export const createPortalClient = async (port: number): Promise<PortalNetwork> =
         { networkId: NetworkId.StateNetwork },
       ],
       db,
-      dbSize: async () => 1024 * 1024 * 1024 * 1024,
+      dbSize: async () => 1024 * 1024 * 1024,
       config: {
         enr,
         bindAddrs: { ip4: nodeAddr },
         privateKey,
       },
       // bootnodes: ['enr:-JG4QIr-TqfTiuOR4vqCcylmFbr7_fb4z8EjUiQfARVmgXwpaLIx4nS6H-wKMagfXR1xdxMSt-BZOoviqMK-khaDKtQGY4d1IDAuMC4xgmlkgnY0gmlwhH8AAAGCcHYAiXNlY3AyNTZrMaEDGUf9MP98h9jH_ywK0VFWJNJHlw-Ubv2ocuiEpDKrtjSDdWRwgiMo'],
-      bootnodes: DEFAULT_BOOTNODES.mainnet.slice(0, 1),
+      bootnodes: DEFAULT_BOOTNODES.mainnet,
     })
 
     await client.start()

@@ -6,15 +6,14 @@ import { ConfigId } from '@/utils/types'
 
 const Home = () => {
   const { client, initialize, cleanup } = usePortalNetwork()
-  const udpPort = getConfigValue(ConfigId.UdpPort);
-  const websocketAddress = getConfigValue(ConfigId.WebsocketAddress);
+  const udpPort = getConfigValue(ConfigId.UdpPort)
   return (
     <div className="w-full flex flex-col items-center">
       <img src={logo} alt="Description" className="max-w-full h-auto logo" />
       <h1 className="font-extrabold m-4 text-5xl">Ultrallight Client</h1>
       <p className="font-extrabold m-2">Ultrallight Decentralized Light Client</p>
       <Button
-        onClick={client ? () => cleanup() : () => initialize(Number(udpPort), websocketAddress)}
+        onClick={client ? () => cleanup() : () => initialize(Number(udpPort))}
         children={`${client ? 'Shutdown' : 'Launch'} Ultralight`}
       />
     </div>

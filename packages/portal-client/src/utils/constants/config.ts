@@ -13,16 +13,4 @@ export const CONFIG_DEFAULTS: { id: ConfigId; title: string; defaultValue: strin
     defaultValue: '9090',
     description: 'The port to bind the node server',
   },
-  {
-    id: ConfigId.WebsocketAddress,
-    title: 'Proxy Address',
-    defaultValue: 'ws://127.0.0.1:6050',
-    description: 'The address for the websocket server',
-  },
-  {
-    id: ConfigId.WebsocketTimeout,
-    title: 'Websocket Timeout',
-    defaultValue: '30000',
-    description: 'Timeout for Websocket requests in milliseconds',
-  },
 ]

@@ -18,7 +18,7 @@ export const MethodInput: React.FC<MethodInputProps> = ({
   const defaultClasses =
     'flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
   return (
-    <div className="flex space-x-2">
+    <div className="flex flex-col space-x-2">
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}

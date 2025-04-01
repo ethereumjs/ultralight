@@ -10,16 +10,16 @@ interface RPCResponse {
   }
 }
 
-export const useNodes = () => {
-  const { client } = usePortalNetwork()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
-  const [node, setNode] = useState<RPCResponse | null>(null)
+export const useJsonRpc = () => {
+  const { client, isLoading, setIsLoading, error, setError } = usePortalNetwork()
+  // const [isLoading, setIsLoading] = useState(false)
+  // const [error, setError] = useState<Error | null>(null)
+  const [result, setResult] = useState<RPCResponse | null>(null)
 
   const sendRequestHandle = useCallback(async (method: string, params: any[] = []) => {
     setIsLoading(true)
     setError(null)
-    setNode(null)
+    setResult(null)
 
     if (!client) {
       setError(new Error('Portal Network client is not initialized'))
@@ -36,7 +36,9 @@ export const useNodes = () => {
           result = await client.ETH.getBlockByNumber(params[0], params[1] ?? false)
           break
         case 'eth_getBlockByHash':
+          alert('getting block by hash')
           result = await client.ETH.getBlockByHash(params[0], params[1] ?? false)
+          alert('got block by hash')
           break
         case 'eth_getCode':
           result = await client.ETH.getCode(params[0], params[1])
@@ -55,7 +57,7 @@ export const useNodes = () => {
       }
 
       console.log('Request Result:', result)
-      setNode({ result: formatBlockResponse(result, params[1] ?? false) })
+      setResult({ result: formatBlockResponse(result, params[1] ?? false) })
       return result
     } catch (err) {
 
@@ -63,8 +65,9 @@ export const useNodes = () => {
         ? err 
         : new Error('An unknown error occurred')
       
+      setIsLoading(false)
       setError(error)
-      setNode({ error: { 
+      setResult({ error: { 
         code: -32000, 
         message: error.message 
       }})
@@ -76,7 +79,7 @@ export const useNodes = () => {
   }, [client])
 
   return {
-    node,
+    result,
     isLoading,
     error,
     sendRequestHandle
