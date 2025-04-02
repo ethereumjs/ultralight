@@ -28,10 +28,10 @@
       "@/*": ["./src/*"],
       "portalnetwork": ["./ultralight/packages/portalnetwork/src/index"],
       "portalnetwork/*": ["./ultralight/packages/portalnetwork/src/*"]
-    }
+    },
+    "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
   "include": ["./src", "./src/tests/vitest.setup.ts"],
   "exclude": ["./dist"],
   "references": [{ "path": "../portalnetwork/tsconfig.json" }],
-  "types": ["vitest/globals", "@testing-library/jest-dom"]
 }
