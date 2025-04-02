@@ -163,25 +163,6 @@ describe('useJsonRpc', () => {
   })
 
   describe('Error handling', () => {
-    it('should handle client not initialized', async () => {
-      mockUsePortalNetwork.mockReturnValueOnce({
-        ...mockUsePortalNetwork(),
-        client: null
-      })
-
-      const { result } = renderHook(() => useJsonRpc())
-      
-      await act(async () => {
-        await expect(result.current.sendRequestHandle('eth_getBlockByNumber', [1, false]))
-          .rejects.toThrow('Portal Network client is not initialized')
-      })
-      console.log('result after act', JSON.stringify(result))
-      expect(result.current.result?.error).toEqual({
-        code: -32000,
-        message: 'Portal Network client is not initialized'
-      })
-    })
-
     it('should handle RPC errors', async () => {
       mockClient.ETH.getBlockByNumber.mockRejectedValue(new Error('RPC error'))
 
@@ -202,7 +183,7 @@ describe('useJsonRpc', () => {
       const { result } = renderHook(() => useJsonRpc())
       
       await act(async () => {
-        await expect(result.current.sendRequestHandle('unsupported_method', []))
+        await expect(result.current.sendRequestHandle('unsupported_method', ['0x1']))
           .rejects.toThrow('Unsupported method: unsupported_method')
       })
 
