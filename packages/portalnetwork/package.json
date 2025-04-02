@@ -45,7 +45,7 @@
     "@ethereumjs/vm": "^10.0.0-rc.1",
     "@frontall/capacitor-udp": "^0.3.4",
     "@kuyoonjo/tauri-plugin-udp": "^0.1.1",
-    "@libp2p/crypto": "5.0.2",
+    "@libp2p/crypto": "^5.0.2",
     "@lodestar/config": "^1.21.0",
     "@lodestar/light-client": "^1.21.0",
     "@lodestar/params": "^1.21.0",
