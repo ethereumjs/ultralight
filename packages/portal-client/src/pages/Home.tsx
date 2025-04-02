@@ -10,8 +10,8 @@ const Home = () => {
   return (
     <div className="w-full flex flex-col items-center">
       <img src={logo} alt="Description" className="max-w-full h-auto logo" />
-      <h1 className="font-extrabold m-4 text-5xl">Ultrallight Client</h1>
-      <p className="font-extrabold m-2">Ultrallight Decentralized Light Client</p>
+      <h1 className="font-extrabold m-4 text-5xl">Ultralight Client</h1>
+      <p className="font-extrabold m-2">Ultralight Decentralized Light Client</p>
       <Button
         onClick={client ? () => cleanup() : () => initialize(Number(udpPort))}
         children={`${client ? 'Shutdown' : 'Launch'} Ultralight`}
