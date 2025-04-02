@@ -7,7 +7,7 @@ import { SignableENR } from '@chainsafe/enr'
 import { UDPTransportService } from '@chainsafe/discv5'
 
 import { NetworkId } from '../networks/index.js'
-import { CapacitorUDPTransportService, WebSocketTransportService } from '../transports/index.js'
+import { TauriUDPTransportService, WebSocketTransportService } from '../transports/index.js'
 import { RateLimiter } from '../transports/rateLimiter.js'
 import { MEGABYTE } from '../util/index.js'
 import { TransportLayer } from './types.js'
@@ -76,12 +76,12 @@ export async function createPortalNetwork(opts: Partial<PortalNetworkOpts>): Pro
   let dbSize
   switch (opts.transport) {
     case TransportLayer.WEB:
-    case TransportLayer.MOBILE:
       dbSize = async function () {
         const sizeEstimate = await window.navigator.storage.estimate()
         return sizeEstimate.usage !== undefined ? sizeEstimate.usage / MEGABYTE : 0
       }
       break
+    case TransportLayer.MOBILE:
     case TransportLayer.NODE:
     default:
       dbSize = opts.dbSize
@@ -100,7 +100,7 @@ export async function createPortalNetwork(opts: Partial<PortalNetworkOpts>): Pro
       break
     }
     case TransportLayer.MOBILE:
-      config.transport = new CapacitorUDPTransportService(ma, config.enr.nodeId)
+      config.transport = new TauriUDPTransportService(ma, config.enr.nodeId)
       break
     case TransportLayer.NODE:
       config.transport = new UDPTransportService({

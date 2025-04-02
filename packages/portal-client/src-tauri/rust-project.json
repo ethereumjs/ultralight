@@ -1,0 +1,13 @@
+{
+  "roots": [
+    "./packages/portal-client/tauri-src"
+  ],
+  "crates": [
+    {
+      "root_module": "./packages/portal-client/tauri-src/src/lib.rs",
+      "edition": "2021",
+      "deps": [],
+      "cfg": []
+    }
+  ]
+}
