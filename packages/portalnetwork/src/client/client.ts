@@ -80,7 +80,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     for (const network of opts.supportedNetworks) {
       switch (network.networkId) {
         case NetworkId.HistoryNetwork:
-          console.log('[portalclient] Creating HistoryNetwork', network)
           this.networks.set(
             network.networkId,
             new HistoryNetwork({
@@ -178,10 +177,8 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       try {
         // Check for stored radius in db
         const storedRadius = await network.db.db.get('radius')
-        console.log('Stored radius:', storedRadius)
         await network.setRadius(BigInt(storedRadius))
       } catch (err) {
-        console.log('Error set radius:', err)
         // No action
       }
       if (network instanceof HistoryNetwork) {

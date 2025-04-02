@@ -46,17 +46,14 @@ export class TauriUDPTransportService
     if (this.isListening) return
     
     const opts = this.bindAddrs[0].toOptions()
-    console.log('Starting UDP transport with options:', opts)
     const port = Number.isInteger(opts.port) ? opts.port : 0
     const host = opts.host || '0.0.0.0'
     const address = `${host}:${port}`
     
     try {
       await bind(this.socketId, address)
-      console.log(`UDP socket bound to ${address}`)
       
       this.unlisten = await listen('plugin://udp', (event) => {
-        console.log('event ', event)
         const payload = event.payload as UdpMessage
         
         if (payload.id !== this.socketId) {
@@ -77,9 +74,7 @@ export class TauriUDPTransportService
       })
       
       this.isListening = true
-      console.log(`UDP Transport started with socket ID: ${this.socketId}`)
     } catch (error) {
-      console.error('Failed to start UDP transport:', error)
       throw error
     }
   }
@@ -95,9 +90,7 @@ export class TauriUDPTransportService
       }
       
       this.isListening = false
-      console.log('UDP Transport stopped')
     } catch (error) {
-      console.error('Failed to stop UDP transport:', error)
       throw error
     }
   }
@@ -110,22 +103,17 @@ export class TauriUDPTransportService
     try {
       const nodeAddr = to.toOptions()
       const encodedHeader = encodeHeader(toId, packet.maskingIv, packet.header)
-      console.log('message before send ', packet.message)
       const fullPacket = concatBytes(packet.maskingIv, encodedHeader, packet.message)
       const address = `${nodeAddr.host}:${nodeAddr.port}`
 
       await send(this.socketId, address, Array.from(encodePacket(toId, packet)))
-      // await send(this.socketId, address, Array.from(fullPacket))
-      console.log(`Successfully sent packet to ${address} message: ${packet.message}`)
     } catch (error) {
-      console.error('Failed to send packet:', error)
       throw error
     }
   }
   
   private handleIncoming = async (data: Uint8Array, rinfo: IRemoteInfo): Promise<void> => {
-    console.log('rinfo ', rinfo)
-    
+  
     const multiaddr = ma(
       `/${rinfo.family === 'IPv4' ? 'ip4' : 'ip6'}/${rinfo.address}/udp/${rinfo.port}`
     )
@@ -133,12 +121,8 @@ export class TauriUDPTransportService
     try {
       const dataCopy = new Uint8Array(data) 
       const packet = decodePacket(this.srcId, dataCopy) 
-      console.log('decoded packet ', packet)
-   
       this.emit('packet', multiaddr, packet)
-      console.log('packet emitted')
     } catch (e) {
-      console.error('Failed to decode packet:', e)
       this.emit('decodeError', e as any, multiaddr)
     }
   }
