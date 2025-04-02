@@ -33,7 +33,6 @@ export const createPortalClient = async (port: number): Promise<PortalNetwork> =
         bindAddrs: { ip4: nodeAddr },
         privateKey,
       },
-      // bootnodes: ['enr:-JG4QIr-TqfTiuOR4vqCcylmFbr7_fb4z8EjUiQfARVmgXwpaLIx4nS6H-wKMagfXR1xdxMSt-BZOoviqMK-khaDKtQGY4d1IDAuMC4xgmlkgnY0gmlwhH8AAAGCcHYAiXNlY3AyNTZrMaEDGUf9MP98h9jH_ywK0VFWJNJHlw-Ubv2ocuiEpDKrtjSDdWRwgiMo'],
       bootnodes: DEFAULT_BOOTNODES.mainnet,
     })
 
@@ -41,11 +40,9 @@ export const createPortalClient = async (port: number): Promise<PortalNetwork> =
     await client.bootstrap()
     
     await new Promise(resolve => setTimeout(resolve, 1000))
-    console.log('Portal client bootstrapped', client)
     
     return client
   } catch (error) {
-    console.error('Error in createPortalClient:', error)
     throw error
   }
 }

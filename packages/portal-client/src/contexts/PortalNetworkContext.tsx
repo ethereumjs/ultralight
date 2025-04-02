@@ -57,8 +57,6 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     if (client) {
       try {
         await client.stop()
-        console.log('Portal client stopped successfully')
-  
         setClient(null)
         setIsNetworkReady(false)
       } catch (err) {
