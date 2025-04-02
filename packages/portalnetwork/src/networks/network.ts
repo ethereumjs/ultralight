@@ -80,6 +80,7 @@ export abstract class BaseNetwork extends EventEmitter {
   private lastRefreshTime: number = 0
   private nextRefreshTimeout: ReturnType<typeof setTimeout> | null = null
   private refreshInterval: number = 30000 // Start with 30s
+  private refreshing: boolean = false
   public pruning: boolean = false
   constructor({
     client,
@@ -504,21 +505,8 @@ export abstract class BaseNetwork extends EventEmitter {
       this.portal.metrics?.nodesMessagesReceived.inc()
       const decoded = PortalWireMessageType.deserialize(res).value as NodesMessage
       const enrs = decoded.enrs ?? []
-      try {
-        if (enrs.length > 0) {
-          const notIgnored = enrs.filter((e) => !this.routingTable.isIgnored(ENR.decode(e).nodeId))
-          // Ping node if not currently ignored by subnetwork routing table
-          await Promise.allSettled(
-            notIgnored.map((e) => {
-              const decodedEnr = ENR.decode(e)
-              return this.sendPing(decodedEnr)
-            }),
-          )
-
-          this.logger.extend(`NODES`)(`Received ${enrs.length} ENRs from ${shortId(enr.nodeId)}`)
-        }
-      } catch (err: any) {
-        this.logger(`Error processing NODES message: ${err.toString()}`)
+      if (enrs.length > 0) {
+        this.logger.extend(`NODES`)(`Received ${enrs.length} ENRs from ${shortId(enr.nodeId)}`)
       }
 
       return decoded
@@ -940,16 +928,24 @@ export abstract class BaseNetwork extends EventEmitter {
    * 5. New nodes will be added to the routing table
    */
   public bucketRefresh = async () => {
+    if (this.refreshing) {
+      this.logger.extend('bucketRefresh')(`Bucket refresh already in progress`)
+      return
+    }
+    this.logger.extend('bucketRefresh')(`Starting bucket refresh`)
+    this.refreshing = true
     const now = Date.now()
     if (now - this.lastRefreshTime < this.getRefreshInterval()) {
       return
     }
     this.lastRefreshTime = now
-    await this.livenessCheck()
     const size = this.routingTable.size
     if (size === 0) {
+      this.logger.extend('bucketRefresh')(`No peers in routing table.  Skipping bucket refresh and liveness check`)
+      this.refreshing = false
       return
     }
+    await this.livenessCheck()
     this.logger.extend('bucketRefresh')(`Starting bucket refresh with ${size} peers`)
     const bucketsToRefresh = this.routingTable.buckets
       .map((bucket, idx) => {
@@ -958,7 +954,7 @@ export abstract class BaseNetwork extends EventEmitter {
       .reverse()
       .slice(0, 16)
       .filter((pair) => pair.bucket.size() < MAX_NODES_PER_BUCKET)
-      .slice(0, 4)
+      .slice(0, 3)
     this.logger.extend('bucketRefresh')(
       `Refreshing buckets: ${bucketsToRefresh.map((b) => b.distance).join(', ')}`,
     )
@@ -974,6 +970,7 @@ export abstract class BaseNetwork extends EventEmitter {
     this.logger.extend('bucketRefresh')(
       `Finished bucket refresh with ${newSize} peers (${newSize - size} new peers)`,
     )
+    this.refreshing = false
   }
 
   /**
