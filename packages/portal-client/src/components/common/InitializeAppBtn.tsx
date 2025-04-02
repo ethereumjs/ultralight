@@ -4,23 +4,29 @@ import { useEffect, useState } from 'react'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
 import { ConfigId } from '@/utils/types'
 import { CONFIG_DEFAULTS } from '@/utils/constants/config'
+import { useNotification } from '@/contexts/NotificationContext'
 
 const InitializeAppBtn = () => {
   const { initialize, client, cleanup } = usePortalNetwork()
   const [udpPort, setUdpPort] = useState<number | undefined>()
+  const { notify } = useNotification()
 
   const udpPortConfig = CONFIG_DEFAULTS.find((config) => config.id === ConfigId.UdpPort)
   const udpPortDefault = udpPortConfig?.defaultValue
 
-  const handleClick = () => {
+  const handleClick = async () => {
     const port = udpPort ?? Number(udpPortDefault)
 
     if (port === undefined) {
-      console.error('UDP port is undefined');
-      return;
+      return notify({ message: 'UDP port is undefined' })
     }
 
-    initialize(port);
+    try {
+      await initialize(port)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to initialize'
+      notify({ message })
+    }
   }
 
   useEffect(() => {
