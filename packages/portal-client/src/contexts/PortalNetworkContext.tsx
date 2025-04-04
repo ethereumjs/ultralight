@@ -49,6 +49,7 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     } catch (err) {
       setIsLoading(false)
       setIsNetworkReady(false)
+      console.error('Error initializing portal client:', err)
       throw new Error('Failed to initialize portal client')
     }
   }

@@ -8,8 +8,10 @@ import {
   DEFAULT_BOOTNODES,
 } from 'portalnetwork'
 import { createDatabase } from './db'
+import { TauriUDPTransportService } from './transports'
 
 import type { PortalNetwork } from 'portalnetwork'
+import type { Multiaddr } from '@multiformats/multiaddr'
 // const isBrowser = () => !window.__TAURI__
 
 const db = createDatabase('network_db', { prefix: 'portalclient_' })
@@ -21,7 +23,7 @@ export const createPortalClient = async (port: number): Promise<PortalNetwork> =
     const nodeAddr = multiaddr(`/ip4/0.0.0.0/udp/${port}`)
     enr.setLocationMultiaddr(nodeAddr)
     const client = await createPortalNetwork({
-      transport: TransportLayer.MOBILE,
+      transport: TransportLayer.TAURI,
       supportedNetworks: [
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.StateNetwork },
@@ -34,6 +36,11 @@ export const createPortalClient = async (port: number): Promise<PortalNetwork> =
         privateKey,
       },
       bootnodes: DEFAULT_BOOTNODES.mainnet,
+      transportServices: {
+        createTauriTransport: (bindAddr: Multiaddr, nodeId: string) => {
+          return new TauriUDPTransportService(bindAddr, nodeId)
+        },
+      },
     })
 
     await client.start()

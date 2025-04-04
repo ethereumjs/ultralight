@@ -1,10 +1,12 @@
-import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
+import type { BindAddrs, IDiscv5CreateOptions } from '@chainsafe/discv5'
 import type { NodeId } from '@chainsafe/enr'
 import type { AbstractLevel } from 'abstract-level'
 
+import type { ITransportService } from '@chainsafe/discv5'
 import type { NetworkId } from '../index.js'
 import type { PortalNetworkRoutingTable } from './routingTable.js'
 import type { Multiaddr } from '@multiformats/multiaddr'
+import type { IRateLimiter } from '../transports/rateLimiter.js'
 import { ListBasicType, UintNumberType } from '@chainsafe/ssz'
 
 /** A representation of an unsigned contactable node. */
@@ -28,8 +30,30 @@ export enum TransportLayer {
   NODE = 'node',
   WEB = 'web',
   MOBILE = 'mobile',
+  TAURI = 'tauri',
 }
 
+
+export interface TransportServices {
+  createTauriTransport?: (
+    bindAddr: Multiaddr,
+    nodeId: string,
+    rateLimiter?: IRateLimiter,
+  ) => ITransportService
+  
+  createWebSocketTransport?: (
+    bindAddr: Multiaddr,
+    nodeId: string,
+    proxyAddress: string,
+    rateLimiter?: IRateLimiter,
+  ) => ITransportService
+
+  createNodeTransport?: (
+    bindAddrs: BindAddrs,
+    nodeId: string,
+    rateLimiter?: IRateLimiter,
+  ) => ITransportService
+}
 export interface NetworkConfig {
   networkId: NetworkId
   maxStorage?: number
@@ -59,6 +83,7 @@ export interface PortalNetworkOpts {
   shouldRefresh?: boolean
   gossipCount?: number
   supportedVersions?: number[]
+  transportServices?: TransportServices
 }
 
 export type RoutingTable = PortalNetworkRoutingTable
