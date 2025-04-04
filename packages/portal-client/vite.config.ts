@@ -16,13 +16,11 @@
       tailwindcss(),
       nodePolyfills({
         include: [
-          'child_process', 
           'crypto', 
           'buffer', 
           'events', 
           'stream', 
-          'os', 
-          'path',
+          'os',
         ],
         protocolImports: true,
         globals: {
@@ -47,8 +45,6 @@
     },
     resolve: {
       alias: {
-        fs: resolve(__dirname, 'src/utils/polyfills/fsBrowser.ts'),
-        child_process: resolve(__dirname, 'src/utils/polyfills/childProcessBrowser.ts'),
         process: resolve(__dirname, 'src/utils/polyfills/processBrowser.ts'),
         'bls-eth-wasm': resolve(__dirname, 'src/utils/polyfills/blsPatch.ts'),
         '@chainsafe/bls-keygen': resolve(__dirname, 'src/utils/polyfills/blsKeyGen.ts'),
@@ -58,8 +54,6 @@
       global: 'globalThis',
       'process.env': '{}',
       'process.browser': 'true',
-      __dirname: JSON.stringify(process.cwd()),
-      __filename: JSON.stringify(import.meta.url),
     },
     optimizeDeps: {
       esbuildOptions: {
