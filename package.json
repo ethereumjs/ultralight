@@ -14,8 +14,6 @@
   "scripts": {
     "biome": "npx @biomejs/biome check --write",
     "postinstall": "npm run build --workspaces --if-present",
-    "start-proxy": "npm run start -w=proxy -- --nat=localhost",
-    "start-browser-client": "npm run start-testnet -w=browser-client",
     "start-cli": "npm run dev -w=cli",
     "lint": "eslint --format codeframe --config ./config/eslint.cjs . --ext .js,.ts",
     "lint:fix": "eslint --fix --config ./config/eslint.cjs . --ext .js,.ts",
