@@ -51,9 +51,7 @@
         child_process: resolve(__dirname, 'src/utils/polyfills/childProcessBrowser.ts'),
         process: resolve(__dirname, 'src/utils/polyfills/processBrowser.ts'),
         'bls-eth-wasm': resolve(__dirname, 'src/utils/polyfills/blsPatch.ts'),
-        '@chainsafe/bls-keygen': resolve(__dirname, 'src/utils/polyfills/blsKeyGen.ts'), 
-        // 'node:crypto': resolve(__dirname, 'src/utils/polyfills/localCrypto.ts'),
-        // crypto: resolve(__dirname, 'src/utils/polyfills/localCrypto.ts'), 
+        '@chainsafe/bls-keygen': resolve(__dirname, 'src/utils/polyfills/blsKeyGen.ts'),
       },
     },
     define: {

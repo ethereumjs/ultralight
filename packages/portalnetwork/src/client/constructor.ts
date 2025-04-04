@@ -12,7 +12,11 @@ import { MEGABYTE } from '../util/index.js'
 import { TransportLayer } from './types.js'
 import { PortalNetwork } from './client.js'
 
-import type { IDiscv5CreateOptions, ITransportService, SignableENRInput } from '@chainsafe/discv5'
+import type { 
+  IDiscv5CreateOptions, 
+  ITransportService, 
+  SignableENRInput,
+ } from '@chainsafe/discv5'
 import type { PortalNetworkOpts } from './types.js'
 
 export async function createPortalNetwork(opts: Partial<PortalNetworkOpts>): Promise<PortalNetwork> {
@@ -89,30 +93,38 @@ export async function createPortalNetwork(opts: Partial<PortalNetworkOpts>): Pro
   let transportService: ITransportService
   
   if (opts.transportServices) {
-    if (
-      !opts.transportServices.createWebSocketTransport ||
-      !opts.transportServices.createTauriTransport ||
-      !opts.transportServices.createNodeTransport
-    ) {
-      throw new Error('No transport service provided')
-    }
-
     switch (opts.transport) {
       case TransportLayer.WEB:
+        if (!opts.transportServices.createWebSocketTransport) {
+          throw new Error('WebSocket transport service not provided')
+        }
         const proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
         transportService = opts.transportServices.createWebSocketTransport(
           ma, 
           config.enr.nodeId, 
           proxyAddress, 
-          new RateLimiter()
+          new RateLimiter(),
         )
         break
       case TransportLayer.TAURI:
-        transportService = opts.transportServices.createTauriTransport(ma, config.enr.nodeId)
+        if (!opts.transportServices.createTauriTransport) {
+          throw new Error('Tauri transport service not provided')
+        }
+        transportService = opts.transportServices.createTauriTransport(
+          ma,
+          config.enr.nodeId,
+        )
         break
       case TransportLayer.NODE:
       default:
-        transportService = opts.transportServices.createNodeTransport(config.bindAddrs, config.enr.nodeId, new RateLimiter())
+        if (!opts.transportServices.createNodeTransport) {
+          throw new Error('Node transport service not provided')
+        }
+        transportService = opts.transportServices.createNodeTransport(
+          config.bindAddrs, 
+          config.enr.nodeId, 
+          new RateLimiter(),
+        )
         break
     }
   } else {
