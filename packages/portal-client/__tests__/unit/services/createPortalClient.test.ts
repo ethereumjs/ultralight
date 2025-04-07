@@ -27,6 +27,7 @@ vi.mock('portalnetwork', () => {
       [MockNetworkId.StateNetwork, { networkId: MockNetworkId.StateNetwork }]
     ]),
     start: vi.fn().mockResolvedValue(undefined),
+    storeNodeDetails: vi.fn().mockResolvedValue(undefined),
     stop: vi.fn().mockResolvedValue(undefined),
     bootstrap: vi.fn().mockResolvedValue(undefined)
   }
