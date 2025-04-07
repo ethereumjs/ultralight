@@ -19,7 +19,7 @@
           'buffer', 
           'events', 
           'stream', 
-          'os', 
+          'os',
         ],
         protocolImports: true,
         globals: {
@@ -66,7 +66,6 @@
       exclude: [
         '@chainsafe/bls', 
         'herumi-*',
-        // 'vite-plugin-node-polyfills',
         'child_process',
         '@peculiar/webcrypto',
       ],

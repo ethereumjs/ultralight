@@ -1,3 +1,10 @@
-import browser from 'debug'
+const debugShim = (namespace: string) => {
+  return (...args: any[]) => {
+    console.log(`[${namespace}]`, ...args)
+  }
+}
 
-export default browser as any;
+debugShim.enable = () => {}
+debugShim.disable = () => {}
+
+export default debugShim
