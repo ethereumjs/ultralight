@@ -1,7 +1,6 @@
   import { defineConfig } from 'vite'
   import react from '@vitejs/plugin-react'
   import { nodePolyfills } from 'vite-plugin-node-polyfills'
-  import polyfillNode from 'rollup-plugin-polyfill-node'
   import tsconfigPaths from 'vite-tsconfig-paths'
   import { builtinModules } from 'module'
   import { resolve } from 'path'
@@ -20,7 +19,7 @@
           'buffer', 
           'events', 
           'stream', 
-          'os',
+          'os', 
         ],
         protocolImports: true,
         globals: {
@@ -29,7 +28,6 @@
           process: true,
         },
       }),
-      polyfillNode(),
       tsconfigPaths(),
     ],
     test: {
@@ -45,9 +43,11 @@
     },
     resolve: {
       alias: {
+        'debug': resolve(__dirname, 'src/utils/polyfills/debug-shim.ts'),
         process: resolve(__dirname, 'src/utils/polyfills/processBrowser.ts'),
         'bls-eth-wasm': resolve(__dirname, 'src/utils/polyfills/blsPatch.ts'),
-        '@chainsafe/bls-keygen': resolve(__dirname, 'src/utils/polyfills/blsKeyGen.ts'),
+        '@chainsafe/bls-keygen': resolve(__dirname, 'src/utils/polyfills/blsKeyGen.ts'), 
+        'portalnetwork': resolve(__dirname, '../portalnetwork/src/index.ts'),
       },
     },
     define: {
@@ -66,7 +66,7 @@
       exclude: [
         '@chainsafe/bls', 
         'herumi-*',
-        'vite-plugin-node-polyfills',
+        // 'vite-plugin-node-polyfills',
         'child_process',
         '@peculiar/webcrypto',
       ],
@@ -84,6 +84,8 @@
         external: [
           ...builtinModules.filter(m => m !== 'crypto' && m !== 'buffer' && m !== 'events'), 
           /^node:(?!crypto|buffer|events).*/,
+          'vite-plugin-node-polyfills/shims/process',
+          'vite-plugin-node-polyfills/shims/buffer',
         ],
 
       },

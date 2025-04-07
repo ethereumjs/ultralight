@@ -26,10 +26,14 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "portalnetwork": ["./ultralight/packages/portalnetwork/src/index"],
-      "portalnetwork/*": ["./ultralight/packages/portalnetwork/src/*"]
+      "portalnetwork": ["../portalnetwork/dist/index"],
+      "portalnetwork/*": ["../portalnetwork/dist/*"]
     },
-    "types": ["vitest/globals", "@testing-library/jest-dom"]
+    "types": [
+      "node",
+      "vitest/globals", 
+      "@testing-library/jest-dom"
+    ]
   },
   "include": ["./src", "./src/tests/vitest.setup.ts"],
   "exclude": ["./dist"],

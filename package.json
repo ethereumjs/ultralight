@@ -4,8 +4,7 @@
   "workspaces": [
     "./",
     "./packages/portalnetwork",
-    "./packages/cli",
-    "./packages/portal-client"
+    "./packages/cli"
   ],
   "engines": {
     "npm": "^10",

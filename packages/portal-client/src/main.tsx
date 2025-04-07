@@ -1,6 +1,6 @@
 import './utils/polyfills/polyfills'
 import React from 'react'
-import ReactDOM from 'react-dom/client'
+import * as ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
 

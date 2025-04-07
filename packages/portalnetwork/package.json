@@ -43,15 +43,12 @@
     "@ethereumjs/statemanager": "^10.0.0-rc.1",
     "@ethereumjs/util": "^10.0.0-rc.1",
     "@ethereumjs/vm": "^10.0.0-rc.1",
-    "@frontall/capacitor-udp": "^0.3.4",
-    "@kuyoonjo/tauri-plugin-udp": "^0.1.1",
-    "@libp2p/crypto": "5.0.2",
+    "@libp2p/crypto": "^5.0.2",
     "@lodestar/config": "^1.21.0",
     "@lodestar/light-client": "^1.21.0",
     "@lodestar/params": "^1.21.0",
     "@lodestar/types": "^1.21.0",
     "@multiformats/multiaddr": "^12.1.10",
-    "@tauri-apps/api": "^2.2.0",
     "@thi.ng/leb128": "^2.1.11",
     "abstract-level": "^1.0.3",
     "debug": "^4.3.2",
@@ -59,14 +56,11 @@
     "ethers": "^6.8.0",
     "eventemitter3": "^5.0.1",
     "heap-js": "^2.5.0",
-    "isomorphic-ws": "^4.0.1",
     "level": "^8.0.0",
     "lru-cache": "^10.0.0",
     "memory-level": "^1.0.0",
     "prom-client": "^14.0.1",
-    "strict-event-emitter-types": "^2.0.0",
-    "websocket-as-promised": "^2.0.1",
-    "ws": "^8.2.1"
+    "strict-event-emitter-types": "^2.0.0"
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
@@ -81,5 +75,33 @@
     "typedoc-plugin-markdown": "^3.11.3",
     "typescript": "^5.8.2",
     "vitest": "^3.0.2"
+  },
+  "peerDependencies": {
+    "@frontall/capacitor-udp": "^0.3.4",
+    "@kuyoonjo/tauri-plugin-udp": "^0.1.1",
+    "@tauri-apps/api": "^2.2.0",
+    "isomorphic-ws": "^4.0.1",
+    "websocket-as-promised": "^2.0.1",
+    "ws": "^8.2.1"
+  },
+  "peerDependenciesMeta": {
+    "@frontall/capacitor-udp": {
+      "optional": true
+    },
+    "@kuyoonjo/tauri-plugin-udp": {
+      "optional": true
+    },
+    "@tauri-apps/api": {
+      "optional": true
+    },
+    "isomorphic-ws": {
+      "optional": true
+    },
+    "websocket-as-promised": {
+      "optional": true
+    },
+    "ws": {
+      "optional": true
+    }
   }
 }
