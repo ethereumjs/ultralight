@@ -1,10 +1,15 @@
 const debugShim = (namespace: string) => {
-  return (...args: any[]) => {
+  const log = (...args: any[]) => {
     console.log(`[${namespace}]`, ...args)
   }
+  
+  log.enable = () => {}
+  log.disable = () => {}
+  log.extend = (subNamespace: string) => {
+    return debugShim(`${namespace}:${subNamespace}`)
+  }
+  
+  return log
 }
-
-debugShim.enable = () => {}
-debugShim.disable = () => {}
 
 export default debugShim
