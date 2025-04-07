@@ -2,6 +2,8 @@ name: PortalClient
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+    paths:
+      - 'packages/portal-client/**'
 env:
   cwd: ${{github.workspace}}/packages/portal-client
 defaults:
@@ -25,12 +27,13 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
+          cache-dependency-path: 'packages/portal-client/package-lock.json'
       
       - run: npm i -g @mapbox/node-pre-gyp
       - run: npm ci
-        working-directory: ${{ github.workspace }}
+        # working-directory: ${{ github.workspace }}
       - run: npm run biome
-        working-directory: ${{ github.workspace }}
+        # working-directory: ${{ github.workspace }}
       - run: npm run test
 
   # test-tauri-portal-client:
