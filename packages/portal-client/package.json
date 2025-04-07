@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "biome": "npx @biomejs/biome check --write",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
