@@ -65,7 +65,7 @@ export abstract class BaseNetwork extends EventEmitter {
     PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
     PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD,
   ]
-  static MAX_CONCURRENT_UTP_STREAMS = 50
+  public MAX_CONCURRENT_UTP_STREAMS = 50
   public routingTable: PortalNetworkRoutingTable
   public nodeRadius: bigint
   public db: NetworkDB
@@ -765,7 +765,7 @@ export abstract class BaseNetwork extends EventEmitter {
       case 0:
       default: {
         const contentIds: boolean[] = Array(msg.contentKeys.length).fill(false)
-        if (this.portal.uTP.openRequests() > BaseNetwork.MAX_CONCURRENT_UTP_STREAMS) {
+        if (this.portal.uTP.openRequests() > this.MAX_CONCURRENT_UTP_STREAMS) {
           this.logger.extend('OFFER')(`Too many open UTP streams - rejecting offer`)
           return this.sendAccept<0>(src, requestId, contentIds, [])
         }
