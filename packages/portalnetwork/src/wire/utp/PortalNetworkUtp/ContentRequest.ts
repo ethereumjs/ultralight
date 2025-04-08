@@ -20,8 +20,9 @@ import type {
   SelectiveAckHeader,
   SocketType,
   StatePacket,
-
-  SynPacket} from '../../../index.js'
+  SynPacket,
+  Version,
+} from '../../../index.js'
 import type { ReadSocket } from '../Socket/ReadSocket.js'
 import type { WriteSocket } from '../Socket/WriteSocket.js'
 import type { RequestManager } from './requestManager.js'
@@ -42,6 +43,7 @@ export interface ContentRequestOptions {
   connectionId: number
   contentKeys: Uint8Array[]
   content: Uint8Array
+  version?: Version
   logger?: Debugger
 }
 
@@ -52,6 +54,7 @@ export abstract class ContentRequest {
   socket: SocketType
   connectionId: number
   logger: Debugger
+  version: Version
   constructor(options: ContentRequestOptions) {
     this.requestManager = options.requestManager
     this.network = options.network
@@ -59,6 +62,7 @@ export abstract class ContentRequest {
     this.connectionId = options.connectionId
     this.socket = options.socket
     this.logger = options.logger ? options.logger.extend('ContentRequest') : debug('ContentRequest')
+    this.version = options.version ?? 0
   }
 
   abstract init(): Promise<void>

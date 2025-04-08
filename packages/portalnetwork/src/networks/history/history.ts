@@ -25,6 +25,7 @@ import {
   decodeHistoryNetworkContentKey,
   decodeReceipts,
   encodeClientInfo,
+  encodeWithVariantPrefix,
   getTalkReqOverhead,
   randUint16,
   reassembleBlock,
@@ -348,6 +349,7 @@ export class HistoryNetwork extends BaseNetwork {
                 enr,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
+                version
               })
             })
             break
@@ -511,6 +513,7 @@ export class HistoryNetwork extends BaseNetwork {
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
         contents,
+        version
       })
 
       const id = new Uint8Array(2)
