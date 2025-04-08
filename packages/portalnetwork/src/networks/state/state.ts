@@ -120,6 +120,7 @@ export class StateNetwork extends BaseNetwork {
                 enr,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
+                version
               })
             })
             break
