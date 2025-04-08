@@ -6,7 +6,8 @@ import { hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { SignableENR } from '@chainsafe/enr'
 import { multiaddr } from '@multiformats/multiaddr'
-import { NetworkId, TransportLayer, createPortalNetwork, HistoryNetwork } from '../../src/index.js'
+import { NetworkId, TransportLayer, createPortalNetwork, HistoryNetwork, AcceptCode } from '../../src/index.js'
+import { BitArray } from '@chainsafe/ssz'
 const testdata = yaml.load(
   readFileSync(
     resolve(__dirname, '../../../portal-spec-tests/tests/mainnet/history/receipts/14764013.yaml'),
@@ -35,7 +36,6 @@ describe('FindContent versions', async () => {
     assert.exists(testdata.content_key)
     assert.exists(testdata.content_value)
   })
-
 
   it('works with 0 / 0', async () => {
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
@@ -78,7 +78,6 @@ describe('FindContent versions', async () => {
     const stored = await network1.findContentLocally(hexToBytes(testdata.content_key))
     assert.exists(stored)
     assert.deepEqual(stored, hexToBytes(testdata.content_value))
-
 
     const found = await network2.sendFindContent(
       node1.discv5.enr.toENR(),
@@ -280,12 +279,353 @@ describe('FindContent versions', async () => {
     assert.exists(stored)
     assert.deepEqual(stored, hexToBytes(testdata.content_value))
 
-
     const found = await network2.sendFindContent(
       node1.discv5.enr.toENR(),
       hexToBytes(testdata.content_key),
     )
     assert.notExists(found)
+  })
+})
 
+describe('Offer/Accept versions', async () => {
+  it('works with 0 / 0', async () => {
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr1.setLocationMultiaddr(initMa)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        privateKey: pk1,
+      },
+      supportedVersions: [0],
+    })
+
+    const node2 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        privateKey: pk2,
+      },
+      supportedVersions: [0],
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+
+    await network1.store(hexToBytes(testdata.content_key), hexToBytes(testdata.content_value))
+
+    const stored = await network1.findContentLocally(hexToBytes(testdata.content_key))
+    assert.exists(stored)
+    assert.deepEqual(stored, hexToBytes(testdata.content_value))
+
+    const offer = await network1.sendOffer(node2.discv5.enr.toENR(), [
+      hexToBytes(testdata.content_key),
+    ])
+    assert.exists(offer)
+    assert.isTrue(offer instanceof BitArray)
+  })
+  it('works with 1 / 1', async () => {
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr1.setLocationMultiaddr(initMa)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        privateKey: pk1,
+      },
+      supportedVersions: [1],
+    })
+
+    const node2 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        privateKey: pk2,
+      },
+      supportedVersions: [1],
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+
+    await network1.store(hexToBytes(testdata.content_key), hexToBytes(testdata.content_value))
+
+    const stored = await network1.findContentLocally(hexToBytes(testdata.content_key))
+    assert.exists(stored)
+    assert.deepEqual(stored, hexToBytes(testdata.content_value))
+
+    const offer = await network1.sendOffer(node2.discv5.enr.toENR(), [
+      hexToBytes(testdata.content_key),
+    ])
+    assert.exists(offer)
+    console.log(offer)
+    assert.isTrue(offer instanceof Uint8Array)
+  })
+  it('defaults to lowest common version', async () => {
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr1.setLocationMultiaddr(initMa)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        privateKey: pk1,
+      },
+      supportedVersions: [0, 1],
+    })
+
+    const node2 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        privateKey: pk2,
+      },
+      supportedVersions: [0],
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+
+    await network1.store(hexToBytes(testdata.content_key), hexToBytes(testdata.content_value))
+
+    const stored = await network1.findContentLocally(hexToBytes(testdata.content_key))
+    assert.exists(stored)
+    assert.deepEqual(stored, hexToBytes(testdata.content_value))
+
+    const offer = await network1.sendOffer(node2.discv5.enr.toENR(), [
+      hexToBytes(testdata.content_key),
+    ])
+    assert.exists(offer)
+    assert.isTrue(offer instanceof BitArray)
+  })
+  it('fails with version mismatch', async () => {
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr1.setLocationMultiaddr(initMa)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        privateKey: pk1,
+      },
+      supportedVersions: [1],
+    })
+
+    const node2 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        privateKey: pk2,
+      },
+      supportedVersions: [0],
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+
+    await network1.store(hexToBytes(testdata.content_key), hexToBytes(testdata.content_value))
+
+    const stored = await network1.findContentLocally(hexToBytes(testdata.content_key))
+    assert.exists(stored)
+    assert.deepEqual(stored, hexToBytes(testdata.content_value))
+
+    const offer = await network1.sendOffer(node2.discv5.enr.toENR(), [
+      hexToBytes(testdata.content_key),
+    ])
+    assert.isUndefined(offer)
+  })
+  it('version 1 - Decline already stored', async () => {
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr1.setLocationMultiaddr(initMa)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        privateKey: pk1,
+      },
+      supportedVersions: [1],
+    })
+
+    const node2 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        privateKey: pk2,
+      },
+      supportedVersions: [1],
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+
+    await network1.store(hexToBytes(testdata.content_key), hexToBytes(testdata.content_value))
+    await network2.store(hexToBytes(testdata.content_key), hexToBytes(testdata.content_value))
+
+    const stored = await network1.findContentLocally(hexToBytes(testdata.content_key))
+    assert.exists(stored)
+    assert.deepEqual(stored, hexToBytes(testdata.content_value))
+
+    const offer = await network1.sendOffer(node2.discv5.enr.toENR(), [
+      hexToBytes(testdata.content_key),
+    ])
+    assert.exists(offer)
+    assert.equal(offer[0], AcceptCode.CONTENT_ALREADY_STORED)
+  })
+  it('version 1 - Decline outside radius', async () => {
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr1.setLocationMultiaddr(initMa)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        privateKey: pk1,
+      },
+      supportedVersions: [1],
+    })
+
+    const node2 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        privateKey: pk2,
+      },
+      supportedVersions: [1],
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+
+    await network1.store(hexToBytes(testdata.content_key), hexToBytes(testdata.content_value))
+    await network2.setRadius(0n)
+
+    const stored = await network1.findContentLocally(hexToBytes(testdata.content_key))
+    assert.exists(stored)
+    assert.deepEqual(stored, hexToBytes(testdata.content_value))
+
+    const offer = await network1.sendOffer(node2.discv5.enr.toENR(), [
+      hexToBytes(testdata.content_key),
+    ])
+    assert.exists(offer)
+    assert.equal(offer[0], AcceptCode.CONTENT_OUT_OF_RADIUS)
+  })
+  it('version 1 - Decline rate limit', async () => {
+    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr1.setLocationMultiaddr(initMa)
+    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/${port++}`)
+    enr2.setLocationMultiaddr(initMa2)
+    const node1 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr1,
+        bindAddrs: {
+          ip4: initMa,
+        },
+        privateKey: pk1,
+      },
+      supportedVersions: [1],
+    })
+
+    const node2 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
+      config: {
+        enr: enr2,
+        bindAddrs: {
+          ip4: initMa2,
+        },
+        privateKey: pk2,
+      },
+      supportedVersions: [1],
+    })
+
+    await node1.start()
+    await node2.start()
+    const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+
+    await network1.store(hexToBytes(testdata.content_key), hexToBytes(testdata.content_value))
+
+    network2.MAX_CONCURRENT_UTP_STREAMS = -1
+
+    const stored = await network1.findContentLocally(hexToBytes(testdata.content_key))
+    assert.exists(stored)
+    assert.deepEqual(stored, hexToBytes(testdata.content_value))
+
+    const offer = await network1.sendOffer(node2.discv5.enr.toENR(), [
+      hexToBytes(testdata.content_key),
+    ])
+    assert.exists(offer)
+    assert.equal(offer[0], AcceptCode.RATE_LIMITED)
   })
 })
