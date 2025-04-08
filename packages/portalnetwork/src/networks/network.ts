@@ -648,7 +648,7 @@ export abstract class BaseNetwork extends EventEmitter {
             if (requestedKeys.length === 0) {
               // Don't start uTP stream if no content ACCEPTed
               this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr.nodeId)}`)
-              return []
+              return msg.contentKeys
             }
             this.logger.extend(`OFFER`)(`ACCEPT message received with uTP id: ${id}`)
 
