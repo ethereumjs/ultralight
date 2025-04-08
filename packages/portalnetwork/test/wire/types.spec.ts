@@ -312,4 +312,17 @@ describe('message encoding should match test vectors', () => {
     testVector = '0x070102060000000101'
     assert.equal(bytesToHex(payload), testVector, 'accept message encodes correctly')
   })
+  it('should encode v1 ACCEPT message correctly', () => {
+    connectionId = Uint8Array.from([0x01, 0x02])
+    const acceptMessageContentKeys: Uint8Array = Uint8Array.from([ 0, 1, 2, 3, 4, 5, 1, 1])
+    payload = PortalWireMessageType[1].serialize({
+      selector: MessageCodes.ACCEPT,
+      value: {
+        connectionId,
+        contentKeys: acceptMessageContentKeys,
+      },
+    })
+    testVector = '0x070102060000000001020304050101'
+    assert.equal(bytesToHex(payload), testVector, 'accept message encodes correctly')
+  })
 })
