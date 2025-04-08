@@ -25,6 +25,7 @@ import {
 } from '../../src/index.js'
 
 import type { BeaconNetwork } from '../../src/index.js'
+import { BitArray } from '@chainsafe/ssz'
 
 const require = createRequire(import.meta.url)
 
@@ -453,7 +454,7 @@ describe('OFFER/ACCEPT tests', () => {
     const acceptedOffers = await network1.sendOffer(network2.enr.toENR(), [
       staleOptimisticUpdateContentKey,
     ])
-    assert.deepEqual(acceptedOffers, [], 'no content was accepted by node 2')
+    assert.deepEqual(acceptedOffers, BitArray.fromBoolArray([false]), 'no content was accepted by node 2')
     const content = await network2.retrieve(
       hexToBytes(intToHex(BeaconNetworkContentType.LightClientOptimisticUpdate)),
     )
