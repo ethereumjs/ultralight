@@ -750,11 +750,11 @@ export abstract class BaseNetwork extends EventEmitter {
             for (const k of desiredKeys) {
               this.streamingKey(k)
             }
-            await this.sendAccept<1>(src, requestId, contentIds, desiredKeys)
+            await this.sendAccept<1>(src, requestId, contentIds, desiredKeys, 1)
           } catch (err: any) {
             this.logger(`Something went wrong handling offer message: ${err.toString()}`)
             // Send empty response if something goes wrong parsing content keys
-            await this.sendAccept<1>(src, requestId, contentIds, [])
+            await this.sendAccept<1>(src, requestId, contentIds, [], 1)
           }
         } catch {
           this.logger(`Error Processing OFFER msg`)
