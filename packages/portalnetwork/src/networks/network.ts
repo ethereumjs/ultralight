@@ -728,6 +728,7 @@ export abstract class BaseNetwork extends EventEmitter {
                 this.logger.extend('OFFER')(
                   `Content key: ${bytesToHex(msg.contentKeys[x])} is outside radius.\ndistance=${d}\nradius=${this.nodeRadius}`,
                 )
+                contentIds[x] = AcceptCode.CONTENT_OUT_OF_RADIUS
                 continue
               }
               try {
