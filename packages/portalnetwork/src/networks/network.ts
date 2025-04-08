@@ -936,14 +936,31 @@ export abstract class BaseNetwork extends EventEmitter {
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.',
       )
       const _id = randUint16()
-      const enr = this.findEnr(src.nodeId) ?? src
+      const enr = this.findEnr(src.nodeId)
+      if (!enr) {
+        this.logger.extend('FOUNDCONTENT')(`No ENR found for ${shortId(src.nodeId)}.  Cannot determine version.  Sending ENR response.`)
+        await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
+        return
+      }
+      const version = await this.portal.highestCommonVersion(enr)
+      let contents: Uint8Array = value
+      switch (version) {
+        case 0:
+          break
+        case 1: {
+          this.logger.extend('FOUNDCONTENT')(`Encoding content with varint prefix`)
+          contents = encodeWithVariantPrefix([value])
+          this.logger.extend('FOUNDCONTENT')(`Value length: ${value.length} Contents length: ${contents.length}`)
+        }
+      }
       await this.handleNewRequest({
         networkId: this.networkId,
         contentKeys: [decodedContentMessage.contentKey],
         enr,
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
-        contents: value,
+        contents,
+        version
       })
 
       const id = new Uint8Array(2)
