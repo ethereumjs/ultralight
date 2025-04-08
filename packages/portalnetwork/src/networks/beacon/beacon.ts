@@ -480,6 +480,7 @@ export class BeaconNetwork extends BaseNetwork {
                 enr,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
+                version,
               })
             })
             break
@@ -610,14 +611,31 @@ export class BeaconNetwork extends BaseNetwork {
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.',
       )
       const _id = randUint16()
-      const enr = this.findEnr(src.nodeId) ?? src
+      const enr = this.findEnr(src.nodeId)
+      if (!enr) {
+        this.logger.extend('FOUNDCONTENT')(
+          `No ENR found for ${shortId(src.nodeId)}.  Cannot determine version.  Sending ENR response.`,
+        )
+        await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
+        return
+      }
+      let contents: Uint8Array = value
+      const version = await this.portal.highestCommonVersion(enr)
+      switch (version) {
+        case 0:
+          break
+        case 1: {
+          contents = encodeWithVariantPrefix([value])
+        }
+      }
       await this.handleNewRequest({
         networkId: this.networkId,
         contentKeys: [decodedContentMessage.contentKey],
         enr,
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
-        contents: value,
+        contents,
+        version,
       })
 
       const id = new Uint8Array(2)
