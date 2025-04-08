@@ -5,6 +5,7 @@ import debug from 'debug'
 import {
   Bytes32TimeStamp,
   ConnectionState,
+  ContentReader,
   PacketType,
   StateNetwork,
   bitmap,
@@ -119,7 +120,9 @@ export abstract class ContentRequest {
     }
   }
   async returnContent(contents: Uint8Array[], keys: Uint8Array[]) {
-    this.logger.extend('returnContent')(`Decompressing stream into ${keys.length} pieces of content`)
+    this.logger.extend('returnContent')(
+      `Decompressing stream into ${keys.length} pieces of content`,
+    )
     for (const [idx, k] of keys.entries()) {
       const _content = contents[idx]
       this.logger.extend(`FINISHED`)(
@@ -195,13 +198,23 @@ export class FindContentReadRequest extends ContentReadRequest {
     if (this.socket.state === ConnectionState.SynSent) {
       this.socket.setAckNr(packet.header.seqNr)
       this.socket.setReader(packet.header.seqNr)
-      this.socket.reader!.bytesExpected = Infinity
+      if (this.version === 0) {
+        // Content is not prefixed with a varint length
+        this.socket.reader!.bytesExpected = Infinity
+      }
       return
     } else {
       throw new Error('READ socket should not get ACKs after SYN-ACK')
     }
   }
   async _handleDataPacket(packet: DataPacket) {
+    if (!this.socket.reader) {
+      this.socket.reader = new ContentReader(packet.header.seqNr)
+      if (this.version === 0) {
+        // Content is not prefixed with a varint length
+        this.socket.reader!.bytesExpected = Infinity
+      }
+    }
     await this.socket.handleDataPacket(packet)
     if (this.socket.state === ConnectionState.GotFin) {
       // FIN packet number marks the end of data stream
@@ -216,14 +229,41 @@ export class FindContentReadRequest extends ContentReadRequest {
         }
       }
       // If all packets have been received, return content
-      await this.returnContent([Uint8Array.from(this.socket.reader!.bytes)], [this.contentKey])
+      switch (this.version) {
+        case 0:
+          await this.returnContent([Uint8Array.from(this.socket.reader!.bytes)], [this.contentKey])
+          break
+        case 1: {
+          if (this.socket.reader!.contents.length > 0) {
+            const key = this.contentKey
+            const value = this.socket.reader!.contents.shift()!
+            this.logger(`Storing: ${bytesToHex(key)}.  length: ${value.length} `)
+            await this.returnContent([value], [key])
+          }
+        }
+      }
     }
     return
   }
   async _handleFinPacket(packet: Packet<PacketType.ST_FIN>): Promise<void> {
-    const content = await this.socket.handleFinPacket(packet, true)
-    if (!content) return
-    await this.returnContent([content], [this.contentKey])
+    switch (this.version) {
+      case 0: {
+        const content = await this.socket.handleFinPacket(packet, true)
+        if (!content) return
+        await this.returnContent([content], [this.contentKey])
+        break
+      }
+      case 1: {
+        while (this.socket.reader!.contents.length > 0) {
+          const key = this.contentKey
+          const value = this.socket.reader!.contents.shift()!
+          this.logger(`Storing: ${bytesToHex(key)}.  length: ${value.length} `)
+          await this.returnContent([value], [key])
+        }
+        await this.socket.handleFinPacket(packet, false)
+        break
+      }
+    }
   }
 }
 
@@ -309,7 +349,7 @@ export class OfferWriteRequest extends ContentWriteRequest {
     }
     await this.socket.handleStatePacket(packet.header.ackNr, packet.header.timestampMicroseconds)
     if (this.socket.state === ConnectionState.Closed) {
-       this.requestManager.closeRequest(packet.header.connectionId)
+      this.requestManager.closeRequest(packet.header.connectionId)
     }
   }
 }
