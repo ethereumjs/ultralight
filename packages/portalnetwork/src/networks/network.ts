@@ -709,13 +709,14 @@ export abstract class BaseNetwork extends EventEmitter {
     )
     switch (version) {
       case 1: {
-        if (this.portal.uTP.openRequests() > BaseNetwork.MAX_CONCURRENT_UTP_STREAMS) {
+        if (this.portal.uTP.openRequests() > this.MAX_CONCURRENT_UTP_STREAMS) {
           this.logger.extend('OFFER')(`Too many open UTP streams - rejecting offer`)
           return this.sendAccept<1>(
             src,
             requestId,
             Array(msg.contentKeys.length).fill(AcceptCode.RATE_LIMITED),
             [],
+            1
           )
         }
         const contentIds: number[] = Array(msg.contentKeys.length).fill(AcceptCode.GENERIC_DECLINE)
