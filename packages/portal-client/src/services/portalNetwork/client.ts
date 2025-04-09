@@ -17,10 +17,17 @@ import type { Multiaddr } from '@multiformats/multiaddr'
 let client: PortalNetwork
 
 export const createPortalClient = async (port: number): Promise<PortalNetwork> => {
-  const db = createDatabase('network_db', { prefix: 'portalclient_' })
+  const db = createDatabase('db', { prefix: 'portalclient_' })
   
   const createNetwork = async (rebuildFromMemory: boolean): Promise<PortalNetwork> => {
-    const privateKey = await keys.generateKeyPair('secp256k1')
+    let privateKey: any
+    if (rebuildFromMemory) {
+      privateKey = await db.getPrivateKey()
+    } else {
+      privateKey = await keys.generateKeyPair('secp256k1')
+      await db.savePrivateKey(privateKey)
+    }
+    
     const enr = SignableENR.createFromPrivateKey(privateKey)
     const nodeAddr = multiaddr(`/ip4/0.0.0.0/udp/${port}`)
     enr.setLocationMultiaddr(nodeAddr)
