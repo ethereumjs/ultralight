@@ -10,7 +10,6 @@ WORKDIR /ultralight
 COPY .git .git
 COPY node_modules node_modules
 COPY packages/portalnetwork/dist packages/portalnetwork/dist
-COPY packages/portalnetwork/node_modules packages/portalnetwork/node_modules
 COPY packages/cli/dist packages/cli/dist
 COPY packages/cli/package.json packages/cli
 COPY packages/portalnetwork/package.json packages/portalnetwork
