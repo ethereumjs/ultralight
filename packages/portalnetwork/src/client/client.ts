@@ -178,7 +178,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         // Check for stored radius in db
         const storedRadius = await network.db.db.get('radius')
         await network.setRadius(BigInt(storedRadius))
-      } catch {
+      } catch (err) {
         // No action
       }
       if (network instanceof HistoryNetwork) {

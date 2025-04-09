@@ -9,13 +9,14 @@ import { assert, describe, expect, it, vi } from 'vitest'
 import {
   NetworkId,
   TransportLayer,
-  getBeaconContentKey,
   createPortalNetwork,
+  getBeaconContentKey,
 } from '../../../src/index.js'
 import {
   BeaconNetworkContentType,
   HistoricalSummariesKey,
   HistoricalSummariesWithProof,
+  LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
@@ -32,6 +33,8 @@ const privateKeys = [
 ]
 const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
 const enr1 = SignableENR.createFromPrivateKey(pk1)
+console.log(bytesToHex(getBeaconContentKey(BeaconNetworkContentType.LightClientBootstrap, 
+  LightClientBootstrapKey.serialize({ blockHash: hexToBytes('0xf090380ffd4ba91c51488bb0fcdcfe70a34d03fac8011861f65bd9ef90576639') }))))
 describe('API tests', async () => {
   const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
   enr1.setLocationMultiaddr(initMa)
@@ -321,4 +324,5 @@ describe('constructor/initialization tests', async () => {
     assert.equal(listeners.length, 0, 'bootstrap listener is not running')
     vi.resetAllMocks()
   })
+  
 })
