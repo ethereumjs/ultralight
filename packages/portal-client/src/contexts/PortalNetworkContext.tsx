@@ -1,7 +1,12 @@
-import { createContext, useContext, useEffect, useState, ReactNode, FC } from 'react'
+import { 
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  FC,
+} from 'react'
 import { createPortalClient } from '@/services/portalNetwork/client'
-import { getConfigValue } from '@/utils/helpers'
-import { ConfigId } from '@/utils/types'
+import { usePersistedState } from '@/hooks/usePersistedState'
 
 type PortalNetworkContextType = {
   client: any | null
@@ -31,10 +36,10 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
 }) => {
   const [client, setClient] = useState<any | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [isNetworkReady, setIsNetworkReady] = useState(false)
-
-  const udpPort = getConfigValue(ConfigId.UdpPort)
-  const shouldAutoInitialize = false
+  const [isNetworkReady, setIsNetworkReady] = usePersistedState<boolean>(
+    'portal-network-ready',
+    false,
+  )
 
   const initialize = async (port: number): Promise<void> => {
 
@@ -60,20 +65,13 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
         await client.stop()
         setClient(null)
         setIsNetworkReady(false)
+        localStorage.removeItem('portal-network-ready')
       } catch (err) {
         const message = err instanceof Error ? err.message : 'An unknown error occurred'
-        throw new Error(message)    
+        throw new Error(message)
       }
     }
   }
-
-   useEffect(() => {
-    if (shouldAutoInitialize) {
-      initialize(Number(udpPort)).catch((err) => {
-        console.error('Auto-initialization failed:', err);
-      });
-    }
-  }, [shouldAutoInitialize, udpPort])
 
   const contextValue: PortalNetworkContextType = {
     client,
