@@ -1,13 +1,14 @@
-import { readFileSync } from 'fs'
-import { resolve } from 'path'
-import yaml from 'js-yaml'
-import { describe, it, assert, expect } from 'vitest'
+import { SignableENR } from '@chainsafe/enr'
+import { BitArray } from '@chainsafe/ssz'
 import { hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
-import { SignableENR } from '@chainsafe/enr'
 import { multiaddr } from '@multiformats/multiaddr'
-import { NetworkId, TransportLayer, createPortalNetwork, HistoryNetwork, AcceptCode } from '../../src/index.js'
-import { BitArray } from '@chainsafe/ssz'
+import { readFileSync } from 'fs'
+import yaml from 'js-yaml'
+import { resolve } from 'path'
+import { assert, describe, it } from 'vitest'
+import type { HistoryNetwork } from '../../src/index.js'
+import { AcceptCode, NetworkId, TransportLayer, createPortalNetwork } from '../../src/index.js'
 const testdata = yaml.load(
   readFileSync(
     resolve(__dirname, '../../../portal-spec-tests/tests/mainnet/history/receipts/14764013.yaml'),
@@ -322,7 +323,6 @@ describe('Offer/Accept versions', async () => {
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
 
     await network1.store(hexToBytes(testdata.content_key), hexToBytes(testdata.content_value))
 
@@ -370,7 +370,6 @@ describe('Offer/Accept versions', async () => {
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
 
     await network1.store(hexToBytes(testdata.content_key), hexToBytes(testdata.content_value))
 
@@ -382,7 +381,6 @@ describe('Offer/Accept versions', async () => {
       hexToBytes(testdata.content_key),
     ])
     assert.exists(offer)
-    console.log(offer)
     assert.isTrue(offer instanceof Uint8Array)
   })
   it('defaults to lowest common version', async () => {
@@ -419,7 +417,6 @@ describe('Offer/Accept versions', async () => {
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
 
     await network1.store(hexToBytes(testdata.content_key), hexToBytes(testdata.content_value))
 
@@ -467,7 +464,6 @@ describe('Offer/Accept versions', async () => {
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-    const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
 
     await network1.store(hexToBytes(testdata.content_key), hexToBytes(testdata.content_value))
 
