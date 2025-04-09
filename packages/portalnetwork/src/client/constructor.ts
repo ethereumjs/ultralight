@@ -1,5 +1,3 @@
-
-
 import { keys } from '@libp2p/crypto'
 import { hexToBytes } from '@ethereumjs/util'
 import { multiaddr } from '@multiformats/multiaddr'
@@ -12,14 +10,12 @@ import { MEGABYTE } from '../util/index.js'
 import { TransportLayer } from './types.js'
 import { PortalNetwork } from './client.js'
 
-import type { 
-  IDiscv5CreateOptions, 
-  ITransportService, 
-  SignableENRInput,
- } from '@chainsafe/discv5'
+import type { IDiscv5CreateOptions, ITransportService, SignableENRInput } from '@chainsafe/discv5'
 import type { PortalNetworkOpts } from './types.js'
 
-export async function createPortalNetwork(opts: Partial<PortalNetworkOpts>): Promise<PortalNetwork> {
+export async function createPortalNetwork(
+  opts: Partial<PortalNetworkOpts>,
+): Promise<PortalNetwork> {
   const defaultConfig: IDiscv5CreateOptions = {
     enr: opts.config?.enr ?? ({} as SignableENRInput),
     privateKey: opts.config?.privateKey ?? (await keys.generateKeyPair('secp256k1')),
@@ -74,7 +70,7 @@ export async function createPortalNetwork(opts: Partial<PortalNetworkOpts>): Pro
   } else {
     ma = opts.config.bindAddrs.ip4
   }
-  
+
   // Configure db size calculation
   let dbSize
   switch (opts.transport) {
@@ -91,50 +87,49 @@ export async function createPortalNetwork(opts: Partial<PortalNetworkOpts>): Pro
   }
 
   let transportService: ITransportService
-  
-  if (opts.transportServices) {
+
+  if (opts.transportServices !== undefined) {
     switch (opts.transport) {
       case TransportLayer.WEB:
-        if (!opts.transportServices.createWebSocketTransport) {
-          throw new Error('WebSocket transport service not provided')
+        {
+          if (opts.transportServices.createWebSocketTransport === undefined) {
+            throw new Error('WebSocket transport service not provided')
+          }
+          const proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
+          transportService = opts.transportServices.createWebSocketTransport(
+            ma,
+            config.enr.nodeId,
+            proxyAddress,
+            new RateLimiter(),
+          )
         }
-        const proxyAddress = opts.proxyAddress ?? 'ws://127.0.0.1:5050'
-        transportService = opts.transportServices.createWebSocketTransport(
-          ma, 
-          config.enr.nodeId, 
-          proxyAddress, 
-          new RateLimiter(),
-        )
         break
       case TransportLayer.TAURI:
-        if (!opts.transportServices.createTauriTransport) {
+        if (opts.transportServices.createTauriTransport === undefined) {
           throw new Error('Tauri transport service not provided')
         }
-        transportService = opts.transportServices.createTauriTransport(
-          ma,
-          config.enr.nodeId,
-        )
+        transportService = opts.transportServices.createTauriTransport(ma, config.enr.nodeId)
         break
       case TransportLayer.NODE:
       default:
-        if (!opts.transportServices.createNodeTransport) {
+        if (opts.transportServices.createNodeTransport === undefined) {
           throw new Error('Node transport service not provided')
         }
         transportService = opts.transportServices.createNodeTransport(
-          config.bindAddrs, 
-          config.enr.nodeId, 
+          config.bindAddrs,
+          config.enr.nodeId,
           new RateLimiter(),
         )
         break
     }
   } else {
     transportService = new UDPTransportService({
-      bindAddrs: config.bindAddrs, 
-      nodeId: config.enr.nodeId, 
+      bindAddrs: config.bindAddrs,
+      nodeId: config.enr.nodeId,
       rateLimiter: new RateLimiter(),
     })
   }
-  
+
   config.transport = transportService
 
   const portal = new PortalNetwork({
