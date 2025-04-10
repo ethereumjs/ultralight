@@ -1,6 +1,6 @@
-import { hexToBytes } from 'viem'
+// import { hexToBytes } from 'viem'
 import { MethodConfig } from '@/services/portalNetwork/types'
-import { isHexString } from '@ethereumjs/util'
+import { hexToBytes, isHexString, isValidAddress } from '@ethereumjs/util'
 import { InputValue } from './types'
 import { APPROVED_METHODS } from './constants/methodRegistry'
 
@@ -27,6 +27,30 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
         throw new Error('Invalid block number. It should be a valid number.')
       }
       return sendRequestHandle('eth_getBlockByNumber', [blockNumber, includeFullTx])
+    },
+  },
+  'eth_getTransactionCount': {
+    name: 'Get Transanctions By An Address',
+    paramPlaceholder: 'Enter Address',
+    handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
+      const [address, includeFullTx] = input.split(',')
+      if (!isValidAddress(address)) {
+        throw new Error('Invalid address. It should be a valid 20-byte hex string.')
+      }
+      return sendRequestHandle('eth_getBlockByNumber', [address, includeFullTx])
+    },
+  },
+  'eth_getBalance': {
+    name: 'Get Balance Of An Address',
+    paramPlaceholder: 'Enter Address',
+    handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
+      //@ts-ignore
+      const [address, includeFullTx] = input.split(',')
+      if (!isValidAddress(address)) {
+        throw new Error('Invalid address. It should be a valid 20-byte hex string.')
+      }
+      const blockNumber = 1000
+      return sendRequestHandle('eth_getBlockByNumber', [address, blockNumber])
     },
   },
 }

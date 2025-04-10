@@ -30,6 +30,9 @@ export const useJsonRpc = () => {
         case 'eth_getBlockByHash':
           result = await client.ETH.getBlockByHash(params[0], params[1] ?? false)
           break
+        case 'eth_getTransactionCount':
+        result = await client.ETH.getTransactionCount(params[0], true)
+        break
         case 'eth_getCode':
           result = await client.ETH.getCode(params[0], params[1])
           break
@@ -48,6 +51,7 @@ export const useJsonRpc = () => {
       if (result === undefined) {
         throw new Error('No result returned from the request')
       }
+      console.log('resultt', result)
       setResult({ result: formatBlockResponse(result, params[1] ?? false) })
       return result
     } catch (err) {
