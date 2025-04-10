@@ -30,9 +30,23 @@
     "enabled": true
   },
   "linter": {
-    "enabled": false,
+    "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "style": {
+        "noNamespace": "error",
+        "noDefaultExport": "error"
+      },
+      "suspicious": {
+         "noConsole": "warn",
+         "noRedeclare": "off",
+         "noDuplicateClassMembers": "off",
+         "useNamespaceKeyword": "off"
+      },
+      "correctness": {
+        "noUnusedVariables": "warn",
+        "useImportExtensions": "error"
+      }
     }
   },
   "javascript": {
