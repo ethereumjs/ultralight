@@ -38,10 +38,11 @@
         "noDefaultExport": "error"
       },
       "suspicious": {
-         "noConsole": "warn",
+         "noConsole": "off",
          "noRedeclare": "off",
          "noDuplicateClassMembers": "off",
-         "useNamespaceKeyword": "off"
+         "useNamespaceKeyword": "off",
+         "noExplicitAny": "off"
       },
       "correctness": {
         "noUnusedVariables": "warn",
