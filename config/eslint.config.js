@@ -3,11 +3,11 @@ import typescriptEslint from '@typescript-eslint/eslint-plugin'
 
 export default [
 	{
-		files: ["**/*.ts"],
+		files: ["packages/cli/**/*.ts", "packages/portalnetwork/**/*.ts", "packages/portal-client/**/*.ts"],
 		languageOptions: {
 			parser: typescriptParser,
 			parserOptions: {
-				project: './config/tsconfig.lint.json',
+				project: './tsconfig.lint.json',
 				extraFileExtensions: ['.json'],
 				tsconfigRootDir: import.meta.dirname,
 			},
@@ -23,10 +23,9 @@ export default [
 			'dist/',
 			'dist.browser/',
 			'coverage/',
-			'prettier.config.cjs',
 			'typedoc.js',
 			'docs',
-			'.eslintrc.cjs',
+			'config/tsconfig.lint.json',
 			'vitest.config.*.ts',
 			'archived-browser-client/',
 			'browser-client/',
