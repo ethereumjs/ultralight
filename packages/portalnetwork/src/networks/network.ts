@@ -242,13 +242,7 @@ export abstract class BaseNetwork extends EventEmitter {
     const id = message.id
     const request = message.request
     const enr = this.findEnr(src.nodeId)!
-    let version: Version
-    try {
-      version = await this.portal.highestCommonVersion(enr)
-    } catch (e: any) {
-      this.logger.extend('error')(e.message)
-      return
-    }
+    const version = await this.portal.highestCommonVersion(enr)
     const deserialized = PortalWireMessageType[version].deserialize(request)
     const decoded = deserialized.value
     const messageType = deserialized.selector
