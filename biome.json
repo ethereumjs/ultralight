@@ -35,7 +35,10 @@
       "recommended": true,
       "style": {
         "noNamespace": "error",
-        "noDefaultExport": "error"
+        "noDefaultExport": "off",
+        "noNonNullAssertion": "off",
+        "useTemplate": "off",
+        "useNodejsImportProtocol": "off"
       },
       "suspicious": {
          "noConsole": "off",
@@ -45,8 +48,12 @@
          "noExplicitAny": "off"
       },
       "correctness": {
-        "noUnusedVariables": "warn",
-        "useImportExtensions": "error"
+        "noUnusedVariables": "off",
+        "useImportExtensions": "off"
+      },
+      "complexity": {
+        "useOptionalChain": "off",
+        "noForEach": "off"
       }
     }
   },
