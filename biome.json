@@ -38,14 +38,18 @@
         "noDefaultExport": "off",
         "noNonNullAssertion": "off",
         "useTemplate": "off",
-        "useNodejsImportProtocol": "off"
+        "useNodejsImportProtocol": "off",
+        "noUselessElse": "off",
+        "useSingleVarDeclarator": "off",
+        "noUnusedTemplateLiteral": "off"
       },
       "suspicious": {
          "noConsole": "off",
          "noRedeclare": "off",
          "noDuplicateClassMembers": "off",
          "useNamespaceKeyword": "off",
-         "noExplicitAny": "off"
+         "noExplicitAny": "off",
+         "noImplicitAnyLet": "off"
       },
       "correctness": {
         "noUnusedVariables": "off",
@@ -53,7 +57,13 @@
       },
       "complexity": {
         "useOptionalChain": "off",
-        "noForEach": "off"
+        "noForEach": "off",
+        "noUselessTernary": "off",
+        "useLiteralKeys": "off",
+        "noBannedTypes": "off"
+      },
+      "a11y": {
+        "useKeyWithClickEvents": "off"
       }
     }
   },

@@ -94,7 +94,7 @@ export class PortalNetworkUTP {
   }
 
   async handleNewRequest(params: INewRequest): Promise<ContentRequestType> {
-    const { contentKeys, enr, connectionId, requestCode } = params
+    const { contentKeys, enr, connectionId, requestCode, version } = params
     if (this.requestManagers[enr.nodeId] === undefined) {
       this.requestManagers[enr.nodeId] = new RequestManager(enr.nodeId, this.logger)
     }
@@ -119,6 +119,7 @@ export class PortalNetworkUTP {
       connectionId,
       content,
       contentKeys,
+      version,
     })
     await this.requestManagers[enr.nodeId].handleNewRequest(connectionId, newRequest)
     this.logger.extend('utpRequest')(

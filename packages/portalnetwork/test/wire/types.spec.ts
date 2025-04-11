@@ -14,6 +14,8 @@ import {
   clientInfoStringToBytes,
 } from '../../src/wire/index.js'
 
+const version = 0
+
 describe('ping pong message encoding', () => {
   it('should encode type 0 ping with client info', () => {
     const params = {
@@ -27,7 +29,7 @@ describe('ping pong message encoding', () => {
       DataRadius: params.dataRadius,
       Capabilities: params.capabilities,
     })
-    const pingMessage = PortalWireMessageType.serialize({
+    const pingMessage = PortalWireMessageType[version]  .serialize({
       selector: MessageCodes.PING,
       value: {
         enrSeq: params.enrSeq,
@@ -50,7 +52,7 @@ describe('ping pong message encoding', () => {
       DataRadius: params.dataRadius,
       Capabilities: params.capabilities,
     })
-    const pingMessage = PortalWireMessageType.serialize({
+    const pingMessage = PortalWireMessageType[version].serialize({
       selector: MessageCodes.PING,
       value: {
         enrSeq: params.enrSeq,
@@ -73,7 +75,7 @@ describe('ping pong message encoding', () => {
       DataRadius: params.dataRadius,
       Capabilities: params.capabilities,
     })
-    const pingMessage = PortalWireMessageType.serialize({
+    const pingMessage = PortalWireMessageType[version].serialize({
       selector: MessageCodes.PONG,
       value: {
         enrSeq: params.enrSeq,
@@ -96,7 +98,7 @@ describe('ping pong message encoding', () => {
       DataRadius: params.dataRadius,
       Capabilities: params.capabilities,
     })
-    const pingMessage = PortalWireMessageType.serialize({
+    const pingMessage = PortalWireMessageType[version].serialize({
       selector: MessageCodes.PONG,
       value: {
         enrSeq: params.enrSeq,
@@ -113,7 +115,7 @@ describe('ping pong message encoding', () => {
       dataRadius: 2n ** 256n - 2n,
     }
     const payload = BasicRadius.serialize({ dataRadius: params.dataRadius })
-    const pingMessage = PortalWireMessageType.serialize({
+    const pingMessage = PortalWireMessageType[version].serialize({
       selector: MessageCodes.PING,
       value: {
         enrSeq: params.enrSeq,
@@ -130,7 +132,7 @@ describe('ping pong message encoding', () => {
       dataRadius: 2n ** 256n - 2n,
     }
     const payload = BasicRadius.serialize({ dataRadius: params.dataRadius })
-    const pingMessage = PortalWireMessageType.serialize({
+    const pingMessage = PortalWireMessageType[version].serialize({
       selector: MessageCodes.PONG,
       value: {
         enrSeq: params.enrSeq,
@@ -148,7 +150,7 @@ describe('ping pong message encoding', () => {
       ephemeralHeaderCount: 4242
     }
     const payload = HistoryRadius.serialize({ dataRadius: params.dataRadius, ephemeralHeadersCount: params.ephemeralHeaderCount })
-    const pingMessage = PortalWireMessageType.serialize({
+    const pingMessage = PortalWireMessageType[version].serialize({
       selector: MessageCodes.PING,
       value: {
         enrSeq: params.enrSeq,
@@ -166,7 +168,7 @@ describe('ping pong message encoding', () => {
       ephemeralHeaderCount: 4242
     }
     const payload = HistoryRadius.serialize({ dataRadius: params.dataRadius, ephemeralHeadersCount: params.ephemeralHeaderCount })
-    const pingMessage = PortalWireMessageType.serialize({
+    const pingMessage = PortalWireMessageType[version].serialize({
       selector: MessageCodes.PONG,
       value: {
         enrSeq: params.enrSeq,
@@ -184,7 +186,7 @@ describe('ping pong message encoding', () => {
       message: 'hello world'
     }
     const payload = ErrorPayload.serialize({ errorCode: params.errorCode, message: utf8ToBytes(params.message) })
-    const pongMessage = PortalWireMessageType.serialize({
+    const pongMessage = PortalWireMessageType[version].serialize({
       selector: MessageCodes.PONG,
       value: {
         enrSeq: params.enrSeq,
@@ -204,7 +206,7 @@ describe('message encoding should match test vectors', () => {
   let payload: Uint8Array
   let testVector: string
   it('should encode PING message correctly', () => {
-    payload = PortalWireMessageType.serialize({
+    payload = PortalWireMessageType[version].serialize({
       selector: MessageCodes.PING,
       value: {
         enrSeq,
@@ -221,7 +223,7 @@ describe('message encoding should match test vectors', () => {
   const distances = Array.from([256, 255])
 
   it('should encode FINDNODES message correctly', () => {
-    payload = PortalWireMessageType.serialize({
+    payload = PortalWireMessageType[version].serialize({
       selector: MessageCodes.FINDNODES,
       value: { distances },
     })
@@ -230,7 +232,7 @@ describe('message encoding should match test vectors', () => {
   })
 
   it('should encode PONG message correctly', () => {
-    payload = PortalWireMessageType.serialize({
+    payload = PortalWireMessageType[version].serialize({
       selector: MessageCodes.NODES,
       value: {
         total: 1,
@@ -249,7 +251,7 @@ describe('message encoding should match test vectors', () => {
   const enrs = [ENR.decodeTxt(enr1).encode(), ENR.decodeTxt(enr2).encode()]
 
   it('should encode NODES message correctly', () => {
-    payload = PortalWireMessageType.serialize({
+    payload = PortalWireMessageType[version].serialize({
       selector: MessageCodes.NODES,
       value: {
         total,
@@ -265,7 +267,7 @@ describe('message encoding should match test vectors', () => {
   const contentKey = hexToBytes('0x706f7274616c')
 
   it('should encode FINDCONTENT message correctly', () => {
-    payload = PortalWireMessageType.serialize({
+    payload = PortalWireMessageType[version].serialize({
       selector: MessageCodes.FINDCONTENT,
       value: { contentKey },
     })
@@ -288,7 +290,7 @@ describe('message encoding should match test vectors', () => {
   // Validate OFFER message encoding
   it('should encode OFFER message correctly', () => {
     const contentKeys = [hexToBytes('0x010203')]
-    payload = PortalWireMessageType.serialize({
+    payload = PortalWireMessageType[version].serialize({
       selector: MessageCodes.OFFER,
       value: { contentKeys },
     })
@@ -300,7 +302,7 @@ describe('message encoding should match test vectors', () => {
   it('should encode ACCEPT message correctly', () => {
     connectionId = Uint8Array.from([0x01, 0x02])
     const acceptMessageContentKeys: BitArray = BitArray.fromSingleBit(8, 0)
-    payload = PortalWireMessageType.serialize({
+    payload = PortalWireMessageType[version].serialize({
       selector: MessageCodes.ACCEPT,
       value: {
         connectionId,
@@ -308,6 +310,19 @@ describe('message encoding should match test vectors', () => {
       },
     })
     testVector = '0x070102060000000101'
+    assert.equal(bytesToHex(payload), testVector, 'accept message encodes correctly')
+  })
+  it('should encode v1 ACCEPT message correctly', () => {
+    connectionId = Uint8Array.from([0x01, 0x02])
+    const acceptMessageContentKeys: Uint8Array = Uint8Array.from([ 0, 1, 2, 3, 4, 5, 1, 1])
+    payload = PortalWireMessageType[1].serialize({
+      selector: MessageCodes.ACCEPT,
+      value: {
+        connectionId,
+        contentKeys: acceptMessageContentKeys,
+      },
+    })
+    testVector = '0x070102060000000001020304050101'
     assert.equal(bytesToHex(payload), testVector, 'accept message encodes correctly')
   })
 })

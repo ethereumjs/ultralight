@@ -27,7 +27,12 @@ import {
   getTalkReqOverhead,
   randUint16,
 } from '../../wire/index.js'
-import { ContentMessageType, MessageCodes, PortalWireMessageType } from '../../wire/types.js'
+import {
+  AcceptCode,
+  ContentMessageType,
+  MessageCodes,
+  PortalWireMessageType,
+} from '../../wire/types.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
@@ -49,7 +54,7 @@ import { getBeaconContentKey } from './util.js'
 import type { BeaconConfig } from '@lodestar/config'
 import type { LightClientUpdate } from '@lodestar/types'
 import type { Debugger } from 'debug'
-import type { AcceptMessage, FindContentMessage, OfferMessage } from '../../wire/types.js'
+import type { AcceptMessage, FindContentMessage, OfferMessage, Version } from '../../wire/types.js'
 import type { ContentLookupResponse } from '../types.js'
 import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
 import type { INodeAddress } from '../../index.js'
@@ -433,9 +438,16 @@ export class BeaconNetwork extends BaseNetwork {
     enr: ENR,
     key: Uint8Array,
   ): Promise<ContentLookupResponse | undefined> => {
+    let version: Version
+    try {
+      version = await this.portal.highestCommonVersion(enr)
+    } catch (e: any) {
+      this.logger.extend('error')(e.message)
+      return
+    }
     this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
-    const payload = PortalWireMessageType.serialize({
+    const payload = PortalWireMessageType[version].serialize({
       selector: MessageCodes.FINDCONTENT,
       value: findContentMsg,
     })
@@ -468,6 +480,7 @@ export class BeaconNetwork extends BaseNetwork {
                 enr,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
+                version,
               })
             })
             break
@@ -598,14 +611,31 @@ export class BeaconNetwork extends BaseNetwork {
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.',
       )
       const _id = randUint16()
-      const enr = this.findEnr(src.nodeId) ?? src
+      const enr = this.findEnr(src.nodeId)
+      if (!enr) {
+        this.logger.extend('FOUNDCONTENT')(
+          `No ENR found for ${shortId(src.nodeId)}.  Cannot determine version.  Sending ENR response.`,
+        )
+        await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
+        return
+      }
+      let contents: Uint8Array = value
+      const version = await this.portal.highestCommonVersion(enr)
+      switch (version) {
+        case 0:
+          break
+        case 1: {
+          contents = encodeWithVariantPrefix([value])
+        }
+      }
       await this.handleNewRequest({
         networkId: this.networkId,
         contentKeys: [decodedContentMessage.contentKey],
         enr,
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
-        contents: value,
+        contents,
+        version,
       })
 
       const id = new Uint8Array(2)
@@ -785,6 +815,13 @@ export class BeaconNetwork extends BaseNetwork {
     contentKeys: Uint8Array[],
     contents?: Uint8Array[],
   ) => {
+    let version: Version
+    try {
+      version = await this.portal.highestCommonVersion(enr)
+    } catch (e: any) {
+      this.logger.extend('error')(e.message)
+      return
+    }
     if (contents && contents.length !== contentKeys.length) {
       throw new Error('Provided Content and content key arrays must be the same length')
     }
@@ -793,7 +830,7 @@ export class BeaconNetwork extends BaseNetwork {
       const offerMsg: OfferMessage = {
         contentKeys,
       }
-      const payload = PortalWireMessageType.serialize({
+      const payload = PortalWireMessageType[version].serialize({
         selector: MessageCodes.OFFER,
         value: offerMsg,
       })
@@ -803,26 +840,35 @@ export class BeaconNetwork extends BaseNetwork {
       const res = await this.sendMessage(enr, payload, this.networkId)
       if (res.length > 0) {
         try {
-          const decoded = PortalWireMessageType.deserialize(res)
+          const decoded = PortalWireMessageType[version].deserialize(res)
           if (decoded.selector === MessageCodes.ACCEPT) {
             this.portal.metrics?.acceptMessagesReceived.inc()
-            const msg = decoded.value as AcceptMessage
+            const msg = decoded.value as AcceptMessage<Version>
             const id = new DataView(msg.connectionId.buffer).getUint16(0, false)
             // Initiate uTP streams with serving of requested content
-            const requestedKeys: Uint8Array[] = contentKeys.filter(
-              (n, idx) => msg.contentKeys.get(idx) === true,
-            )
+            const requestedKeys: Uint8Array[] =
+              version === 0
+                ? contentKeys.filter(
+                    (n, idx) => (<AcceptMessage<0>>msg).contentKeys.get(idx) === true,
+                  )
+                : contentKeys.filter(
+                    (n, idx) => (<AcceptMessage<1>>msg).contentKeys[idx] === AcceptCode.ACCEPT,
+                  )
             if (requestedKeys.length === 0) {
               // Don't start uTP stream if no content ACCEPTed
               this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr.nodeId)}`)
-              return []
+              return msg.contentKeys
             }
             this.logger.extend(`ACCEPT`)(`ACCEPT message received with uTP id: ${id}`)
 
             const requestedData: Uint8Array[] = []
             if (contents) {
               for (const [idx, _] of requestedKeys.entries()) {
-                if (msg.contentKeys.get(idx) === true) {
+                if (
+                  version === 0
+                    ? (<AcceptMessage<0>>msg).contentKeys.get(idx) === true
+                    : (<AcceptMessage<1>>msg).contentKeys[idx] === AcceptCode.ACCEPT
+                ) {
                   requestedData.push(contents[idx])
                 }
               }
