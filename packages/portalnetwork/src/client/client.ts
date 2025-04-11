@@ -25,6 +25,7 @@ import type {
   PortalNetworkMetrics,
   PortalNetworkOpts,
 } from './types.js'
+import type { Version } from '../wire/types.js'
 import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
 import { type IClientInfo } from '../wire/payloadExtensions.js'
 import type { RateLimiter } from '../transports/rateLimiter.js'
@@ -346,6 +347,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     payload: Uint8Array,
     networkId: NetworkId,
     utpMessage?: boolean,
+    version: Version = 0,
   ): Promise<Uint8Array> => {
     const messageNetwork = utpMessage !== undefined ? NetworkId.UTPNetwork : networkId
     const remote =
@@ -363,7 +365,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
           `Error sending uTP TALKREQ message using ${enr instanceof ENR ? 'ENR' : 'MultiAddr'}: ${err.message}`,
         )
       } else {
-        const messageType = PortalWireMessageType.deserialize(payload).selector
+        const messageType = PortalWireMessageType[version].deserialize(payload).selector
         throw new Error(
           `Error sending TALKREQ ${MessageCodes[messageType]} message using ${enr instanceof ENR ? 'ENR' : 'MultiAddr'}: ${err}.  NetworkId: ${networkId} NodeId: ${enr.nodeId} MultiAddr: ${enr instanceof ENR ? enr.getLocationMultiaddr('udp')?.toString() : enr.socketAddr.toString()}`,
         )
@@ -409,9 +411,13 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
   public updateENRCache = (enrs: ENR[]) => {
     for (const enr of enrs) {
-      this.highestCommonVersion(enr).finally(() => {
-        this.enrCache.updateENR(enr)
-      })
+      this.highestCommonVersion(enr)
+        .catch((e: any) => {
+          this.logger.extend('error')(e.message)
+        })
+        .finally(() => {
+          this.enrCache.updateENR(enr)
+        })
     }
   }
 
@@ -441,7 +447,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       // No action
     }
   }
-  public async highestCommonVersion(peer: ENR): Promise<number> {
+  public async highestCommonVersion(peer: ENR): Promise<Version> {
     const mySupportedVersions: number[] = SupportedVersions.deserialize(
       this.discv5.enr.kvs.get('pv')!,
     )
@@ -455,8 +461,8 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       .sort((a, b) => b - a)[0]
     if (highestCommonVersion === undefined) {
       this.addToBlackList(peer.getLocationMultiaddr('udp')!)
-      return -1
+      throw new Error(`No common version found with ${peer.nodeId}`)
     }
-    return highestCommonVersion
+    return highestCommonVersion as Version
   }
 }

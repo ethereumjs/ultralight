@@ -46,7 +46,7 @@ import {
 } from './util.js'
 import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
-import type { FindContentMessage } from '../../wire/types.js'
+import type { FindContentMessage, Version } from '../../wire/types.js'
 import type { BaseNetworkConfig, ContentLookupResponse } from '../index.js'
 import type { TNibbles } from './types.js'
 
@@ -76,9 +76,16 @@ export class StateNetwork extends BaseNetwork {
    * @returns the value of the FOUNDCONTENT response or undefined
    */
   public sendFindContent = async (enr: ENR, key: Uint8Array) => {
+    let version: Version
+    try {
+      version = await this.portal.highestCommonVersion(enr)
+    } catch (e: any) {
+      this.logger.extend('error')(e.message)
+      return
+    }
     this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
-    const payload = PortalWireMessageType.serialize({
+    const payload = PortalWireMessageType[version].serialize({
       selector: MessageCodes.FINDCONTENT,
       value: findContentMsg,
     })
@@ -113,6 +120,7 @@ export class StateNetwork extends BaseNetwork {
                 enr,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
+                version
               })
             })
             break

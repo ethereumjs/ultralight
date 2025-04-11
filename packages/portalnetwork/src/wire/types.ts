@@ -116,15 +116,32 @@ export const OfferMessageType = new ContainerType({
   contentKeys: new ListCompositeType(ByteList, 64),
 })
 
-export type AcceptMessage = {
-  connectionId: Uint8Array
-  contentKeys: BitArray
-}
+export type Version = 0 | 1
 
-export const AcceptMessageType = new ContainerType({
-  connectionId: Bytes2,
-  contentKeys: new BitListType(64),
-})
+export type AcceptMessage<V extends Version> = V extends 0
+  ? {
+      connectionId: Uint8Array
+      contentKeys: BitArray
+    }
+  : V extends 1
+    ? {
+        connectionId: Uint8Array
+        contentKeys: Uint8Array
+      }
+    : never
+
+export const AcceptCodesType = new ByteListType(64)
+
+export const AcceptMessageType: Record<Version, ContainerType<any>> = {
+  0: new ContainerType({
+    connectionId: Bytes2,
+    contentKeys: new BitListType(64),
+  }),
+  1: new ContainerType({
+    connectionId: Bytes2,
+    contentKeys: AcceptCodesType,
+  }),
+}
 
 export type MessageTypeUnion = [
   | PingMessage
@@ -134,15 +151,36 @@ export type MessageTypeUnion = [
   | FindContentMessage
   | ContentMessage
   | OfferMessage
-  | AcceptMessage,
+  | AcceptMessage<Version>,
 ]
-export const PortalWireMessageType = new UnionType([
-  PingMessageType,
-  PongMessageType,
-  FindNodesMessageType,
-  NodesMessageType,
-  FindContentMessageType,
-  ContentMessageType,
-  OfferMessageType,
-  AcceptMessageType,
-])
+export const PortalWireMessageType: Record<Version, UnionType<any>> = {
+  0: new UnionType([
+    PingMessageType,
+    PongMessageType,
+    FindNodesMessageType,
+    NodesMessageType,
+    FindContentMessageType,
+    ContentMessageType,
+    OfferMessageType,
+    AcceptMessageType[0],
+  ]),
+  1: new UnionType([
+    PingMessageType,
+    PongMessageType,
+    FindNodesMessageType,
+    NodesMessageType,
+    FindContentMessageType,
+    ContentMessageType,
+    OfferMessageType,
+    AcceptMessageType[1],
+  ]),
+}
+
+export enum AcceptCode {
+  ACCEPT = 0,
+  GENERIC_DECLINE = 1,
+  CONTENT_ALREADY_STORED = 2,
+  CONTENT_OUT_OF_RADIUS = 3,
+  RATE_LIMITED = 4,
+  CONTENT_ID_LIMITED = 5,
+}
