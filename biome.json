@@ -38,7 +38,10 @@
         "noDefaultExport": "off",
         "noNonNullAssertion": "off",
         "useTemplate": "off",
-        "useNodejsImportProtocol": "off"
+        "useNodejsImportProtocol": "off",
+        "noUselessElse": "off",
+        "useSingleVarDeclarator": "off",
+        "noUnusedTemplateLiteral": "off"
       },
       "suspicious": {
          "noConsole": "off",
@@ -53,7 +56,9 @@
       },
       "complexity": {
         "useOptionalChain": "off",
-        "noForEach": "off"
+        "noForEach": "off",
+        "noUselessTernary": "off",
+        "useLiteralKeys": "off"
       }
     }
   },
