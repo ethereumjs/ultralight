@@ -16,7 +16,7 @@
     "postinstall": "npm run build --workspaces --if-present",
     "start-cli": "npm run dev -w=cli",
     "lint": "eslint --config ./config/eslint.config.js .",
-    "lint:fix": "eslint --fix --config ./config/eslint.js .",
+    "lint:fix": "eslint --fix --config ./config/eslint.config.js .",
     "clean": "bash ./scripts/clean-root.sh"
   },
   "devDependencies": {
