@@ -4,6 +4,7 @@ import {
   useState,
   ReactNode,
   FC,
+  useRef,
 } from 'react'
 import { createPortalClient } from '@/services/portalNetwork/client'
 import { usePersistedState } from '@/hooks/usePersistedState'
@@ -15,6 +16,9 @@ type PortalNetworkContextType = {
   initialize: (customPort: number) => Promise<void>
   isNetworkReady: boolean
   cleanup: () => Promise<void>
+  abortController: AbortController | null
+  createAbortController: () => AbortController
+  cancelRequest: () => void
 }
 
 const PortalNetworkContext = createContext<PortalNetworkContextType>({
@@ -24,6 +28,9 @@ const PortalNetworkContext = createContext<PortalNetworkContextType>({
   isNetworkReady: false,
   initialize: async () => {},
   cleanup: async () => {},
+  abortController: null,
+  createAbortController: () => new AbortController(),
+  cancelRequest: () => {},
 })
 
 type PortalNetworkProviderProps = {
@@ -34,6 +41,7 @@ type PortalNetworkProviderProps = {
 export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   children,
 }) => {
+  const abortControllerRef = useRef<AbortController | null>(null)
   const [client, setClient] = useState<any | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isNetworkReady, setIsNetworkReady] = usePersistedState<boolean>(
@@ -73,6 +81,23 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     }
   }
 
+   const createAbortController = () => {
+     if (abortControllerRef.current) {
+       abortControllerRef.current.abort()
+     }
+
+     const controller = new AbortController()
+     abortControllerRef.current = controller
+     return controller
+   }
+
+   const cancelRequest = () => {
+     if (abortControllerRef.current) {
+       abortControllerRef.current.abort('Request cancelled by user')
+       abortControllerRef.current = null
+     }
+   }
+
   const contextValue: PortalNetworkContextType = {
     client,
     isLoading,
@@ -80,6 +105,9 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     isNetworkReady,
     initialize,
     cleanup,
+    abortController: abortControllerRef.current,
+    createAbortController,
+    cancelRequest,
   }
 
   return (

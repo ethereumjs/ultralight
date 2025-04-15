@@ -24,14 +24,14 @@ export const useJsonRpc = () => {
       setIsLoading(true)
       let result
       switch (method) { 
-        case 'eth_getBlockByNumber':      
-          result = await client.ETH.getBlockByNumber(params[0], params[1] ?? false)
+        case 'eth_getBlockByNumber':
+          result = await client.ETH.getBlockByNumber(params[0], params[1])
           break
         case 'eth_getBlockByHash':
-          result = await client.ETH.getBlockByHash(params[0], params[1] ?? false)
+          result = await client.ETH.getBlockByHash(params[0], params[1])
           break
         case 'eth_getTransactionCount':
-        result = await client.ETH.getTransactionCount(params[0], true)
+        result = await client.ETH.getTransactionCount(params[0], params[1])
         break
         case 'eth_getCode':
           result = await client.ETH.getCode(params[0], params[1])
@@ -51,8 +51,8 @@ export const useJsonRpc = () => {
       if (result === undefined) {
         throw new Error('No result returned from the request')
       }
-      console.log('resultt', result)
-      setResult({ result: formatBlockResponse(result, params[1] ?? false) })
+      // setResult({ result: formatBlockResponse(result, params[1]) })
+      setResult(result)
       return result
     } catch (err) {
 
