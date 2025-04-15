@@ -5,7 +5,7 @@ import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import { fromNodeAddress } from '@multiformats/multiaddr'
 import debug from 'debug'
-import packageJson from '../../package.json' assert { type: 'json' }
+import packageJson from '../../package.json'
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import { BeaconNetwork, NetworkId, StateNetwork, SyncStrategy } from '../networks/index.js'
