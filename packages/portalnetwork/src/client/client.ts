@@ -5,7 +5,6 @@ import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import { fromNodeAddress } from '@multiformats/multiaddr'
 import debug from 'debug'
-import packageJson from '../../package.json'
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import { BeaconNetwork, NetworkId, StateNetwork, SyncStrategy } from '../networks/index.js'
@@ -30,6 +29,9 @@ import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
 import { type IClientInfo } from '../wire/payloadExtensions.js'
 import type { RateLimiter } from '../transports/rateLimiter.js'
 import { ENRCache } from './enrCache.js'
+
+const CURRENT_ULTRALIGHT_VERSION = '0.0.2-rc3'
+const CURRENT_TYPESCRIPT_VERSION = '^5.8.2'
 
 export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   clientInfo: IClientInfo
@@ -56,9 +58,9 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     super()
     this.clientInfo = {
       clientName: 'ultralight',
-      clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
+      clientVersionAndShortCommit: `${CURRENT_ULTRALIGHT_VERSION}-${opts.shortCommit ?? ''}`,
       operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture ?? '',
-      programmingLanguageAndVersion: `typescript_${packageJson.devDependencies.typescript}`,
+      programmingLanguageAndVersion: `typescript_${CURRENT_TYPESCRIPT_VERSION}`,
     }
     this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
