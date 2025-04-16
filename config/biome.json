@@ -6,7 +6,7 @@
 		"useIgnoreFile": false
 	},
 	"files": {
-		"ignoreUnknown": true,
+		"ignoreUnknown": false,
 		"include": [
 			"packages/cli",
 			"packages/portalnetwork",
@@ -16,8 +16,12 @@
 			"**/node_modules/**",
 			"**/dist/**",
 			"**/coverage/**",
-
-			"**/tsconfig.*.json",
+      "packages/archived-transport-layers/",
+      "packages/archived-browser-client/",
+      "packages/archived-browser/",
+      "packages/proxy/",
+      "packages/ui/",
+			"../tsconfig.lint.json",
 			"**/testData",
 			"**/scripts/**/*.json"
 		]
@@ -104,13 +108,11 @@
 			}
 		},
 		{
-			"include": ["**/tsconfig*.json"],
-			"json": {
-				"parser": {
-					"allowComments": true
-				}
-			}
-		}
+      "include": ["../tsconfig.lint.json"],
+      "linter": {
+        "enabled": false
+      }
+    }
 	],
 	"json": {
 		"parser": {

@@ -54,9 +54,3 @@ export default [
 		},
 	},
 ];
-/* 
-List of rules that needs to be enforced after fixing. Not limited to these though:
-	noNonNullAssertion
-	noExplicitAny
-	noUnusedVariables
-*/
