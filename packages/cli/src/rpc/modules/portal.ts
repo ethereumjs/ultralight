@@ -20,6 +20,7 @@ import { RunStatusCode } from '@lodestar/light-client'
 import type { Debugger } from 'debug'
 import type { BeaconNetwork, HistoryNetwork, PortalNetwork, StateNetwork } from 'portalnetwork'
 import type { GetEnrResult } from '../schema/types.js'
+import { BitArray } from '@chainsafe/ssz'
 
 const methods = [
   // state
@@ -573,7 +574,7 @@ export class portal {
     )
 
     let encodedPayload = undefined
-    if (payload !== undefined) {
+    if (payload !== undefined && payload !== null) {
       encodedPayload = encodeExtensionPayloadFromJson(extension, payload)
     }
     const pong = await this._history.sendPing(encodedENR, extension, encodedPayload)
@@ -597,7 +598,7 @@ export class portal {
       `PING request received on StateNetwork for ${shortId(encodedENR.nodeId)} with extension ${extension}`,
     )
     let encodedPayload = undefined
-    if (payload !== undefined) {
+    if (payload !== undefined && payload !== null) {
       encodedPayload = encodeExtensionPayloadFromJson(extension, payload)
     }
     const pong = await this._state.sendPing(encodedENR, extension, encodedPayload)
@@ -623,7 +624,7 @@ export class portal {
     )
 
     let encodedPayload = undefined
-    if (payload !== undefined) {
+    if (payload !== undefined && payload !== null) {
       encodedPayload = encodeExtensionPayloadFromJson(extension, payload)
     }
 
