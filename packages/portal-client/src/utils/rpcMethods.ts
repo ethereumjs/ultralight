@@ -48,7 +48,6 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
       if (!isValidAddress(address)) {
         throw new Error('Invalid address. It should be a valid 20-byte hex string.')
       }
-      // const blockNumber = 1000
       return sendRequestHandle('eth_getBalance', [hexToBytes(address), blockHeight])
     },
   },

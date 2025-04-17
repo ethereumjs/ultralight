@@ -1,4 +1,4 @@
-import { FC, useMemo, useState } from 'react'
+import { FC, useEffect, useMemo, useState } from 'react'
 import { useJsonRpc } from '@/hooks/useJsonRpc'
 import { MethodInput } from '@/components/ui/MethodInput'
 import { ResponseViewer } from '@/components/ui/ResponseViewer'
@@ -12,10 +12,10 @@ const BlockExplorer: FC = () => {
   const [selectedMethod, setSelectedMethod] = useState<MethodType | ''>('')
   const [inputValue, setInputValue] = useState('')
   const [includeFullTx, setIncludeFullTx] = useState(false)
-  const [blockHeight, setBlockHeight] = useState('earliest')
+  const [blockHeight, setBlockHeight] = useState('')
 
   const { result, setResult, sendRequestHandle } = useJsonRpc()
-  const { isLoading, setIsLoading, cancelRequest } = usePortalNetwork()
+  const { isLoading, setIsLoading, cancelRequest, client } = usePortalNetwork()
   const { notify } = useNotification()
 
   const methodOptions = APPROVED_METHODS.map((method) => ({
@@ -30,15 +30,7 @@ const BlockExplorer: FC = () => {
 
         if (methodParamMap[selectedMethod]?.showIncludeFullTx) {
           formattedInput = `${inputValue},${includeFullTx}`
-        } else if (methodParamMap[selectedMethod]?.showBlockHeight) {
-          if (
-            !['latest', 'pending', 'earliest'].includes(blockHeight) &&
-            Number.isNaN(Number(blockHeight))
-          ) {
-            throw new Error(
-              'Invalid block height - must be "latest", "pending", "earliest", or a number',
-            )
-          }
+        } else if (methodParamMap[selectedMethod]?.showBlockHeight) {        
           formattedInput = `${inputValue},${blockHeight}`
         }
         await methodRegistry[selectedMethod].handler(formattedInput, sendRequestHandle)
@@ -53,9 +45,7 @@ const BlockExplorer: FC = () => {
 
   const handleSelectMethod = (method: MethodType) => {
     setSelectedMethod(method)
-    setInputValue('')
-    setResult(null)
-    setIsLoading(false)
+    reset()
   }
 
   const handleCancel = () => {
@@ -67,6 +57,14 @@ const BlockExplorer: FC = () => {
         type: 'info',
       })
     }
+  }
+
+  const reset = () => {
+    setInputValue('')
+    setBlockHeight('')
+    setIncludeFullTx(false)
+    setResult(null)
+    setIsLoading(false)
   }
 
   const methodParamMap = useMemo(() => {
@@ -84,6 +82,12 @@ const BlockExplorer: FC = () => {
 
     return map
   }, [])
+
+  useEffect(() => {
+    if (client === null) {
+      reset()
+    }
+  }, [client])
 
   const currentMethodConfig = selectedMethod ? methodParamMap[selectedMethod] || {} : {}
 
@@ -119,7 +123,7 @@ const BlockExplorer: FC = () => {
           </div>
         )}
         {isLoading && <div className="text-center text-gray-400">Loading...</div>}
-        {result && <ResponseViewer data={result.result} />}
+        {result && <ResponseViewer data={result} />}
       </div>
     </div>
   )

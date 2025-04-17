@@ -73,30 +73,27 @@ export const MethodInput: React.FC<MethodInputProps> = ({
             type="text"
             value={blockHeight}
             onChange={(e) => handleBlockHeightChange(e.target.value)}
-            placeholder="Enter latest, pending, earliest, or block number"
+            placeholder="Block number"
             className="w-full bg-[#2A323C] text-gray-200 border border-gray-600 placeholder-gray-400 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"
           />
-          <p className="mt-1 text-xs text-gray-400">
-            Accepted values: latest, pending, earliest, or a block number
-          </p>
         </div>
       )}
 
       <div className="flex space-x-2">
+        <button
+          onClick={onCancel}
+          disabled={!isLoading}
+            className="flex-1 px-4 py-2 bg-red-300 text-white rounded-lg hover:bg-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Cancel
+        </button>
         <button
           onClick={onSubmit}
           disabled={isLoading}
           className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-blue-300"
         >
           Submit
-        </button>
-        <button
-          onClick={onCancel}
-          disabled={!isLoading}
-          className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Cancel
-        </button>
+        </button>        
       </div>
     </div>
   )
