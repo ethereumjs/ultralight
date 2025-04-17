@@ -21,13 +21,19 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
   beforeAll(() => {
     headers = []
     headers.push(
-      createBlockFromRPC(latestBlocks[0] as JSONRPCBlock, [], { setHardfork: true }).header,
+      createBlockFromRPC(latestBlocks[0] as JSONRPCBlock, [], {
+        setHardfork: true,
+      }).header,
     )
     headers.push(
-      createBlockFromRPC(latestBlocks[1] as JSONRPCBlock, [], { setHardfork: true }).header,
+      createBlockFromRPC(latestBlocks[1] as JSONRPCBlock, [], {
+        setHardfork: true,
+      }).header,
     )
     headers.push(
-      createBlockFromRPC(latestBlocks[2] as JSONRPCBlock, [], { setHardfork: true }).header,
+      createBlockFromRPC(latestBlocks[2] as JSONRPCBlock, [], {
+        setHardfork: true,
+      }).header,
     )
     headerPayload = EphemeralHeaderPayload.serialize(headers.map((h) => h.serialize()))
     contentKey = getContentKey(HistoryNetworkContentType.EphemeralHeader, {
@@ -83,7 +89,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     const network2 = node2.network()['0x500b']
     const res = await network2!.sendFindContent(node1.discv5.enr.toENR(), contentKey)
     assert.exists(res)
-    if ('content' in res!) {
+    if ('content' in res) {
       const payload = EphemeralHeaderPayload.deserialize(res.content)
       assert.equal(payload.length, headers.length)
       assert.deepEqual(payload[0], headers[0].serialize())

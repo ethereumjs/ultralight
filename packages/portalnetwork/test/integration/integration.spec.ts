@@ -269,7 +269,7 @@ describe('eth_getBlockByHash', async () => {
     network1,
     AccumulatorProofType.serialize(witnesses),
   )
-  await network1.sendPing(network2?.enr!.toENR())
+  await network1.sendPing(network2?.enr.toENR())
 
   const retrieved = await network2.portal.ETH.getBlockByHash(
     hexToBytes(testBlockData[29].blockHash),
@@ -322,7 +322,7 @@ describe('Offer/Accept', () => {
     const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     await network2.setRadius(1n)
-    await network1.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     const veryFarFakeContentKey = hexToBytes(
       '0x00' + generateRandomNodeIdAtDistance(node2.discv5.enr.nodeId, 256),
     )
@@ -362,7 +362,7 @@ describe('Offer/Accept', () => {
     await node2.start()
     const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-    await network1.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     const contentKeys: Uint8Array[] = []
 
     // Generate 2 content keys that are at log2 distance 253 and 254

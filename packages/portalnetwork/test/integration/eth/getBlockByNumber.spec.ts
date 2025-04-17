@@ -82,7 +82,7 @@ describe(
       await generatePreMergeHeaderProof(1000n, hexToBytes(epoch)),
     )
     await addRLPSerializedBlock(blockRlp, blockHash, network1, proof)
-    await network1.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     const retrieved = await node2.ETH.getBlockByNumber(1000, false)
     it('should retrieve header', () => {
       assert.equal(Number(retrieved!.header.number), 1000, 'retrieved expected header')

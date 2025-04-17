@@ -1,6 +1,5 @@
 import { readFileSync, readdirSync, statSync } from 'fs'
 import { join, resolve } from 'path'
-/* eslint-disable no-console */
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import yaml from 'js-yaml'
 import { afterAll, beforeAll, describe, it } from 'vitest'
