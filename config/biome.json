@@ -7,7 +7,11 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "include": ["packages/cli", "packages/portalnetwork", "packages/portal-client"],
+    "include": [
+      "packages/cli",
+      "packages/portalnetwork",
+      "packages/portal-client"
+    ],
     "ignore": [
       "**/node_modules/**",
       "**/dist/**",
@@ -17,6 +21,7 @@
       "packages/archived-browser/",
       "packages/proxy/",
       "packages/ui/",
+      "packages/cli/scripts",
       "tsconfig.lint.json",
       "**/testData",
       "**/scripts/**/*.json",
@@ -81,15 +86,11 @@
       }
     }
   },
-  "javascript": {
-    "formatter": {
-      "quoteStyle": "single",
-      "semicolons": "asNeeded"
-    }
-  },
   "overrides": [
     {
-      "include": ["**/cli/**/*.ts"],
+      "include": [
+        "**/cli/**/*.ts"
+      ],
       "linter": {
         "rules": {
           "suspicious": {
@@ -97,24 +98,14 @@
           }
         }
       }
-    },
-    {
-      "include": ["**/portal-client/**/*.tsx"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noDefaultExport": "off"
-          }
-        }
-      }
-    },
-    {
-      "include": ["../tsconfig.lint.json"],
-      "linter": {
-        "enabled": false
-      }
     }
   ],
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded"
+    }
+  },
   "json": {
     "parser": {
       "allowComments": true,
