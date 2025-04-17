@@ -2,6 +2,7 @@ import type { ENR } from '@chainsafe/enr'
 
 import type { NetworkId } from '../../../networks/types.js'
 import type { INodeAddress } from '@chainsafe/discv5/lib/session/nodeInfo.js'
+import { Version } from '../../../index.js'
 
 export type UtpSocketKey = string
 
@@ -22,6 +23,7 @@ export interface INewRequest {
   connectionId: number
   requestCode: RequestCode
   contents?: Uint8Array
+  version?: Version
 }
 
 

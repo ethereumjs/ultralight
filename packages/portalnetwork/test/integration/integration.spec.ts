@@ -327,7 +327,7 @@ describe('Offer/Accept', () => {
       '0x00' + generateRandomNodeIdAtDistance(node2.discv5.enr.nodeId, 256),
     )
     const res = await network1.sendOffer(node2.discv5.enr.toENR(), [veryFarFakeContentKey])
-    assert.deepEqual(res, [], 'no accepts should be received')
+    assert.deepEqual(res, BitArray.fromBoolArray([false]), 'no accepts should be received')
   })
   it('should send offer and get correct number of accepted content keys', async () => {
     const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3092`)

@@ -42,10 +42,7 @@ export class ReadSocket extends UtpSocket {
       expected = this.ackNr + 1 === packet.header.seqNr
     }
     this.setSeqNr(this.getSeqNr() + 1)
-    if (!this.reader) {
-      this.reader = new ContentReader(packet.header.seqNr)
-      this.reader.bytesExpected = Infinity
-    }
+
     // Add the packet.seqNr to this.ackNrs at the relative index, regardless of order received.
     if (this.ackNrs[0] === undefined) {
       this.logger(`Setting AckNr[0] to ${packet.header.seqNr}`)
@@ -56,10 +53,10 @@ export class ReadSocket extends UtpSocket {
       )
       this.ackNrs[packet.header.seqNr - this.ackNrs[0]] = packet.header.seqNr
     }
-    this.reader.addPacket(packet)
+    this.reader!.addPacket(packet)
     this.logger(
       `Packet bytes: ${packet.payload!.length} bytes.  Total bytes: ${
-        this.reader.bytesReceived
+        this.reader!.bytesReceived
       } bytes.`,
     )
     if (expected) {

@@ -1,4 +1,5 @@
 import { assert, describe, it } from 'vitest'
+import packageJson from '../../package.json'
 
 import { NetworkId, SupportedVersions, TransportLayer, createPortalNetwork } from '../../src/index.js'
 describe('Client unit tests', () => {
@@ -9,6 +10,16 @@ describe('Client unit tests', () => {
       supportedNetworks: [{ networkId: NetworkId.HistoryNetwork }],
       supportedVersions: [0, 1],
     })
+    assert.equal(
+      packageJson.version,
+      node.clientInfo.clientVersionAndShortCommit.slice(0, packageJson.version.length),
+      'package.json version is set',
+    )
+    assert.equal(
+      node.clientInfo.programmingLanguageAndVersion,
+      `typescript_${packageJson.devDependencies.typescript}`,
+      'package.json devDependencies typescript version is set',
+    )
     assert.equal(
       node.discv5.enr.getLocationMultiaddr('udp')!.toOptions().host,
       '192.168.0.1',

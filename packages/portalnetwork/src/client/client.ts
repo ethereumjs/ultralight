@@ -5,7 +5,6 @@ import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import { fromNodeAddress } from '@multiformats/multiaddr'
 import debug from 'debug'
-import packageJson from '../../package.json' assert { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import { BeaconNetwork, NetworkId, StateNetwork, SyncStrategy } from '../networks/index.js'
@@ -25,10 +24,14 @@ import type {
   PortalNetworkMetrics,
   PortalNetworkOpts,
 } from './types.js'
+import type { Version } from '../wire/types.js'
 import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
 import { type IClientInfo } from '../wire/payloadExtensions.js'
 import type { RateLimiter } from '../transports/rateLimiter.js'
 import { ENRCache } from './enrCache.js'
+
+const CURRENT_ULTRALIGHT_VERSION = '0.0.2-rc3'
+const CURRENT_TYPESCRIPT_VERSION = '^5.8.2'
 
 export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   clientInfo: IClientInfo
@@ -55,9 +58,9 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     super()
     this.clientInfo = {
       clientName: 'ultralight',
-      clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
+      clientVersionAndShortCommit: `${CURRENT_ULTRALIGHT_VERSION}-${opts.shortCommit ?? ''}`,
       operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture ?? '',
-      programmingLanguageAndVersion: `typescript_${packageJson.devDependencies.typescript}`,
+      programmingLanguageAndVersion: `typescript_${CURRENT_TYPESCRIPT_VERSION}`,
     }
     this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
@@ -346,6 +349,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     payload: Uint8Array,
     networkId: NetworkId,
     utpMessage?: boolean,
+    version: Version = 0,
   ): Promise<Uint8Array> => {
     const messageNetwork = utpMessage !== undefined ? NetworkId.UTPNetwork : networkId
     const remote =
@@ -363,7 +367,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
           `Error sending uTP TALKREQ message using ${enr instanceof ENR ? 'ENR' : 'MultiAddr'}: ${err.message}`,
         )
       } else {
-        const messageType = PortalWireMessageType.deserialize(payload).selector
+        const messageType = PortalWireMessageType[version].deserialize(payload).selector
         throw new Error(
           `Error sending TALKREQ ${MessageCodes[messageType]} message using ${enr instanceof ENR ? 'ENR' : 'MultiAddr'}: ${err}.  NetworkId: ${networkId} NodeId: ${enr.nodeId} MultiAddr: ${enr instanceof ENR ? enr.getLocationMultiaddr('udp')?.toString() : enr.socketAddr.toString()}`,
         )
@@ -409,9 +413,13 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
   public updateENRCache = (enrs: ENR[]) => {
     for (const enr of enrs) {
-      this.highestCommonVersion(enr).finally(() => {
-        this.enrCache.updateENR(enr)
-      })
+      this.highestCommonVersion(enr)
+        .catch((e: any) => {
+          this.logger.extend('error')(e.message)
+        })
+        .finally(() => {
+          this.enrCache.updateENR(enr)
+        })
     }
   }
 
@@ -441,7 +449,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       // No action
     }
   }
-  public async highestCommonVersion(peer: ENR): Promise<number> {
+  public async highestCommonVersion(peer: ENR): Promise<Version> {
     const mySupportedVersions: number[] = SupportedVersions.deserialize(
       this.discv5.enr.kvs.get('pv')!,
     )
@@ -455,8 +463,8 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       .sort((a, b) => b - a)[0]
     if (highestCommonVersion === undefined) {
       this.addToBlackList(peer.getLocationMultiaddr('udp')!)
-      return -1
+      throw new Error(`No common version found with ${peer.nodeId}`)
     }
-    return highestCommonVersion
+    return highestCommonVersion as Version
   }
 }

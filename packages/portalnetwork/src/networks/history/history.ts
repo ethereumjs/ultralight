@@ -25,6 +25,7 @@ import {
   decodeHistoryNetworkContentKey,
   decodeReceipts,
   encodeClientInfo,
+  encodeWithVariantPrefix,
   getTalkReqOverhead,
   randUint16,
   reassembleBlock,
@@ -307,7 +308,14 @@ export class HistoryNetwork extends BaseNetwork {
   public sendFindContent = async (enr: ENR, key: Uint8Array) => {
     this.portal.metrics?.findContentMessagesSent.inc()
     const findContentMsg: FindContentMessage = { contentKey: key }
-    const payload = PortalWireMessageType.serialize({
+    let version
+    try {
+      version = await this.portal.highestCommonVersion(enr)
+    } catch (e: any) {
+      this.logger.extend('error')(e.message)
+      return
+    }
+    const payload = PortalWireMessageType[version].serialize({
       selector: MessageCodes.FINDCONTENT,
       value: findContentMsg,
     })
@@ -341,6 +349,7 @@ export class HistoryNetwork extends BaseNetwork {
                 enr,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
+                version
               })
             })
             break
@@ -479,14 +488,32 @@ export class HistoryNetwork extends BaseNetwork {
         'Found value for requested content.  Larger than 1 packet.  uTP stream needed.',
       )
       const _id = randUint16()
-      const enr = this.findEnr(src.nodeId) ?? src
+      const enr = this.findEnr(src.nodeId)
+      if (!enr) {
+        this.logger.extend('FOUNDCONTENT')(`No ENR found for ${shortId(src.nodeId)}.  Cannot determine version.  Sending ENR response.`)
+        await this.enrResponse(decodedContentMessage.contentKey, src, requestId)
+        return
+      }
+      let contents: Uint8Array = value
+      const version = await this.portal.highestCommonVersion(enr)
+      switch (version) {
+        case 0:
+          this.logger.extend('FOUNDCONTENT')(`Version 0:  Sending content without prefix.`)
+          break
+        case 1: {
+          this.logger.extend('FOUNDCONTENT')(`Version 1: Encoding content with varint prefix`)
+          contents = encodeWithVariantPrefix([value])
+          this.logger.extend('FOUNDCONTENT')(`Value length: ${value.length} Contents length: ${contents.length}`)
+        }
+      }
       await this.handleNewRequest({
         networkId: this.networkId,
         contentKeys: [decodedContentMessage.contentKey],
         enr,
         connectionId: _id,
         requestCode: RequestCode.FOUNDCONTENT_WRITE,
-        contents: value,
+        contents,
+        version
       })
 
       const id = new Uint8Array(2)
