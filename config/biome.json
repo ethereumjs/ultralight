@@ -26,7 +26,8 @@
 			"**/scripts/**/*.json",
 			"**/*.css",
 			"**/*.scss",
-			"**/*.html"
+			"**/*.html",
+			"**/*.tsx"
 		]
 	},
 	"formatter": {
