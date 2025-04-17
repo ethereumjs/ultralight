@@ -1174,6 +1174,9 @@ export class portal {
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))
     const enr = ENR.decodeTxt(enrHex)
     const res = await this._state.sendOffer(enr, contentKeys, contentValues)
+    if (res === undefined) {
+      return '0x'
+    }
     return res instanceof BitArray ? bytesToHex(res.uint8Array) : bytesToHex(res)
   }
   async beaconOffer(
@@ -1184,6 +1187,9 @@ export class portal {
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))
     const enr = ENR.decodeTxt(enrHex)
     const res = await this._beacon.sendOffer(enr, contentKeys, contentValues)
+    if (res === undefined) {
+      return '0x'
+    }
     return res instanceof BitArray ? bytesToHex(res.uint8Array) : bytesToHex(res)
   }
 
