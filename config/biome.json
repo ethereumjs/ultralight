@@ -16,14 +16,17 @@
 			"**/node_modules/**",
 			"**/dist/**",
 			"**/coverage/**",
-      "packages/archived-transport-layers/",
-      "packages/archived-browser-client/",
-      "packages/archived-browser/",
-      "packages/proxy/",
-      "packages/ui/",
+			"packages/archived-transport-layers/",
+			"packages/archived-browser-client/",
+			"packages/archived-browser/",
+			"packages/proxy/",
+			"packages/ui/",
 			"tsconfig.lint.json",
 			"**/testData",
-			"**/scripts/**/*.json"
+			"**/scripts/**/*.json",
+			"**/*.css",
+			"**/*.scss",
+			"**/*.html"
 		]
 	},
 	"formatter": {
@@ -88,7 +91,9 @@
 	},
 	"overrides": [
 		{
-			"include": ["**/cli/**/*.ts"],
+			"include": [
+				"**/cli/**/*.ts"
+			],
 			"linter": {
 				"rules": {
 					"suspicious": {
@@ -98,7 +103,9 @@
 			}
 		},
 		{
-			"include": ["**/portal-client/**/*.tsx"],
+			"include": [
+				"**/portal-client/**/*.tsx"
+			],
 			"linter": {
 				"rules": {
 					"style": {
@@ -108,11 +115,13 @@
 			}
 		},
 		{
-      "include": ["../tsconfig.lint.json"],
-      "linter": {
-        "enabled": false
-      }
-    }
+			"include": [
+				"../tsconfig.lint.json"
+			],
+			"linter": {
+				"enabled": false
+			}
+		}
 	],
 	"json": {
 		"parser": {
