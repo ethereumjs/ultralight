@@ -39,7 +39,6 @@ export class TauriUDPTransportService
   private srcId: string
 
   constructor(multiaddr: Multiaddr, srcId: string) {
-    // eslint-disable-next-line constructor-super
     super()
     this.bindAddrs = [multiaddr]
     this.srcId = srcId

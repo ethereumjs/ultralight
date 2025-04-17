@@ -15,8 +15,8 @@
 		"biome": "npx @biomejs/biome check --write --config-path ./config/biome.json",
 		"postinstall": "npm run build --workspaces --if-present",
 		"start-cli": "npm run dev -w=cli",
-		"lint": "eslint --config ./config/eslint.config.js .",
-		"lint:fix": "eslint --fix --config ./config/eslint.config.js .",
+		"lint": "eslint --config ./config/eslint.config.mjs .",
+		"lint:fix": "eslint --fix --config ./config/eslint.config.mjs .",
 		"clean": "bash ./scripts/clean-root.sh"
 	},
 	"devDependencies": {
