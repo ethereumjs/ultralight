@@ -1,14 +1,8 @@
 import { useState, useCallback } from 'react'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
 import { formatBlockResponse } from 'portalnetwork'
-interface RPCResponse {
-  result?: any
-  error?: {
-    code: number
-    message: string
-  }
-  responseType?: 'block' | 'bigNumber' | 'code' | 'storage' | 'callResult' | 'ether'
-}
+import { RPCResponse } from '@/utils/types'
+
 
 export const useJsonRpc = () => {
   const { client, setIsLoading } = usePortalNetwork()

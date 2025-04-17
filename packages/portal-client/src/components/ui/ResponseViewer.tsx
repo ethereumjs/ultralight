@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import jsonRenderer from '@/components/common/jsonRenderer'
 
+import { RPCResponse } from '@/utils/types'
+
 interface ResponseViewerProps {
-  data: any
-  responseType?: 'block' | 'bigNumber' | 'code' | 'storage' | 'callResult' | 'ether'
+  data: RPCResponse | null
 }
 
 export const ResponseViewer: React.FC<ResponseViewerProps> = ({ data }) => {
@@ -19,7 +20,6 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({ data }) => {
         </pre>
       )
     }
-console.log('datarendertype ', data.responseType)
     switch (data.responseType) {
       
       case 'block':
@@ -53,7 +53,7 @@ console.log('datarendertype ', data.responseType)
         return (
           <div className="font-mono text-sm p-2 bg-[#1C232A] rounded overflow-auto max-h-[70vh]">
             <pre className="text-green-300 break-all whitespace-pre-wrap">
-              {data || '0x'}
+              {data.result || '0x'}
             </pre>
           </div>
         )

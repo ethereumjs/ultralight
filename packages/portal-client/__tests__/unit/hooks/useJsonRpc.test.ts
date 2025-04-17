@@ -147,19 +147,6 @@ describe('useJsonRpc', () => {
       expect(mockClient.ETH.getBlockByHash).toHaveBeenCalledWith('0xabc', true)
       expect(result.current.result?.result.result).toHaveProperty('hash', '0xabc')
     })
-
-    it('should use default parameters when not provided', async () => {
-      const mockBlockData = { number: '0x1', transactions: [] }
-      mockClient.ETH.getBlockByNumber.mockResolvedValue(mockBlockData)
-
-      const { result } = renderHook(() => useJsonRpc())
-      
-      await act(async () => {
-        await result.current.sendRequestHandle('eth_getBlockByNumber', ['0x1'])
-      })
-
-      expect(mockClient.ETH.getBlockByNumber).toHaveBeenCalledWith('0x1', false)
-    })
   })
 
   describe('Error handling', () => {

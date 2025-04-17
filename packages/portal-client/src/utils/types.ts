@@ -3,4 +3,24 @@ export const enum ConfigId {
   NodeBindPort = 'node-bind-port',
 }
 
-export type InputValue = string | number | `0x${string}`
+export type ResponseType =
+  | 'block'
+  | 'bigNumber'
+  | 'code'
+  | 'storage'
+  | 'callResult'
+  | 'ether'
+
+export interface RPCResponse {
+  result?: any
+  error?: {
+    code: number
+    message: string
+  }
+  responseType?: ResponseType
+}
+
+export type InputValue = 
+  | string 
+  | number 
+  | `0x${string}`
