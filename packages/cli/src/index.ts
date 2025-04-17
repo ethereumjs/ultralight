@@ -37,6 +37,7 @@ const main = async () => {
   portalConfig.operatingSystemAndCpuArchitecture = args.arch
   portalConfig.shortCommit = args.commit ?? execSync('git rev-parse HEAD').toString().slice(0, 7)
   portalConfig.dbSize = dirSize
+  portalConfig.supportedVersions = [0, 1]
   const portal = await createPortalNetwork(portalConfig)
 
   log(`discv5Config: ${JSON.stringify(portal.discv5['config'], null, 2)}`)
