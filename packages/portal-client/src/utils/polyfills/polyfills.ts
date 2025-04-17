@@ -12,4 +12,3 @@ if (typeof global === 'undefined') {
 if (!process.env) {
   process.env = {}
 }
-

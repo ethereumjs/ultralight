@@ -1,14 +1,14 @@
-import { keys } from '@libp2p/crypto'
-import { hexToBytes } from '@ethereumjs/util'
-import { multiaddr } from '@multiformats/multiaddr'
-import { SignableENR } from '@chainsafe/enr'
 import { UDPTransportService } from '@chainsafe/discv5'
+import { SignableENR } from '@chainsafe/enr'
+import { hexToBytes } from '@ethereumjs/util'
+import { keys } from '@libp2p/crypto'
+import { multiaddr } from '@multiformats/multiaddr'
 
 import { NetworkId } from '../networks/index.js'
 import { RateLimiter } from '../transports/rateLimiter.js'
 import { MEGABYTE } from '../util/index.js'
-import { TransportLayer } from './types.js'
 import { PortalNetwork } from './client.js'
+import { TransportLayer } from './types.js'
 
 import type { IDiscv5CreateOptions, ITransportService, SignableENRInput } from '@chainsafe/discv5'
 import type { PortalNetworkOpts } from './types.js'
@@ -75,14 +75,12 @@ export async function createPortalNetwork(
   let dbSize
   switch (opts.transport) {
     case TransportLayer.WEB:
-      dbSize = async function () {
+      dbSize = async () => {
         // eslint-disable-next-line no-undef
         const sizeEstimate = await window.navigator.storage.estimate()
         return sizeEstimate.usage !== undefined ? sizeEstimate.usage / MEGABYTE : 0
       }
       break
-    case TransportLayer.NODE:
-    case TransportLayer.TAURI:
     default:
       dbSize = opts.dbSize
   }
@@ -111,7 +109,6 @@ export async function createPortalNetwork(
         }
         transportService = opts.transportServices.createTauriTransport(ma, config.enr.nodeId)
         break
-      case TransportLayer.NODE:
       default:
         if (opts.transportServices.createNodeTransport === undefined) {
           throw new Error('Node transport service not provided')

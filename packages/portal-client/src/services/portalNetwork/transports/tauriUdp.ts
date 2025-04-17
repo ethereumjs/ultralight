@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events'
 import type {
   IPMode,
   IRemoteInfo,
@@ -10,7 +11,6 @@ import { decodePacket, encodePacket } from '@chainsafe/discv5/packet'
 import { bind, send, unbind } from '@kuyoonjo/tauri-plugin-udp'
 import { multiaddr as ma } from '@multiformats/multiaddr'
 import { listen } from '@tauri-apps/api/event'
-import { EventEmitter } from 'events'
 
 import type { IPacket } from '@chainsafe/discv5/packet'
 import type { ENR } from '@chainsafe/enr'

@@ -7,11 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "include": [
-      "packages/cli",
-      "packages/portalnetwork",
-      "packages/portal-client"
-    ],
+    "include": ["packages/cli", "packages/portalnetwork", "packages/portal-client"],
     "ignore": [
       "**/node_modules/**",
       "**/dist/**",
@@ -28,7 +24,8 @@
       "**/*.css",
       "**/*.scss",
       "**/*.html",
-      "**/*.tsx"
+      "**/*.tsx",
+      "packages/**/docs/**"
     ]
   },
   "formatter": {
@@ -75,7 +72,8 @@
         "noForEach": "off",
         "noUselessTernary": "off",
         "useLiteralKeys": "off",
-        "noBannedTypes": "off"
+        "noBannedTypes": "off",
+        "noStaticOnlyClass": "info"
       },
       "a11y": {
         "useKeyWithClickEvents": "off",
@@ -88,9 +86,7 @@
   },
   "overrides": [
     {
-      "include": [
-        "**/cli/**/*.ts"
-      ],
+      "include": ["**/cli/**/*.ts"],
       "linter": {
         "rules": {
           "suspicious": {

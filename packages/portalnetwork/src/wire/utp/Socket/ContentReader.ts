@@ -20,7 +20,7 @@ export class ContentReader {
   constructor(startingDataNr: number, logger?: Debugger) {
     this.contents = []
     this.bytesReceived = 0
-    this.bytesExpected = -Infinity
+    this.bytesExpected = Number.NEGATIVE_INFINITY
     this.length = 0
     this.offset = 0
     this.packets = new Array<DataPacket>()
@@ -28,7 +28,7 @@ export class ContentReader {
     this.reading = true
     this.startingDataNr = startingDataNr
     this.nextDataNr = startingDataNr
-    this.lastDataNr = Infinity
+    this.lastDataNr = Number.POSITIVE_INFINITY
     this.logger = logger ? logger.extend('READING') : debug('read').extend('READING')
     this.logger(`Starting at ${this.nextDataNr}`)
   }
@@ -68,7 +68,7 @@ export class ContentReader {
     this.nextDataNr! = (this.nextDataNr! + 1) % 65536
     this.bytes.push(...payload)
     this.logger.extend('BYTES')(
-      `Current stream: ${this.bytes.length}${this.bytesExpected === Infinity ? '' : `/ ${this.bytesExpected}`} bytes. ${this.bytesExpected === Infinity ? 'Unknown' : this.bytesExpected - this.bytes.length} bytes till end of content.`,
+      `Current stream: ${this.bytes.length}${this.bytesExpected === Number.POSITIVE_INFINITY ? '' : `/ ${this.bytesExpected}`} bytes. ${this.bytesExpected === Number.POSITIVE_INFINITY ? 'Unknown' : this.bytesExpected - this.bytes.length} bytes till end of content.`,
     )
   }
 
@@ -89,7 +89,7 @@ export class ContentReader {
 
   _addPacket(packet: DataPacket): void {
     this.packets[packet.header.seqNr] = packet
-    if (this.bytesExpected === -Infinity) {
+    if (this.bytesExpected === Number.NEGATIVE_INFINITY) {
       const bytes = packet.payload!
       this.readPrefix(bytes)
     }

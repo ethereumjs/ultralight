@@ -11,18 +11,18 @@ import {
   ReadSocket,
   RequestCode,
   UtpSocketType,
+  createPortalNetwork,
   encodeWithVariantPrefix,
   randUint16,
   startingNrs,
-  createPortalNetwork,
 } from '../../../src/index.js'
 import { ContentReader } from '../../../src/wire/utp/Socket/ContentReader.js'
 import { ContentWriter } from '../../../src/wire/utp/Socket/ContentWriter.js'
 import { WriteSocket } from '../../../src/wire/utp/Socket/WriteSocket.js'
 
 import { ENR } from '@chainsafe/enr'
-import { RequestManager } from '../../../src/wire/utp/PortalNetworkUtp/requestManager.js'
 import { utf8ToBytes } from '@ethereumjs/util'
+import { RequestManager } from '../../../src/wire/utp/PortalNetworkUtp/requestManager.js'
 
 const sampleSize = 50000
 const enr = ENR.decodeTxt(
@@ -34,7 +34,7 @@ describe('uTP Reader/Writer tests', async () => {
     const content = randomBytes(sampleSize)
     const writer = new ContentWriter(WriteSocket.prototype, content, 0, debug('utp:writer'))
     const reader = new ContentReader(0)
-    reader.bytesExpected = Infinity
+    reader.bytesExpected = Number.POSITIVE_INFINITY
     const contentChunks = writer.chunk()
     assert.exists(writer, 'ContentWriter created')
     assert.exists(reader, 'ContentReader created')

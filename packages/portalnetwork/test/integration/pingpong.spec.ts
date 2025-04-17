@@ -25,9 +25,9 @@ const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
 const enr2 = SignableENR.createFromPrivateKey(pk2)
 
 describe('PING/PONG', async () => {
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3098`)
+  const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3098')
   enr1.setLocationMultiaddr(initMa)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3099`)
+  const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3099')
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,

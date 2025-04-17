@@ -1,8 +1,7 @@
-
+import fs from 'fs'
+import path from 'path'
 import type { BaseNetwork, NetworkId } from 'portalnetwork'
 import type { Enr } from './rpc/schema/types.js'
-import path from 'path'
-import fs from 'fs'
 export const hasValidEnrPrefix = (enr: Enr) => {
   return enr.startsWith('enr:')
 }
@@ -59,9 +58,6 @@ const MEGABYTE = 1000 * 1000
 export const dirSize = async (directory: string) => {
   const files = fs.readdirSync(directory)
   const stats = files.map((file) => fs.statSync(path.join(directory, file)))
-  const bytesSize = stats.reduce(
-    (accumulator, { size }) => accumulator + size,
-    0,
-  )
+  const bytesSize = stats.reduce((accumulator, { size }) => accumulator + size, 0)
   return bytesSize / MEGABYTE
 }

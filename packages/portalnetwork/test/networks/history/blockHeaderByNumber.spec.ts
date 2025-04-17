@@ -11,8 +11,8 @@ import {
   decodeHistoryNetworkContentKey,
 } from '../../../src/index.js'
 
-import testdata from './testData/block207686.json'
 import { createBlockHeaderFromRLP } from '@ethereumjs/block'
+import testdata from './testData/block207686.json'
 
 describe('Retrieve Block Header By Number', async () => {
   const HWP207686 = hexToBytes(testdata.header)

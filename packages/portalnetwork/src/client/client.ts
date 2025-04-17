@@ -1,10 +1,10 @@
-import { EventEmitter } from 'eventemitter3'
 import { Discv5 } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import { fromNodeAddress } from '@multiformats/multiaddr'
 import debug from 'debug'
+import { EventEmitter } from 'eventemitter3'
 import packageJson from '../../package.json' assert { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
@@ -19,17 +19,17 @@ import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { Debugger } from 'debug'
 import type { BaseNetwork } from '../networks/network.js'
+import type { RateLimiter } from '../transports/rateLimiter.js'
+import type { IClientInfo } from '../wire/payloadExtensions.js'
+import type { Version } from '../wire/types.js'
+import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
+import { ENRCache } from './enrCache.js'
 import type {
   INodeAddress,
   PortalNetworkEvents,
   PortalNetworkMetrics,
   PortalNetworkOpts,
 } from './types.js'
-import type { Version } from '../wire/types.js'
-import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
-import { type IClientInfo } from '../wire/payloadExtensions.js'
-import type { RateLimiter } from '../transports/rateLimiter.js'
-import { ENRCache } from './enrCache.js'
 
 export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   clientInfo: IClientInfo
@@ -44,7 +44,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   logger: Debugger
   ETH: ETH
   enrCache: ENRCache
-  shouldRefresh: boolean = true
+  shouldRefresh = true
 
   /**
    *
@@ -243,7 +243,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    * @param namespaces comma separated list of logging namespaces
    * defaults to "*Portal*,*uTP*"
    */
-  public enableLog = (namespaces: string = '*Portal*,*uTP*,*discv5*') => {
+  public enableLog = (namespaces = '*Portal*,*uTP*,*discv5*') => {
     debug.enable(namespaces)
   }
 

@@ -1,6 +1,11 @@
 import { assert, describe, it } from 'vitest'
 
-import { NetworkId, SupportedVersions, TransportLayer, createPortalNetwork } from '../../src/index.js'
+import {
+  NetworkId,
+  SupportedVersions,
+  TransportLayer,
+  createPortalNetwork,
+} from '../../src/index.js'
 describe('Client unit tests', () => {
   it('node initialization/startup', async () => {
     const node = await createPortalNetwork({

@@ -5,7 +5,13 @@ import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, beforeAll, describe, it } from 'vitest'
 
-import { ContentLookup, NetworkId, PortalNetwork, TransportLayer, createPortalNetwork } from '../../src/index.js'
+import {
+  ContentLookup,
+  NetworkId,
+  type PortalNetwork,
+  TransportLayer,
+  createPortalNetwork,
+} from '../../src/index.js'
 
 import type { ContentTrace, HistoryNetwork } from '../../src/index.js'
 
@@ -19,11 +25,11 @@ describe('Recursive Content Lookup Test', () => {
   let node1: PortalNetwork, node2: PortalNetwork, node3: PortalNetwork
   let network1: HistoryNetwork, network2: HistoryNetwork, network3: HistoryNetwork
   beforeAll(async () => {
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5000`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/5000')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5001`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/5001')
     enr2.setLocationMultiaddr(initMa2)
-    const initMa3: any = multiaddr(`/ip4/127.0.0.1/udp/5002`)
+    const initMa3: any = multiaddr('/ip4/127.0.0.1/udp/5002')
     enr3.setLocationMultiaddr(initMa3)
     node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,

@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs'
+import { createRequire } from 'module'
 import {
   type BlockBytes,
   createBlockFromBytesArray,
@@ -6,8 +8,6 @@ import {
 } from '@ethereumjs/block'
 import * as RLP from '@ethereumjs/rlp'
 import { bytesToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
-import { readFileSync } from 'fs'
-import { createRequire } from 'module'
 import { assert, describe, it } from 'vitest'
 
 import {
@@ -17,11 +17,11 @@ import {
   HistoryNetworkContentType,
   NetworkId,
   TransportLayer,
+  createPortalNetwork,
   generatePreMergeHeaderProof,
   getContentKey,
   reassembleBlock,
   sszEncodeBlockBody,
-  createPortalNetwork,
 } from '../../../src/index.js'
 
 import type { HistoryNetwork } from '../../../src/index.js'
@@ -35,7 +35,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
     const epoch =
       '0x' +
       readFileSync(
-        `./test/networks/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent`,
+        './test/networks/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
         {
           encoding: 'hex',
         },

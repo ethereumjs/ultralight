@@ -129,7 +129,7 @@ export const ethJsBlockToEthersBlock = (
   )
 }
 
-export interface ExtendedTransactionResponse {}
+export type ExtendedTransactionResponse = {}
 
 /**
  *

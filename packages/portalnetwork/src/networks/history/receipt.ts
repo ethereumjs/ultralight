@@ -52,7 +52,7 @@ export class Receipt {
   }
 
   public static decodeReceiptBytes(encoded: Uint8Array): TxReceiptType {
-    return this.fromEncodedReceipt(encoded).decoded()
+    return Receipt.fromEncodedReceipt(encoded).decoded()
   }
 
   constructor(opts: IReceiptOpts) {

@@ -160,7 +160,7 @@ export class eth {
     )
     try {
       const block = await this._client.ETH.getBlockByNumber(
-        parseInt(blockNumber),
+        Number.parseInt(blockNumber),
         includeTransactions,
       )
       if (block === undefined) throw new Error('block not found')
@@ -233,7 +233,7 @@ export class eth {
     if (blockHash !== undefined && (fromBlock !== undefined || toBlock !== undefined)) {
       throw {
         code: INVALID_PARAMS,
-        message: `Can only specify a blockHash if fromBlock or toBlock are not provided`,
+        message: 'Can only specify a blockHash if fromBlock or toBlock are not provided',
       }
     }
     let from: Block, to: Block

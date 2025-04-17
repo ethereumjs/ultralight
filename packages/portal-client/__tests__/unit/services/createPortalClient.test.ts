@@ -1,15 +1,15 @@
-import { describe, it, vi, beforeEach, assert } from 'vitest'
-import { createPortalClient } from '../../../src/services/portalNetwork/client'
 import { NetworkId } from 'portalnetwork'
+import { assert, beforeEach, describe, it, vi } from 'vitest'
+import { createPortalClient } from '../../../src/services/portalNetwork/client'
 
 vi.mock('portalnetwork', () => {
   const MockNetworkId = {
     HistoryNetwork: 'history',
-    StateNetwork: 'state'
+    StateNetwork: 'state',
   }
 
   const MockTransportLayer = {
-    MOBILE: 'mobile'
+    MOBILE: 'mobile',
   }
 
   const mockClient = {
@@ -17,18 +17,18 @@ vi.mock('portalnetwork', () => {
       enr: {
         setLocationMultiaddr: vi.fn(),
         getLocationMultiaddr: () => ({
-          toOptions: () => ({ port: 9000 })
+          toOptions: () => ({ port: 9000 }),
         }),
-        kvs: new Map()
-      }
+        kvs: new Map(),
+      },
     },
     networks: new Map([
       [MockNetworkId.HistoryNetwork, { networkId: MockNetworkId.HistoryNetwork }],
-      [MockNetworkId.StateNetwork, { networkId: MockNetworkId.StateNetwork }]
+      [MockNetworkId.StateNetwork, { networkId: MockNetworkId.StateNetwork }],
     ]),
     start: vi.fn().mockResolvedValue(undefined),
     stop: vi.fn().mockResolvedValue(undefined),
-    bootstrap: vi.fn().mockResolvedValue(undefined)
+    bootstrap: vi.fn().mockResolvedValue(undefined),
   }
 
   return {
@@ -36,8 +36,8 @@ vi.mock('portalnetwork', () => {
     TransportLayer: MockTransportLayer,
     createPortalNetwork: vi.fn().mockResolvedValue(mockClient),
     DEFAULT_BOOTNODES: {
-      mainnet: ['enr:-example-bootnode']
-    }
+      mainnet: ['enr:-example-bootnode'],
+    },
   }
 })
 
@@ -54,7 +54,10 @@ describe('Portal Client Tests', () => {
     assert.isDefined(client, 'Client should be defined')
 
     // Verify network support (using our mock values)
-    assert.isDefined(client.networks.get(NetworkId.HistoryNetwork), 'Should support History Network')
+    assert.isDefined(
+      client.networks.get(NetworkId.HistoryNetwork),
+      'Should support History Network',
+    )
     assert.isDefined(client.networks.get(NetworkId.StateNetwork), 'Should support State Network')
 
     // Verify ENR configuration
@@ -63,7 +66,7 @@ describe('Portal Client Tests', () => {
     assert.equal(
       enr.getLocationMultiaddr('udp')?.toOptions().port ?? 0,
       port,
-      'ENR should have correct port'
+      'ENR should have correct port',
     )
 
     // Verify lifecycle methods were called

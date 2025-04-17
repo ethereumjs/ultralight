@@ -125,7 +125,7 @@ export abstract class ContentRequest {
     )
     for (const [idx, k] of keys.entries()) {
       const _content = contents[idx]
-      this.logger.extend(`FINISHED`)(
+      this.logger.extend('FINISHED')(
         `${idx + 1}/${keys.length} -- (${_content.length} bytes) sending content type: ${bytesToHex(k.slice(0, 1))} to database`,
       )
       if (this.network instanceof StateNetwork) {
@@ -192,7 +192,7 @@ export class FindContentReadRequest extends ContentReadRequest {
     await this.socket.sendSynPacket(this.socket.sndConnectionId)
   }
   async _handleSynPacket(): Promise<void> {
-    throw new Error(`Should not receive SYN packets during FINDCONTENT_READ`)
+    throw new Error('Should not receive SYN packets during FINDCONTENT_READ')
   }
   async _handleStatePacket(packet: StatePacket): Promise<void> {
     if (this.socket.state === ConnectionState.SynSent) {
@@ -200,7 +200,7 @@ export class FindContentReadRequest extends ContentReadRequest {
       this.socket.setReader(packet.header.seqNr)
       if (this.version === 0) {
         // Content is not prefixed with a varint length
-        this.socket.reader!.bytesExpected = Infinity
+        this.socket.reader!.bytesExpected = Number.POSITIVE_INFINITY
       }
       return
     } else {
@@ -212,7 +212,7 @@ export class FindContentReadRequest extends ContentReadRequest {
       this.socket.reader = new ContentReader(packet.header.seqNr)
       if (this.version === 0) {
         // Content is not prefixed with a varint length
-        this.socket.reader!.bytesExpected = Infinity
+        this.socket.reader!.bytesExpected = Number.POSITIVE_INFINITY
       }
     }
     await this.socket.handleDataPacket(packet)
@@ -306,7 +306,7 @@ export class AcceptReadRequest extends ContentReadRequest {
     await this.socket.handleSynPacket(packet.header.seqNr)
   }
   async _handleStatePacket(): Promise<void> {
-    throw new Error(`Should not receive STATE packet during ACCEPT_READ`)
+    throw new Error('Should not receive STATE packet during ACCEPT_READ')
   }
   async _handleDataPacket(packet: DataPacket): Promise<void> {
     await this.socket.handleDataPacket(packet)
@@ -335,7 +335,7 @@ export class OfferWriteRequest extends ContentWriteRequest {
     await this.socket.sendSynPacket(this.socket.sndConnectionId)
   }
   async _handleSynPacket(): Promise<void> {
-    throw new Error(`Should not receive SYN packet during OFFER_WRITE`)
+    throw new Error('Should not receive SYN packet during OFFER_WRITE')
   }
   async _handleStatePacket(packet: StatePacket): Promise<void> {
     this.socket.logger(`(${this.socket.state})socket.seqNr: ${this.socket.getSeqNr()}`)

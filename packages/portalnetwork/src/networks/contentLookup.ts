@@ -106,7 +106,7 @@ export class ContentLookup {
         try {
           await Promise.any(promises)
         } catch (err) {
-          this.logger(`All requests errored`)
+          this.logger('All requests errored')
         }
         if (!this.finished) {
           this.logger(

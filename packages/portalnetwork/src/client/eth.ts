@@ -37,7 +37,7 @@ export class ETH {
     this.history = portal.network()['0x500b']
     this.state = portal.network()['0x500a']
     this.beacon = portal.network()['0x500c']
-    this.logger = portal.logger.extend(`ETH`)
+    this.logger = portal.logger.extend('ETH')
   }
 
   /**

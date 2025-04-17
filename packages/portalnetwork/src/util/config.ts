@@ -37,10 +37,7 @@ export const NetworkStrings: Record<string, NetworkId> = {
 }
 
 export const cliConfig = async (args: PortalClientOpts) => {
-  const ip =
-    args.bindAddress !== undefined
-      ? args.bindAddress.split(':')[0]
-      : '0.0.0.0'
+  const ip = args.bindAddress !== undefined ? args.bindAddress.split(':')[0] : '0.0.0.0'
   const bindPort = args.bindAddress !== undefined ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
   let privateKey: AsyncReturnType<typeof keys.generateKeyPair>
   try {
@@ -76,7 +73,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
   } as any
   const networks: NetworkConfig[] = []
   const argsNetworks = args.networks.split(',')
-  const argsStorage = args.storage.split(',').map((x) => parseInt(x))
+  const argsStorage = args.storage.split(',').map((x) => Number.parseInt(x))
   for (const [i, network] of argsNetworks.entries()) {
     let networkdb
     if (args.dataDir !== undefined) {

@@ -45,9 +45,9 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     const enr1 = SignableENR.createFromPrivateKey(pk1)
     const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
     const enr2 = SignableENR.createFromPrivateKey(pk2)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3198`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3198')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3199`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3199')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       supportedNetworks: [

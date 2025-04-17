@@ -36,9 +36,9 @@ const enr2 = SignableENR.createFromPrivateKey(pk2)
 describe(
   'retrieve block using number',
   async () => {
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3090`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3090')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3091`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3091')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
