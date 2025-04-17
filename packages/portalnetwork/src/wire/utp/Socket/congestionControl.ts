@@ -13,7 +13,7 @@ export class CongestionControl extends EventEmitter {
   rtt: number
   rtt_var: number
   timeout: number
-  // eslint-disable-next-line no-undef
+   
   timeoutCounter?: NodeJS.Timeout
   baseDelay: { delay: number; timestamp: number }
   ourDelay: number

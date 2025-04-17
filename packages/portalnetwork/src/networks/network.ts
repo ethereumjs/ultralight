@@ -1001,7 +1001,7 @@ export abstract class BaseNetwork extends EventEmitter {
       }
       const payload = ContentMessageType.serialize({
         selector: FoundContent.ENRS,
-        value: encodedEnrs as Uint8Array[],
+        value: encodedEnrs,
       })
       await this.sendResponse(
         src,

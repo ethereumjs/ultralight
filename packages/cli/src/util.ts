@@ -45,8 +45,8 @@ export const isValidEnr = (enr: Enr) => {
  */
 export const addBootNode = async (networkId: NetworkId, baseNetwork: BaseNetwork, enr: Enr) => {
   try {
-    await baseNetwork!.addBootNode(enr)
-    baseNetwork!.logger(`Added bootnode ${enr} to ${networkId}`)
+    await baseNetwork.addBootNode(enr)
+    baseNetwork.logger(`Added bootnode ${enr} to ${networkId}`)
   } catch (error: any) {
     throw new Error(`Error adding bootnode ${enr} to network \
       ${networkId}: ${error.message ?? error}`)

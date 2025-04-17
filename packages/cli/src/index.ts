@@ -73,7 +73,7 @@ const main = async () => {
         // https://github.com/tedeh/jayson/blob/HEAD/examples/method_routing/server.js
         if (this.getMethod(method) === undefined && web3) {
           return new jayson.Method(async () => {
-            const res = await web3!.request(method, params)
+            const res = await web3.request(method, params)
             if (res.result !== undefined) return res.result
             else return res.error
           })

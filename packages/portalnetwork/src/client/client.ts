@@ -52,7 +52,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    * @param opts a dictionary of `PortalNetworkOpts`
    */
   constructor(opts: PortalNetworkOpts) {
-    // eslint-disable-next-line constructor-super
+     
     super()
     this.clientInfo = {
       clientName: 'ultralight',
@@ -76,7 +76,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       this.logger,
       async () => opts.dbSize(opts.dataDir ?? './'),
       opts.db,
-    ) as DBManager
+    )
     opts.supportedNetworks = opts.supportedNetworks ?? []
     for (const network of opts.supportedNetworks) {
       switch (network.networkId) {
@@ -267,12 +267,12 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         {
           type: 'put',
           key: 'privateKey',
-          value: bytesToHex(this.discv5.enr.privateKey!),
+          value: bytesToHex(this.discv5.enr.privateKey),
         },
         {
           type: 'put',
           key: 'publicKey',
-          value: bytesToHex(this.discv5.enr.publicKey!),
+          value: bytesToHex(this.discv5.enr.publicKey),
         },
         {
           type: 'put',
@@ -390,7 +390,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public addToBlackList = (ma: Multiaddr) => {
-    // eslint-disable-next-line no-extra-semi
+     
     ;(<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).addToBlackList(
       ma.nodeAddress().address,
     )
@@ -403,7 +403,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public removeFromBlackList = (ma: Multiaddr) => {
-    // eslint-disable-next-line no-extra-semi
+     
     ;(<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).removeFromBlackList(
       ma.nodeAddress().address,
     )

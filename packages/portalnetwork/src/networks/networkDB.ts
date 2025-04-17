@@ -96,7 +96,7 @@ export class NetworkDB {
       this.logger(`Content ${key}.  currently streaming`)
     }
     const timeout = setTimeout(() => {
-      this.streaming.delete(<string>key)
+      this.streaming.delete(key)
     }, 1000)
     while (this.streaming.has(key)) {
       await new Promise((resolve) => setTimeout(resolve, 100))

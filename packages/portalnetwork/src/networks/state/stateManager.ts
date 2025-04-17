@@ -105,9 +105,9 @@ export class UltralightStateManager implements StateManagerInterface {
   }
   putAccount = async (address: Address, account?: Account | undefined): Promise<void> => {
     if (account !== undefined) {
-      this._accountCache!.put(address, account)
+      this._accountCache.put(address, account)
     } else {
-      this._accountCache!.del(address)
+      this._accountCache.del(address)
     }
   }
   deleteAccount = async (address: Address): Promise<void> => {
@@ -147,7 +147,7 @@ export class UltralightStateManager implements StateManagerInterface {
       throw new Error('Storage key must be 32 bytes long')
     }
 
-    let value: Uint8Array | null | undefined = this._storageCache!.get(address, key)
+    let value: Uint8Array | null | undefined = this._storageCache.get(address, key)
     if (value !== undefined) {
       return value
     }

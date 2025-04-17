@@ -74,7 +74,7 @@ describe('Find Content tests', () => {
     await node2.start()
     const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -156,7 +156,7 @@ describe('Find Content tests', () => {
       },
     }
 
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -230,7 +230,7 @@ describe('Find Content tests', () => {
     await node2.start()
     const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -326,7 +326,7 @@ describe('OFFER/ACCEPT tests', () => {
       },
     }
 
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -433,7 +433,7 @@ describe('OFFER/ACCEPT tests', () => {
       },
     }
 
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -503,7 +503,7 @@ describe('OFFER/ACCEPT tests', () => {
     const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
 
     const bootstrapKey = getBeaconContentKey(
       BeaconNetworkContentType.LightClientBootstrap,
@@ -631,7 +631,7 @@ describe('beacon light client sync tests', () => {
       ),
     )
 
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -758,7 +758,7 @@ describe('beacon light client sync tests', () => {
           resolve('undefined)')
         }
       })
-      void network2!.addBootNode(network1?.enr!.encodeTxt())
+      void network2.addBootNode(network1?.enr.encodeTxt())
     })
   }, 30000)
 })
@@ -833,7 +833,7 @@ describe('historicalSummaries verification', () => {
       ),
     )
 
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',

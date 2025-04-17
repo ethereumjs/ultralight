@@ -76,7 +76,7 @@ export async function createPortalNetwork(
   switch (opts.transport) {
     case TransportLayer.WEB:
       dbSize = async () => {
-        // eslint-disable-next-line no-undef
+         
         const sizeEstimate = await window.navigator.storage.estimate()
         return sizeEstimate.usage !== undefined ? sizeEstimate.usage / MEGABYTE : 0
       }

@@ -146,7 +146,7 @@ export class BeaconNetwork extends BaseNetwork {
       const forkhash = decoded.content.slice(0, 4) as Uint8Array
       const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
       const bootstrap = ssz[forkname].LightClientBootstrap.deserialize(
-        (decoded.content as Uint8Array).slice(4),
+        (decoded.content).slice(4),
       )
       const headerHash = bytesToHex(
         ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
@@ -195,7 +195,7 @@ export class BeaconNetwork extends BaseNetwork {
         const range = await this.sendFindContent(enr, rangeKey)
         if (range === undefined || 'enrs' in range) return // If we don't get a range, exit early
 
-        const updates = LightClientUpdatesByRange.deserialize(range.content as Uint8Array)
+        const updates = LightClientUpdatesByRange.deserialize(range.content)
 
         const roots: string[] = []
         for (const update of updates) {
@@ -249,12 +249,12 @@ export class BeaconNetwork extends BaseNetwork {
               if (res !== undefined && 'content' in res) {
                 try {
                   const fork = this.beaconConfig.forkDigest2ForkName(
-                    (res.content as Uint8Array).slice(0, 4),
+                    (res.content).slice(0, 4),
                   ) as LightClientForkName
                   // Verify bootstrap is valid
-                  ssz[fork].LightClientBootstrap.deserialize((res.content as Uint8Array).slice(4))
+                  ssz[fork].LightClientBootstrap.deserialize((res.content).slice(4))
                   this.logger.extend('BOOTSTRAP')(`found a valid bootstrap - ${results[x][0]}`)
-                  await this.store(bootstrapKey, res.content as Uint8Array)
+                  await this.store(bootstrapKey, res.content)
                   this.portal.removeListener('NodeAdded', this.getBootStrapVote)
                   this.logger.extend('BOOTSTRAP')('Terminating Light Client bootstrap process')
                   await this.initializeLightClient(results[x][0])

@@ -107,7 +107,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
 
     const res2 = await network2!.sendFindContent(node1.discv5.enr.toENR(), contentKeyForOneAncestor)
     assert.exists(res2)
-    if ('content' in res2!) {
+    if ('content' in res2) {
       const payload = EphemeralHeaderPayload.deserialize(res2.content)
       assert.equal(payload.length, 2, 'should only get a single ancestor')
     } else {
@@ -123,7 +123,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
       }),
     )
     assert.exists(res3)
-    if ('content' in res3!) {
+    if ('content' in res3) {
       const payload = EphemeralHeaderPayload.deserialize(res3.content)
       assert.equal(payload.length, 0, 'should not get any headers for a random blockhash')
     } else {

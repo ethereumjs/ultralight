@@ -152,7 +152,7 @@ export const genesisContent = async (
   )
   const trieNodeContent: [string, Uint8Array][] = Object.entries(allProofs).map(
     ([nodeHash, { nibbles, proof }]) => {
-      const path = packNibbles(nibbles as TNibble[])
+      const path = packNibbles(nibbles)
       const key: TAccountTrieNodeKey = {
         nodeHash: hexToBytes(nodeHash),
         path,

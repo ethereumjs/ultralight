@@ -74,7 +74,7 @@ describe('gossip test', async () => {
   const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   network1.gossipManager.setPulse(10)
   const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-  await network1?.sendPing(network2?.enr!.toENR())
+  await network1?.sendPing(network2?.enr.toENR())
   it('has pinged node in routing table', () => {
     assert.equal(
       network1?.routingTable.getWithPending(
@@ -207,7 +207,7 @@ describe('FindContent', async () => {
     assert.equal(bytesToHex(findStateRoot!), bytesToHex(stateRoot), 'retrieved expected state root')
   })
 
-  await network1.sendPing(network2?.enr!.toENR())
+  await network1.sendPing(network2?.enr.toENR())
 
   const res = await network2.sendFindContent(
     node1.discv5.enr.toENR(),
@@ -381,9 +381,9 @@ describe('Offer/Accept', () => {
     await network2.setRadius(2n ** 253n - 1n)
     const res = await network1.sendOffer(node2.discv5.enr.toENR(), contentKeys)
     assert.ok(res instanceof BitArray, 'should get a bitarray')
-    assert.equal((res as BitArray).bitLen, 2, 'should get matching length accepts')
+    assert.equal((res).bitLen, 2, 'should get matching length accepts')
     assert.equal(
-      (res as BitArray).getTrueBitIndexes().length,
+      (res).getTrueBitIndexes().length,
       1,
       'should only accept one content key',
     )
@@ -392,7 +392,7 @@ describe('Offer/Accept', () => {
     await network2.setRadius(2n ** 254n - 1n)
     const res2 = await network1.sendOffer(node2.discv5.enr.toENR(), contentKeys)
     assert.ok(res2 instanceof BitArray, 'should get a bitarray')
-    assert.equal((res2 as BitArray).bitLen, 2, 'should get matching length accepts')
-    assert.equal((res2 as BitArray).getTrueBitIndexes().length, 2, 'should accept two content keys')
+    assert.equal((res2).bitLen, 2, 'should get matching length accepts')
+    assert.equal((res2).getTrueBitIndexes().length, 2, 'should accept two content keys')
   })
 })

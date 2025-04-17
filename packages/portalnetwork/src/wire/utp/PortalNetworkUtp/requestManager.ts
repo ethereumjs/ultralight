@@ -156,13 +156,13 @@ export class RequestManager {
       return
     }
     if (request.socket.type === UtpSocketType.READ && request.socket.reader !== undefined) {
-      if (this.currentPacket.header.seqNr < request.socket.reader!.nextDataNr) {
+      if (this.currentPacket.header.seqNr < request.socket.reader.nextDataNr) {
         this.logger.extend('PROCESS_CURRENT_PACKET')(
           `Packet ${this.currentPacket.header.seqNr} already processed.`,
         )
         this.currentPacket = this.packetHeap.pop()
         return this.processCurrentPacket()
-      } else if (this.currentPacket.header.seqNr > request.socket.reader!.nextDataNr) {
+      } else if (this.currentPacket.header.seqNr > request.socket.reader.nextDataNr) {
         if (this.getPacketCount(this.currentPacket.header.connectionId) < MAX_IN_FLIGHT_PACKETS) {
           // Requeue packet.  Optimistically assume expected packet has arrived out of order.
           this.logger.extend('PROCESS_CURRENT_PACKET')(

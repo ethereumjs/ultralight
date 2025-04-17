@@ -87,7 +87,7 @@ export class Receipt {
           cumulativeBlockGasUsed: this.cumulativeBlockGasUsed,
           bitvector: this.bitvector,
           logs: this.logs,
-          stateRoot: this.stateRoot!,
+          stateRoot: this.stateRoot,
           txType: this.txType,
         } as PreByzantiumTxReceiptWithType
       } else {
@@ -102,7 +102,7 @@ export class Receipt {
     } else {
       if (this.stateRoot instanceof Uint8Array) {
         return {
-          stateRoot: this.stateRoot!,
+          stateRoot: this.stateRoot,
           cumulativeBlockGasUsed: this.cumulativeBlockGasUsed,
           bitvector: this.bitvector,
           logs: this.logs,

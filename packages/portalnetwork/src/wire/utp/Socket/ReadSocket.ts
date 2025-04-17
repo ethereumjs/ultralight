@@ -61,7 +61,7 @@ export class ReadSocket extends UtpSocket {
     )
     if (expected) {
       // Update this.ackNr to last in-order seqNr received.
-      const future = this.ackNrs.slice(packet.header.seqNr - this.ackNrs[0]!)
+      const future = this.ackNrs.slice(packet.header.seqNr - this.ackNrs[0])
       this.ackNr = future.slice(future.findIndex((n, i, ackNrs) => ackNrs[i + 1] === undefined))[0]!
       if (this.state === ConnectionState.GotFin) {
         if (this.ackNr === this.finNr) {

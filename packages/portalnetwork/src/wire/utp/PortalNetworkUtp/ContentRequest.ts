@@ -212,7 +212,7 @@ export class FindContentReadRequest extends ContentReadRequest {
       this.socket.reader = new ContentReader(packet.header.seqNr)
       if (this.version === 0) {
         // Content is not prefixed with a varint length
-        this.socket.reader!.bytesExpected = Number.POSITIVE_INFINITY
+        this.socket.reader.bytesExpected = Number.POSITIVE_INFINITY
       }
     }
     await this.socket.handleDataPacket(packet)
@@ -222,8 +222,8 @@ export class FindContentReadRequest extends ContentReadRequest {
         throw new Error('Failed to record FIN packet number')
       }
       // Check if all packets have been received from startingDataNr to finNr
-      for (let i = this.socket.finNr - 1; i >= this.socket.reader!.startingDataNr; i--) {
-        if (this.socket.reader!.packets[i] === undefined) {
+      for (let i = this.socket.finNr - 1; i >= this.socket.reader.startingDataNr; i--) {
+        if (this.socket.reader.packets[i] === undefined) {
           // If any packet is missing, return and wait for out of order packet
           return
         }
@@ -231,12 +231,12 @@ export class FindContentReadRequest extends ContentReadRequest {
       // If all packets have been received, return content
       switch (this.version) {
         case 0:
-          await this.returnContent([Uint8Array.from(this.socket.reader!.bytes)], [this.contentKey])
+          await this.returnContent([Uint8Array.from(this.socket.reader.bytes)], [this.contentKey])
           break
         case 1: {
-          if (this.socket.reader!.contents.length > 0) {
+          if (this.socket.reader.contents.length > 0) {
             const key = this.contentKey
-            const value = this.socket.reader!.contents.shift()!
+            const value = this.socket.reader.contents.shift()!
             this.logger(`Storing: ${bytesToHex(key)}.  length: ${value.length} `)
             await this.returnContent([value], [key])
           }

@@ -431,6 +431,6 @@ export const generatePreMergeHeaderProof = async (
     const proof = createProof(tree, proofInput) as SingleProof
     return proof.witnesses
   } catch (err: any) {
-    throw new Error('Error generating inclusion proof: ' + (err as any).message)
+    throw new Error('Error generating inclusion proof: ' + (err).message)
   }
 }

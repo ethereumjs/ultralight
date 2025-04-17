@@ -38,7 +38,7 @@ export class ContentReader {
     this.packets[packet.header.seqNr] = packet
     this.bytesReceived += packet.payload!.length
     this.logger(`Total ${this.bytesReceived} bytes received`)
-    if (packet.header.seqNr === this.nextDataNr!) {
+    if (packet.header.seqNr === this.nextDataNr) {
       this._addPacket(packet)
     } else {
       this.logger.extend('OOO')(
@@ -65,7 +65,7 @@ export class ContentReader {
 
   readPacket(payload: Uint8Array) {
     // Wrap seqNr back to 0 when it exceeds 16-bit max integer
-    this.nextDataNr! = (this.nextDataNr! + 1) % 65536
+    this.nextDataNr = (this.nextDataNr + 1) % 65536
     this.bytes.push(...payload)
     this.logger.extend('BYTES')(
       `Current stream: ${this.bytes.length}${this.bytesExpected === Number.POSITIVE_INFINITY ? '' : `/ ${this.bytesExpected}`} bytes. ${this.bytesExpected === Number.POSITIVE_INFINITY ? 'Unknown' : this.bytesExpected - this.bytes.length} bytes till end of content.`,
@@ -95,8 +95,8 @@ export class ContentReader {
     }
     this.readPacket(packet.payload!)
     this.readContent()
-    while (this.packets[this.nextDataNr!] !== undefined) {
-      const nextPacket = this.packets[this.nextDataNr!]
+    while (this.packets[this.nextDataNr] !== undefined) {
+      const nextPacket = this.packets[this.nextDataNr]
       this.logger(`packet:${this.nextDataNr} +${nextPacket.payload!.length} bytes.`)
       this.readPacket(nextPacket.payload!)
       this.readContent()

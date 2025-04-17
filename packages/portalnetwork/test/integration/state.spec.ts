@@ -95,7 +95,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
     const requested = await network2.findContentLocally(hexToBytes(contentKey))
     expect(requested, `Expected content for ${contentKey}`).toBeDefined()
     expect(requested).instanceOf(Uint8Array)
-    assert.equal(bytesToHex(requested!), bytesToHex(expected), 'retrieved value is correct')
+    assert.equal(bytesToHex(requested), bytesToHex(expected), 'retrieved value is correct')
   })
 })
 

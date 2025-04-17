@@ -125,17 +125,17 @@ export async function getLogs(
   const returnedLogs: GetLogsReturn = []
   let returnedLogsSize = 0
   for (const block of blocks) {
-    const receipts = await getReceipts(bytesToHex(block!.hash()))
+    const receipts = await getReceipts(bytesToHex(block.hash()))
     if (receipts.length === 0) continue
     let logs: GetLogsReturn = []
     let logIndex = 0
     for (const [receiptIndex, receipt] of receipts.entries()) {
       block !== undefined &&
         logs.push(
-          ...receipt!.logs.map((log) => ({
+          ...receipt.logs.map((log) => ({
             log,
             block,
-            tx: block!.transactions[receiptIndex],
+            tx: block.transactions[receiptIndex],
             txIndex: receiptIndex,
             logIndex: logIndex++,
           })),

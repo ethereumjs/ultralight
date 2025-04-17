@@ -105,7 +105,7 @@ describe('Recursive Content Lookup Test', () => {
     const contentKey = hexToBytes(
       '0x00a6f23da625dc9c17792f4d8d8a6ee8b42274f73739768d50335db878ad54acd7',
     )
-    const contentLookup = new ContentLookup(network3, contentKey!, true)
+    const contentLookup = new ContentLookup(network3, contentKey, true)
     const res = await contentLookup.startLookup()
     assert.equal(Object.keys(res!.trace!.metadata!).length, 2)
   })
