@@ -52,7 +52,6 @@ export const useJsonRpc = () => {
         default:
           throw new Error(`Unsupported method: ${method}`)
       }
-      console.log('resultt ', result)
       if (result === undefined) {
         throw new Error('No result returned from the request')
       }

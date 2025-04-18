@@ -46,7 +46,14 @@ describe('useJsonRpc', () => {
       isLoading: false,
       initialize: vi.fn(),
       cleanup: vi.fn(),
-      isNetworkReady: false
+      isNetworkReady: false,
+      abortController: null,
+      createAbortController: function (): AbortController {
+        throw new Error('Function not implemented.')
+      },
+      cancelRequest: function (): void {
+        throw new Error('Function not implemented.')
+      }
     })
 
     mockFormatBlockResponse.mockImplementation((result, includeTransactions) => ({

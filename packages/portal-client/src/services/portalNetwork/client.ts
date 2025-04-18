@@ -12,7 +12,7 @@ import type { Multiaddr } from '@multiformats/multiaddr'
 let client: PortalNetwork
 
 export const createPortalClient = async (port: number): Promise<PortalNetwork> => {
-  const db = createDatabase('db', { prefix: 'portalclient_' })
+  const db = createDatabase('network_db', { prefix: '' })
 
   const createNetwork = async (rebuildFromMemory: boolean): Promise<PortalNetwork> => {
     let privateKey: any
