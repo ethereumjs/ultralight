@@ -1,12 +1,7 @@
 import { SignableENR } from '@chainsafe/enr'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
-import { 
-  NetworkId,
-  TransportLayer,
-  createPortalNetwork,
-  DEFAULT_BOOTNODES,
-} from 'portalnetwork'
+import { NetworkId, TransportLayer, createPortalNetwork, DEFAULT_BOOTNODES } from 'portalnetwork'
 import { createDatabase } from './db'
 import { TauriUDPTransportService } from './transports'
 import { DEFAULT_DB_SIZE, STARTUP_DELAY_MS } from '@/utils/constants/config'
@@ -18,7 +13,7 @@ let client: PortalNetwork
 
 export const createPortalClient = async (port: number): Promise<PortalNetwork> => {
   const db = createDatabase('db', { prefix: 'portalclient_' })
-  
+
   const createNetwork = async (rebuildFromMemory: boolean): Promise<PortalNetwork> => {
     let privateKey: any
     if (rebuildFromMemory) {
@@ -27,11 +22,11 @@ export const createPortalClient = async (port: number): Promise<PortalNetwork> =
       privateKey = await keys.generateKeyPair('secp256k1')
       await db.savePrivateKey(privateKey)
     }
-    
+
     const enr = SignableENR.createFromPrivateKey(privateKey)
     const nodeAddr = multiaddr(`/ip4/0.0.0.0/udp/${port}`)
     enr.setLocationMultiaddr(nodeAddr)
-    
+
     return createPortalNetwork({
       transport: TransportLayer.TAURI,
       supportedNetworks: [
@@ -54,18 +49,19 @@ export const createPortalClient = async (port: number): Promise<PortalNetwork> =
       },
     })
   }
-  
+
   try {
     client = await createNetwork(true)
   } catch (error) {
     console.error('Failed to create node from memory, creating from scratch:', error)
     client = await createNetwork(false)
   }
-  
+
   await client.start()
   await client.storeNodeDetails()
-  
-  await new Promise(resolve => setTimeout(resolve, STARTUP_DELAY_MS))
-  
+
+  client.enableLog('*Portal*')
+  await new Promise((resolve) => setTimeout(resolve, STARTUP_DELAY_MS))
+
   return client
 }
