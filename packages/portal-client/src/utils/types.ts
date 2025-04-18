@@ -10,6 +10,7 @@ export type ResponseType =
   | 'storage'
   | 'callResult'
   | 'ether'
+  | 'generic'
 
 export interface RPCResponse {
   result?: any

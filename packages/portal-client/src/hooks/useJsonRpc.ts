@@ -18,7 +18,7 @@ export const useJsonRpc = () => {
     try {
       setIsLoading(true)
       let result
-      let responseType: RPCResponse['responseType']
+      let responseType = 'generic' as RPCResponse['responseType']
 
       switch (method) { 
         case 'eth_getBlockByNumber':
@@ -52,6 +52,7 @@ export const useJsonRpc = () => {
         default:
           throw new Error(`Unsupported method: ${method}`)
       }
+      console.log('resultt ', result)
       if (result === undefined) {
         throw new Error('No result returned from the request')
       }
@@ -83,7 +84,10 @@ export const useJsonRpc = () => {
           })
           break
         default:
-          setResult({ result })
+          setResult({ 
+            result,
+            responseType: 'generic'
+          })
       }
       return result
     } catch (err) {
@@ -93,10 +97,13 @@ export const useJsonRpc = () => {
         : 'An unknown error occurred'
       
       setIsLoading(false)
-      setResult({ error: { 
-        code: -32000, 
-        message 
-      }})
+      setResult({ 
+        error: { 
+          code: -32000, 
+          message 
+        },
+        responseType: 'generic'
+      })
       
       throw new Error(message)
     } finally {

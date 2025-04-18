@@ -79,7 +79,7 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({ data }) => {
             </div>
           </div>
         )
-      
+      case 'generic':
       default:
         if (typeof data.result === 'object' && data.result !== null) {
           return (
@@ -87,7 +87,7 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({ data }) => {
               {Object.entries(data.result).map(([key, value]) => (
                 <div key={key} className="ml-4 flex items-start">
                   <span className="text-purple-400 mr-2">{key}:</span>
-                  {jsonRenderer(value)}
+                  {jsonRenderer(value)}one
                 </div>
               ))}
             </div>

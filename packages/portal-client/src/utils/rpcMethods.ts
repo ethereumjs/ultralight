@@ -25,6 +25,7 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
       if (isNaN(Number(blockNumber))) {
         throw new Error('Invalid block number. It should be a valid number.')
       }
+      console.log('testt ', includeFullTx)
       return sendRequestHandle('eth_getBlockByNumber', [blockNumber, includeFullTx])
     },
   },
