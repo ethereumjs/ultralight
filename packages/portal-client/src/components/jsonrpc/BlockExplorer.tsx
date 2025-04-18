@@ -1,4 +1,4 @@
-import { FC, useState } from 'react'
+import { FC, useEffect, useMemo, useState } from 'react'
 import { useJsonRpc } from '@/hooks/useJsonRpc'
 import { MethodInput } from '@/components/ui/MethodInput'
 import { ResponseViewer } from '@/components/ui/ResponseViewer'
@@ -11,9 +11,11 @@ import { APPROVED_METHODS } from '@/utils/constants/methodRegistry'
 const BlockExplorer: FC = () => {
   const [selectedMethod, setSelectedMethod] = useState<MethodType | ''>('')
   const [inputValue, setInputValue] = useState('')
-  
+  const [includeFullTx, setIncludeFullTx] = useState(false)
+  const [blockHeight, setBlockHeight] = useState('')
+
   const { result, setResult, sendRequestHandle } = useJsonRpc()
-  const { isLoading, setIsLoading } = usePortalNetwork()
+  const { isLoading, setIsLoading, cancelRequest, client } = usePortalNetwork()
   const { notify } = useNotification()
 
   const methodOptions = APPROVED_METHODS.map((method) => ({
@@ -24,7 +26,14 @@ const BlockExplorer: FC = () => {
   const handleSubmit = async () => {
     if (selectedMethod && methodRegistry[selectedMethod]) {
       try {
-        await methodRegistry[selectedMethod].handler(inputValue, sendRequestHandle)
+        let formattedInput = inputValue
+
+        if (methodParamMap[selectedMethod]?.showIncludeFullTx) {
+          formattedInput = `${inputValue},${includeFullTx}`
+        } else if (methodParamMap[selectedMethod]?.showBlockHeight) {        
+          formattedInput = `${inputValue},${blockHeight}`
+        }
+        await methodRegistry[selectedMethod].handler(formattedInput, sendRequestHandle)
       } catch (err) {
         notify({
           message: err instanceof Error ? err.message : 'Request failed',
@@ -36,42 +45,88 @@ const BlockExplorer: FC = () => {
 
   const handleSelectMethod = (method: MethodType) => {
     setSelectedMethod(method)
+    reset()
+  }
+
+  const handleCancel = () => {
+    if (cancelRequest) {
+      cancelRequest()
+      setIsLoading(false)
+      notify({
+        message: 'Request cancelled',
+        type: 'info',
+      })
+    }
+  }
+
+  const reset = () => {
     setInputValue('')
+    setBlockHeight('')
+    setIncludeFullTx(false)
     setResult(null)
     setIsLoading(false)
   }
 
- return (
-   <div className="w-full max-w-2xl mx-auto mt-4 p-4 bg-[#1C232A]">
-     <div className="bg-[#2A323C] rounded-lg shadow-lg p-6">
-       <h2 className="text-2xl font-bold mb-6 text-gray-200">JSON RPC Interface</h2>
-       <div className="mb-6">
-         <Select
-           options={methodOptions}
-           value={selectedMethod}
-           onChange={(e) => handleSelectMethod(e.target.value as MethodType)}
-           placeholder="Select a method"
-         />
-       </div>
-       {selectedMethod && (
-         <div className="mb-6">
-           <MethodInput
-             value={inputValue}
-             onChange={setInputValue}
-             placeholder={methodRegistry[selectedMethod].paramPlaceholder}
-             onSubmit={handleSubmit}
-             isLoading={isLoading}
-             className="bg-[#2A323C] text-gray-200 border border-gray-600 placeholder-gray-400 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"
-           />
-         </div>
-       )}
+  const methodParamMap = useMemo(() => {
+    const map: Record<string, { showIncludeFullTx?: boolean; showBlockHeight?: boolean }> = {}
 
-       {isLoading && <div className="text-center text-gray-400">Loading...</div>}
-       {result && <ResponseViewer data={result.result} />}
-     </div>
-   </div>
- )
+    APPROVED_METHODS.forEach((method) => {
+      if (method.includes('BlockBy')) {
+        map[method] = { showIncludeFullTx: true }
+      } else if (method === 'eth_getTransactionCount' || method === 'eth_getBalance') {
+        map[method] = { showBlockHeight: true }
+      } else {
+        map[method] = {}
+      }
+    })
 
+    return map
+  }, [])
+
+  useEffect(() => {
+    if (client === null) {
+      reset()
+    }
+  }, [client])
+
+  const currentMethodConfig = selectedMethod ? methodParamMap[selectedMethod] || {} : {}
+
+  return (
+    <div className="w-full max-w-2xl mx-auto mt-4 p-4 bg-[#1C232A]">
+      <div className="bg-[#2A323C] rounded-lg shadow-lg p-6">
+        <h2 className="text-2xl font-bold mb-6 text-gray-200">JSON RPC Interface</h2>
+        <div className="mb-6">
+          <Select
+            options={methodOptions}
+            value={selectedMethod}
+            onChange={(e) => handleSelectMethod(e.target.value as MethodType)}
+            placeholder="Select a method"
+          />
+        </div>
+        {selectedMethod && (
+          <div className="mb-6">
+            <MethodInput
+              value={inputValue}
+              onChange={setInputValue}
+              placeholder={methodRegistry[selectedMethod].paramPlaceholder}
+              onSubmit={handleSubmit}
+              onCancel={handleCancel}
+              isLoading={isLoading}
+              className="bg-[#2A323C] text-gray-200 border border-gray-600 placeholder-gray-400 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"
+              showIncludeFullTx={currentMethodConfig.showIncludeFullTx}
+              includeFullTx={includeFullTx}
+              onIncludeFullTxChange={setIncludeFullTx}
+              showBlockHeight={currentMethodConfig.showBlockHeight}
+              blockHeight={blockHeight}
+              onBlockHeightChange={setBlockHeight}
+            />
+          </div>
+        )}
+        {isLoading && <div className="text-center text-gray-400">Loading...</div>}
+        {result && <ResponseViewer data={result} />}
+      </div>
+    </div>
+  )
 }
 
 export default BlockExplorer
