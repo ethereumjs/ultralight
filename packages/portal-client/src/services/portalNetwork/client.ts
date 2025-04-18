@@ -61,6 +61,9 @@ export const createPortalClient = async (port: number): Promise<PortalNetwork> =
   await client.storeNodeDetails()
 
   client.enableLog('*Portal*')
+
+  // @ts-expect-error Window is available in browser
+  window.portal = client // add portal to window to allow for direct access to portalnetwork client
   await new Promise((resolve) => setTimeout(resolve, STARTUP_DELAY_MS))
 
   return client
