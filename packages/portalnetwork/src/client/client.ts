@@ -5,7 +5,7 @@ import type { Multiaddr } from '@multiformats/multiaddr'
 import { fromNodeAddress } from '@multiformats/multiaddr'
 import debug from 'debug'
 import { EventEmitter } from 'eventemitter3'
-import packageJson from '../../package.json' assert { type: 'json' }
+// import packageJson from '../../package.json' assert { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import { BeaconNetwork, NetworkId, StateNetwork, SyncStrategy } from '../networks/index.js'
@@ -52,13 +52,14 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    * @param opts a dictionary of `PortalNetworkOpts`
    */
   constructor(opts: PortalNetworkOpts) {
-     
     super()
     this.clientInfo = {
       clientName: 'ultralight',
-      clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
+      clientVersionAndShortCommit: `clientVersionAndShortCommit`,
+      // clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
       operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture ?? '',
-      programmingLanguageAndVersion: `typescript_${packageJson.devDependencies.typescript}`,
+      programmingLanguageAndVersion: `programmingLanguageAndVersion`,
+      // programmingLanguageAndVersion: `typescript_${packageJson.devDependencies.typescript}`,
     }
     this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
@@ -390,7 +391,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public addToBlackList = (ma: Multiaddr) => {
-     
     ;(<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).addToBlackList(
       ma.nodeAddress().address,
     )
@@ -403,7 +403,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public removeFromBlackList = (ma: Multiaddr) => {
-     
     ;(<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).removeFromBlackList(
       ma.nodeAddress().address,
     )
