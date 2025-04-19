@@ -5,7 +5,7 @@ import type { Multiaddr } from '@multiformats/multiaddr'
 import { fromNodeAddress } from '@multiformats/multiaddr'
 import debug from 'debug'
 import { EventEmitter } from 'eventemitter3'
-// import packageJson from '../../package.json' assert { type: 'json' }
+import packageJson from '../../package.json' assert { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import { BeaconNetwork, NetworkId, StateNetwork, SyncStrategy } from '../networks/index.js'
@@ -55,11 +55,9 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     super()
     this.clientInfo = {
       clientName: 'ultralight',
-      clientVersionAndShortCommit: `clientVersionAndShortCommit`,
-      // clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
+      clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
       operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture ?? '',
-      programmingLanguageAndVersion: `programmingLanguageAndVersion`,
-      // programmingLanguageAndVersion: `typescript_${packageJson.devDependencies.typescript}`,
+      programmingLanguageAndVersion: `typescript_${packageJson.devDependencies.typescript}`,
     }
     this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
