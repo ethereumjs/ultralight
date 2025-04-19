@@ -23,7 +23,7 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
     paramPlaceholder: 'Enter Block Number',
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
       const [blockNumber, includeFullTx] = input.split(',')
-      if (isNaN(Number(blockNumber))) {
+      if (Number.isNaN(Number(blockNumber))) {
         throw new Error('Invalid block number. It should be a valid number.')
       }
       return sendRequestHandle('eth_getBlockByNumber', [blockNumber, includeFullTx])
