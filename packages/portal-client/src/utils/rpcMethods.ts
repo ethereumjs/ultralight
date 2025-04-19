@@ -51,4 +51,16 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
       return sendRequestHandle('eth_getBalance', [hexToBytes(address), blockHeight])
     },
   },
+
+  'portal_findContent': {
+    name: "Find Content",
+    paramPlaceholder: "Enter content ID",
+    handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
+  
+      const [nodeId, distance] = input.split(',')
+      
+      return sendRequestHandle('portal_findContent', [nodeId, distance])
+    },
+  },
+
 }
