@@ -24,8 +24,8 @@ import {
   getBeaconContentKey,
 } from '../../src/index.js'
 
-import type { BeaconNetwork } from '../../src/index.js'
 import { BitArray } from '@chainsafe/ssz'
+import type { BeaconNetwork } from '../../src/index.js'
 
 const require = createRequire(import.meta.url)
 
@@ -42,9 +42,9 @@ const enr1 = SignableENR.createFromPrivateKey(pk1)
 const enr2 = SignableENR.createFromPrivateKey(pk2)
 describe('Find Content tests', () => {
   it('should find bootstrap content', async () => {
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3000')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3001')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
@@ -74,7 +74,7 @@ describe('Find Content tests', () => {
     await node2.start()
     const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -102,9 +102,9 @@ describe('Find Content tests', () => {
   }, 10000)
   it('should find optimistic update', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3002`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3002')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3003`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3003')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
@@ -156,7 +156,7 @@ describe('Find Content tests', () => {
       },
     }
 
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -199,9 +199,9 @@ describe('Find Content tests', () => {
 
   it('should find LightClientUpdatesByRange update', async () => {
     const updatesByRange = specTestVectors.updateByRange['6684738']
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3004`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3004')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3005`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3005')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
@@ -230,7 +230,7 @@ describe('Find Content tests', () => {
     await node2.start()
     const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -268,9 +268,9 @@ describe('Find Content tests', () => {
 describe('OFFER/ACCEPT tests', () => {
   it('offers optimistic updates to another node', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30022`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/30022')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30023`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/30023')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
@@ -326,7 +326,7 @@ describe('OFFER/ACCEPT tests', () => {
       },
     }
 
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -378,9 +378,9 @@ describe('OFFER/ACCEPT tests', () => {
   }, 10000)
   it('offers a stale optimistic update to another node that is declined', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30025`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/30025')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30026`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/30026')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
@@ -433,7 +433,7 @@ describe('OFFER/ACCEPT tests', () => {
       },
     }
 
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -454,7 +454,11 @@ describe('OFFER/ACCEPT tests', () => {
     const acceptedOffers = await network1.sendOffer(network2.enr.toENR(), [
       staleOptimisticUpdateContentKey,
     ])
-    assert.deepEqual(acceptedOffers, BitArray.fromBoolArray([false]), 'no content was accepted by node 2')
+    assert.deepEqual(
+      acceptedOffers,
+      BitArray.fromBoolArray([false]),
+      'no content was accepted by node 2',
+    )
     const content = await network2.retrieve(
       hexToBytes(intToHex(BeaconNetworkContentType.LightClientOptimisticUpdate)),
     )
@@ -468,9 +472,9 @@ describe('OFFER/ACCEPT tests', () => {
   it('gossips a bootstrap to another node', async () => {
     const bootstrapJson = require('./testdata/bootstrap2.json').data
     const bootstrap = ssz.capella.LightClientBootstrap.fromJson(bootstrapJson)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30025`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/30025')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30026`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/30026')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
@@ -499,7 +503,7 @@ describe('OFFER/ACCEPT tests', () => {
     const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
 
     const bootstrapKey = getBeaconContentKey(
       BeaconNetworkContentType.LightClientBootstrap,
@@ -542,9 +546,9 @@ describe('beacon light client sync tests', () => {
      */
     vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
     vi.setSystemTime(1693431998000)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/31824`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/31824')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/31825`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/31825')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
@@ -627,7 +631,7 @@ describe('beacon light client sync tests', () => {
       ),
     )
 
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -662,9 +666,9 @@ describe('beacon light client sync tests', () => {
     const range = require('./testdata/range.json')
     const bootstrapJson = require('./testdata/bootstrap2.json').data
     const bootstrap = ssz.capella.LightClientBootstrap.fromJson(bootstrapJson)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30025`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/30025')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30026`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/30026')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
@@ -754,7 +758,7 @@ describe('beacon light client sync tests', () => {
           resolve('undefined)')
         }
       })
-      void network2!.addBootNode(network1?.enr!.encodeTxt())
+      void network2.addBootNode(network1?.enr.encodeTxt())
     })
   }, 30000)
 })
@@ -772,9 +776,9 @@ describe('historicalSummaries verification', () => {
     const optimisticUpdateJson =
       require('./testdata/historicalSummaries/optimistic_update.json').data
     const optimisticUpdate = ssz.deneb.LightClientOptimisticUpdate.fromJson(optimisticUpdateJson)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/30027`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/30027')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/30028`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/30028')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
@@ -829,7 +833,7 @@ describe('historicalSummaries verification', () => {
       ),
     )
 
-    await network1!.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',

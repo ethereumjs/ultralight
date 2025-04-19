@@ -1,0 +1,111 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "vcs": {
+    "enabled": false,
+    "clientKind": "git",
+    "useIgnoreFile": false
+  },
+  "files": {
+    "ignoreUnknown": false,
+    "include": ["packages/cli", "packages/portalnetwork", "packages/portal-client"],
+    "ignore": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/coverage/**",
+      "packages/archived-transport-layers/",
+      "packages/archived-browser-client/",
+      "packages/archived-browser/",
+      "packages/proxy/",
+      "packages/ui/",
+      "packages/cli/scripts",
+      "tsconfig.lint.json",
+      "**/testData",
+      "**/scripts/**/*.json",
+      "**/*.css",
+      "**/*.scss",
+      "**/*.html",
+      "**/*.tsx",
+      "packages/**/docs/**"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        "noNamespace": "error",
+        "noNonNullAssertion": "off",
+        "useTemplate": "off",
+        "useNodejsImportProtocol": "off",
+        "noUselessElse": "off",
+        "useSingleVarDeclarator": "off",
+        "noParameterAssign": "off",
+        "useSelfClosingElements": "off"
+      },
+      "suspicious": {
+        "noRedeclare": "off",
+        "noDuplicateClassMembers": "off",
+        "useNamespaceKeyword": "off",
+        "noExplicitAny": "off",
+        "noImplicitAnyLet": "off",
+        "noArrayIndexKey": "off",
+        "noConfusingVoidType": "off",
+        "noAssignInExpressions": "off",
+        "noExportsInTest": "off"
+      },
+      "correctness": {
+        "noUnusedVariables": "off",
+        "useImportExtensions": "off",
+        "useExhaustiveDependencies": "off"
+      },
+      "complexity": {
+        "useOptionalChain": "off",
+        "noForEach": "off",
+        "noUselessTernary": "off",
+        "useLiteralKeys": "off",
+        "noBannedTypes": "off",
+        "noStaticOnlyClass": "info"
+      },
+      "a11y": {
+        "useKeyWithClickEvents": "off",
+        "useSemanticElements": "off",
+        "useButtonType": "off",
+        "noSvgWithoutTitle": "off",
+        "noNoninteractiveTabindex": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "include": ["**/cli/**/*.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    }
+  ],
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded"
+    }
+  },
+  "json": {
+    "parser": {
+      "allowComments": true,
+      "allowTrailingCommas": true
+    }
+  }
+}

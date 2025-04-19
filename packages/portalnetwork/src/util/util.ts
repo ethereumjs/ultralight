@@ -44,7 +44,7 @@ export const generateRandomNodeIdAtDistance = (nodeId: NodeId, targetDistance: n
   while (binaryDistance.length < 256) {
     binaryDistance.push(Math.random() >= 0.5 ? 1 : 0)
   }
-  const xorNumericDistance = BigInt(parseInt(binaryDistance.join(''), 2))
+  const xorNumericDistance = BigInt(Number.parseInt(binaryDistance.join(''), 2))
   return bytesToUnprefixedHex(
     bigIntToBytes(bytesToBigInt(unprefixedHexToBytes(nodeId), false) ^ xorNumericDistance),
   ).padStart(64, '0')

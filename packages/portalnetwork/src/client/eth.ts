@@ -33,11 +33,11 @@ export class ETH {
   activeNetworks: NetworkId[]
   logger: Debugger
   constructor(portal: PortalNetwork) {
-    this.activeNetworks = Array.from(portal.networks.keys()) as NetworkId[]
+    this.activeNetworks = Array.from(portal.networks.keys())
     this.history = portal.network()['0x500b']
     this.state = portal.network()['0x500a']
     this.beacon = portal.network()['0x500c']
-    this.logger = portal.logger.extend(`ETH`)
+    this.logger = portal.logger.extend('ETH')
   }
 
   /**

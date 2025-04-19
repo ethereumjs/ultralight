@@ -218,7 +218,7 @@ const main = async () => {
       customCrypto: {
         kzg: {
           loadTrustedSetup: async () => {
-            return await loadKZG()
+            return loadKZG()
           },
           blobToKzgCommitment: (blob) => {
             return hexToBytes(kzg.blobToKZGCommitment(bytesToHex(blob)))

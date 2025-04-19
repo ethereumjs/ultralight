@@ -33,10 +33,18 @@ const privateKeys = [
 ]
 const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
 const enr1 = SignableENR.createFromPrivateKey(pk1)
-console.log(bytesToHex(getBeaconContentKey(BeaconNetworkContentType.LightClientBootstrap, 
-  LightClientBootstrapKey.serialize({ blockHash: hexToBytes('0xf090380ffd4ba91c51488bb0fcdcfe70a34d03fac8011861f65bd9ef90576639') }))))
+console.log(
+  bytesToHex(
+    getBeaconContentKey(
+      BeaconNetworkContentType.LightClientBootstrap,
+      LightClientBootstrapKey.serialize({
+        blockHash: hexToBytes('0xf090380ffd4ba91c51488bb0fcdcfe70a34d03fac8011861f65bd9ef90576639'),
+      }),
+    ),
+  ),
+)
 describe('API tests', async () => {
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+  const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3000')
   enr1.setLocationMultiaddr(initMa)
 
   const node1 = await createPortalNetwork({
@@ -139,7 +147,7 @@ describe('API tests', async () => {
     const gossipSpy = vi.spyOn(network, 'sendOffer')
     const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
     const enr2 = SignableENR.createFromPrivateKey(pk2)
-    const initMa2 = multiaddr(`/ip4/127.0.0.1/udp/3001`)
+    const initMa2 = multiaddr('/ip4/127.0.0.1/udp/3001')
     enr2.setLocationMultiaddr(initMa2)
     const node2 = await createPortalNetwork({
       transport: TransportLayer.NODE,
@@ -246,7 +254,7 @@ describe('API tests', async () => {
 })
 
 describe('constructor/initialization tests', async () => {
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3000`)
+  const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3000')
   enr1.setLocationMultiaddr(initMa)
 
   it('starts the bootstrap finder mechanism when no trusted block root is provided', async () => {
@@ -324,5 +332,4 @@ describe('constructor/initialization tests', async () => {
     assert.equal(listeners.length, 0, 'bootstrap listener is not running')
     vi.resetAllMocks()
   })
-  
 })

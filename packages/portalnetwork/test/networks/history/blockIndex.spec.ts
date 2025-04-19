@@ -1,5 +1,5 @@
-import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { readFileSync } from 'fs'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { assert, describe, it } from 'vitest'
 import {
   BlockHeaderWithProof,
@@ -9,8 +9,8 @@ import {
   getContentKey,
 } from '../../../src/index.js'
 
-import { createBlockHeaderFromRLP } from '@ethereumjs/block'
 import path from 'path'
+import { createBlockHeaderFromRLP } from '@ethereumjs/block'
 import type { HistoryNetwork } from '../../../src/index.js'
 
 const headerWithProof = JSON.parse(

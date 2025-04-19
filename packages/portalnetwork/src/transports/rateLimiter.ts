@@ -14,7 +14,6 @@ export class RateLimiter implements IRateLimiter {
     IPAddress,
     ReturnType<typeof setTimeout>
   >()
-  constructor() {}
 
   public allowEncodedPacket(ip: IPAddress): boolean {
     return !this.blackListed.has(ip)

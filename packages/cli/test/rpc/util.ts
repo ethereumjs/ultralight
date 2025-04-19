@@ -30,7 +30,7 @@ export const startRpc = async (opts?: cliConfig) => {
   let done = false
   while (!done) {
     try {
-      await rpc.request(`discv5_nodeInfo`, [])
+      await rpc.request('discv5_nodeInfo', [])
       done = true
     } catch {
       /** Catch connection errors while waiting for portal client to start */

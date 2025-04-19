@@ -4,10 +4,10 @@ import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, expect, it } from 'vitest'
 
+import { bytesToUnprefixedHex, hexToBytes } from '@ethereumjs/util'
 import { createUltralightProvider } from '../../src/client/provider.js'
 import { TransportLayer } from '../../src/client/types.js'
 import { NetworkId } from '../../src/networks/types.js'
-import { bytesToUnprefixedHex, hexToBytes } from '@ethereumjs/util'
 
 describe('Test provider functionality', () => {
   it('should test provider API', async () => {

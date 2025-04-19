@@ -1,10 +1,10 @@
 import type { PortalNetwork } from './client.js'
 
-import type { PortalNetworkOpts } from './types'
 import { hexToBytes } from '@ethereumjs/util'
+import type { PortalNetworkOpts } from './types'
 
-import { formatBlockResponse, formatResponse } from '../util/helpers.js'
 import { DEFAULT_OPTS } from '../util/config.js'
+import { formatBlockResponse, formatResponse } from '../util/helpers.js'
 import { createPortalNetwork } from './constructor.js'
 
 const ERROR_CODES = {
@@ -39,7 +39,7 @@ export class UltralightProvider {
     if (!SUPPORTED_METHODS.has(method)) {
       throw this.createError(
         ERROR_CODES.UNSUPPORTED_METHOD,
-        `The provider does not support the requested method`,
+        'The provider does not support the requested method',
       )
     }
 
@@ -125,7 +125,7 @@ export class UltralightProvider {
         default:
           throw this.createError(
             ERROR_CODES.UNSUPPORTED_METHOD,
-            `The Provider does not support the requested method`,
+            'The Provider does not support the requested method',
           )
       }
     } catch (error: any) {

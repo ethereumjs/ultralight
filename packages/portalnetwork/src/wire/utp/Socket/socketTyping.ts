@@ -22,17 +22,17 @@ export const logScope = {
   topics: 'utp_socket',
 }
 export enum ConnectionState {
-  SynSent,
-  SynRecv,
-  Connected,
-  Reset,
-  Closed,
-  GotFin,
+  SynSent = 0,
+  SynRecv = 1,
+  Connected = 2,
+  Reset = 3,
+  Closed = 4,
+  GotFin = 5,
 }
 
 export enum ConnectionDirection {
-  Outgoing,
-  Ingoing,
+  Outgoing = 0,
+  Ingoing = 1,
 }
 
 export interface IUtpSocketKeyOptions {
@@ -41,9 +41,9 @@ export interface IUtpSocketKeyOptions {
 }
 
 export enum AckResult {
-  PacketAcked,
-  PacketAlreadyAcked,
-  PacketNotSentYet,
+  PacketAcked = 0,
+  PacketAlreadyAcked = 1,
+  PacketNotSentYet = 2,
 }
 
 export type SendCallback = (to: Multiaddr, data: Uint8Array) => void

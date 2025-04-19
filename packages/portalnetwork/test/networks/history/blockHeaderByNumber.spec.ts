@@ -11,14 +11,16 @@ import {
   decodeHistoryNetworkContentKey,
 } from '../../../src/index.js'
 
-import testdata from './testData/block207686.json'
 import { createBlockHeaderFromRLP } from '@ethereumjs/block'
+import testdata from './testData/block207686.json'
 
 describe('Retrieve Block Header By Number', async () => {
   const HWP207686 = hexToBytes(testdata.header)
   const serializedHeader207686 = BlockHeaderWithProof.deserialize(HWP207686).header
 
-  const header207868 = createBlockHeaderFromRLP(serializedHeader207686, { setHardfork: true })
+  const header207868 = createBlockHeaderFromRLP(serializedHeader207686, {
+    setHardfork: true,
+  })
   const hash207686 = bytesToHex(header207868.hash())
 
   const contentKey207686 = BlockHeaderByNumberKey(207686n)
@@ -45,7 +47,9 @@ describe('Retrieve Block Header By Number', async () => {
   })
 
   it('Should retrieve block header by hash', async () => {
-    const header = await history.getBlockHeaderFromDB({ blockHash: hexToBytes(hash207686) })
+    const header = await history.getBlockHeaderFromDB({
+      blockHash: hexToBytes(hash207686),
+    })
     assert.deepEqual(header, serializedHeader207686)
   })
   it('Should retrieve block by number', async () => {
@@ -56,12 +60,12 @@ describe('Retrieve Block Header By Number', async () => {
   it('Should retrieve locally via eth_getBlockByNumber', async () => {
     const block = await client.ETH.getBlockByNumber(207686n, false)
     assert.isDefined(block)
-    assert.deepEqual(block!.header.serialize(), serializedHeader207686)
+    assert.deepEqual(block.header.serialize(), serializedHeader207686)
   })
 
   it('Should retrieve locally via eth_getBlockByHash', async () => {
     const block = await client.ETH.getBlockByHash(hexToBytes(hash207686), false)
     assert.isDefined(block)
-    assert.deepEqual(block!.header.serialize(), serializedHeader207686)
+    assert.deepEqual(block.header.serialize(), serializedHeader207686)
   })
 })

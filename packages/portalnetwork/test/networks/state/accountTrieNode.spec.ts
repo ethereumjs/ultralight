@@ -7,8 +7,8 @@ import {
   AccountTrieNodeContentKey,
   AccountTrieNodeOffer,
   NetworkId,
-  createPortalNetwork,
   StateNetworkContentId,
+  createPortalNetwork,
   distance,
 } from '../../../src/index.js'
 

@@ -1,6 +1,6 @@
 import type { ENR } from '@chainsafe/enr'
-import type { IClientInfo, NetworkId } from '../index.js'
 import type { Multiaddr } from '@multiformats/multiaddr'
+import type { IClientInfo, NetworkId } from '../index.js'
 
 export type PeerScore = {
   errors: number

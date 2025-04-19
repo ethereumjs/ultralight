@@ -17,7 +17,7 @@ export function createDatabase(
     keyEncoding: 'utf8',
     valueEncoding: 'utf8',
   })
-  
+
   const enhancedDb = browserDb as any
   enhancedDb.nextTick = (fn: Function) => setTimeout(fn, 0)
   

@@ -176,7 +176,7 @@ export const jsonRpcBlock = async (
   includeTransactions: boolean,
 ): Promise<JsonRpcBlock> => {
   const json = block.toJSON()
-  const header = json!.header!
+  const header = json.header!
   const transactions = block.transactions.map((tx, txIndex) =>
     includeTransactions ? jsonRpcTx(tx, block, txIndex) : bytesToHex(tx.hash()),
   )

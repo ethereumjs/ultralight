@@ -1,8 +1,7 @@
-/* eslint-disable no-console */
-import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { readFileSync, readdirSync, statSync } from 'fs'
-import yaml from 'js-yaml'
 import { join, resolve } from 'path'
+import { bytesToHex, hexToBytes } from '@ethereumjs/util'
+import yaml from 'js-yaml'
 import { afterAll, beforeAll, describe, it } from 'vitest'
 import type { HistoryNetwork } from '../../../src/index.js'
 import {

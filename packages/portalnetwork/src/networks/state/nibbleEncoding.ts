@@ -10,7 +10,7 @@ const isNibble = (value: string): boolean => {
 }
 
 // Utility function to convert a nibble into its numerical representation
-const nibbleToNumber = (nibble: TNibble): number => parseInt(nibble, 16)
+const nibbleToNumber = (nibble: TNibble): number => Number.parseInt(nibble, 16)
 
 // Utility function to convert a number to a nibble string
 const numberToNibble = (number: number): TNibble => number.toString(16) as TNibble

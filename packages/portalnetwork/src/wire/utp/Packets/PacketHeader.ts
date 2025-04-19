@@ -1,7 +1,7 @@
 import { VERSION } from '../Utils/constants.js'
 import { SelectiveAckHeaderExtension } from './Extensions.js'
 
-import type { Uint16, Uint32, Uint8 } from '../index.js'
+import type { Uint8, Uint16, Uint32 } from '../index.js'
 import type {
   HeaderInput,
   ISelectiveAckHeaderInput,
@@ -37,19 +37,16 @@ abstract class Header<T extends PacketType> {
   abstract encode(): Uint8Array
 }
 export class BasicPacketHeader<T extends PacketType> extends Header<T> {
-  constructor(options: HeaderInput<T>) {
-    super(options)
-  }
   encode(): Uint8Array {
     const array = new Uint8Array(this.length)
     const view = new DataView(array.buffer)
-    
+
     // Combine packet type and version into a single byte
     const p = Number(this.pType).toString(16)
     const v = this.version.toString(16)
     const pv = p + v
-    const typeAndVer = parseInt(pv, 16)
-    
+    const typeAndVer = Number.parseInt(pv, 16)
+
     view.setUint8(0, typeAndVer)
     view.setUint8(1, this.extension)
     view.setUint16(2, this.connectionId, false) // false = big-endian
@@ -58,7 +55,7 @@ export class BasicPacketHeader<T extends PacketType> extends Header<T> {
     view.setUint32(12, this.wndSize, false)
     view.setUint16(16, this.seqNr, false)
     view.setUint16(18, this.ackNr, false)
-    
+
     return array
   }
 }
@@ -77,13 +74,13 @@ export class SelectiveAckHeader extends Header<PacketType.ST_STATE> {
   encode(): Uint8Array {
     const array = new Uint8Array(20 + this.selectiveAckExtension.bitmask.length + 2)
     const view = new DataView(array.buffer)
-    
+
     // Combine packet type and version into a single byte
     const p = this.pType.toString(16)
     const v = this.version.toString(16)
     const pv = p + v
-    const typeAndVer = parseInt(pv, 16)
-    
+    const typeAndVer = Number.parseInt(pv, 16)
+
     view.setUint8(0, typeAndVer)
     view.setUint8(1, this.extension)
     view.setUint16(2, this.connectionId, false) // false = big-endian
@@ -94,12 +91,12 @@ export class SelectiveAckHeader extends Header<PacketType.ST_STATE> {
     view.setUint16(18, this.ackNr, false)
     view.setUint8(20, this.selectiveAckExtension.type)
     view.setUint8(21, this.selectiveAckExtension.len)
-    
+
     // Write bitmask values directly to the Uint8Array
     this.selectiveAckExtension.bitmask.forEach((value, idx) => {
       array[22 + idx] = value
     })
-    
+
     return array
   }
 }

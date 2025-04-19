@@ -22,7 +22,7 @@ export class NodeLookup {
   private pendingNodes: Map<string, ENR> // nodeId -> ENR
   private refresh: boolean
 
-  constructor(network: BaseNetwork, nodeId: string, refresh: boolean = false) {
+  constructor(network: BaseNetwork, nodeId: string, refresh = false) {
     this.network = network
     this.nodeSought = nodeId
     this.refresh = refresh
@@ -113,7 +113,6 @@ export class NodeLookup {
             // Add to pending
             this.pendingNodes.set(nodeId, decodedEnr)
           } catch (error) {
-            continue
             // this.log(`Error processing ENR: ${decodedEnr.encodeTxt()}`)
           }
         }
@@ -134,7 +133,7 @@ export class NodeLookup {
 
     while (this.pendingNodes.size > 0) {
       if (this.refresh === true && startingSize >= MAX_NODES_PER_BUCKET) {
-        this.log(`Bucket is full, stopping lookup`)
+        this.log('Bucket is full, stopping lookup')
         break
       }
 

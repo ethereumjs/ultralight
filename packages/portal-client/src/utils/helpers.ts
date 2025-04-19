@@ -1,5 +1,5 @@
-import { ConfigId } from '@/utils/types'
 import { CONFIG_DEFAULTS } from '@/utils/constants/config'
+import type { ConfigId } from '@/utils/types'
 
 /**
  * Get a configuration value from localStorage or fall back to the default value from CONFIG_DEFAULTS.

@@ -1,4 +1,4 @@
-import { afterAll, assert, beforeAll, describe, it } from 'vitest'
+import { assert, afterAll, beforeAll, describe, it } from 'vitest'
 
 import { startRpc } from '../util.js'
 const method = 'portal_historyPing'

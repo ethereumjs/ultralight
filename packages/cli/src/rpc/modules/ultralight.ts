@@ -72,7 +72,7 @@ export class ultralight {
   async addContentToDB(params: [string, string]) {
     const [contentKey, value] = params
 
-    const type: number = parseInt(contentKey.slice(0, 4))
+    const type: number = Number.parseInt(contentKey.slice(0, 4))
     this.logger(
       `ultralight_addContentToDB request received for ${HistoryNetworkContentType[type]} ${contentKey}`,
     )
@@ -104,15 +104,15 @@ export class ultralight {
     try {
       switch (networkId) {
         case NetworkId.HistoryNetwork: {
-          await this._history!.setRadius(2n ** BigInt(parseInt(radius)) - 1n)
+          await this._history!.setRadius(2n ** BigInt(Number.parseInt(radius)) - 1n)
           return '0x' + this._history!.nodeRadius.toString(16)
         }
         case NetworkId.StateNetwork: {
-          await this._state!.setRadius(2n ** BigInt(parseInt(radius)) - 1n)
+          await this._state!.setRadius(2n ** BigInt(Number.parseInt(radius)) - 1n)
           return '0x' + this._state!.nodeRadius.toString(16)
         }
         case NetworkId.BeaconChainNetwork: {
-          await this._beacon!.setRadius(2n ** BigInt(parseInt(radius)) - 1n)
+          await this._beacon!.setRadius(2n ** BigInt(Number.parseInt(radius)) - 1n)
           return '0x' + this._beacon!.nodeRadius.toString(16)
         }
         default: {

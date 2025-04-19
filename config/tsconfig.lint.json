@@ -1,5 +1,5 @@
 {
-  "include": ["../packages/cli/**/*.ts", "../packages/era/**/*.ts", "../packages/portalnetwork/**/*.ts"],
+  "include": ["../packages/cli/**/*.ts","../packages/portalnetwork/**/*.ts", "../packages/portal-client/**/*.ts"],
   "exclude": ["dist"],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */

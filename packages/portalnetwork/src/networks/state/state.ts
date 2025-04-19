@@ -25,6 +25,10 @@ import {
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 
+import type { ENR } from '@chainsafe/enr'
+import type { Debugger } from 'debug'
+import type { FindContentMessage, Version } from '../../wire/types.js'
+import type { BaseNetworkConfig, ContentLookupResponse } from '../index.js'
 import { StateManager } from './manager.js'
 import { packNibbles, unpackNibbles } from './nibbleEncoding.js'
 import {
@@ -36,6 +40,7 @@ import {
   StorageTrieNodeOffer,
   StorageTrieNodeRetrieval,
 } from './types.js'
+import type { TNibbles } from './types.js'
 import {
   AccountTrieNodeContentKey,
   ContractCodeContentKey,
@@ -44,11 +49,6 @@ import {
   extractAccountProof,
   nextOffer,
 } from './util.js'
-import type { ENR } from '@chainsafe/enr'
-import type { Debugger } from 'debug'
-import type { FindContentMessage, Version } from '../../wire/types.js'
-import type { BaseNetworkConfig, ContentLookupResponse } from '../index.js'
-import type { TNibbles } from './types.js'
 
 export class StateNetwork extends BaseNetwork {
   networkId: NetworkId.StateNetwork
@@ -120,13 +120,13 @@ export class StateNetwork extends BaseNetwork {
                 enr,
                 connectionId: id,
                 requestCode: RequestCode.FINDCONTENT_READ,
-                version
+                version,
               })
             })
             break
           }
           case FoundContent.CONTENT:
-            this.logger.extend(`FOUNDCONTENT`)(
+            this.logger.extend('FOUNDCONTENT')(
               `received ${StateNetworkContentType[contentType]} content corresponding to ${bytesToHex(key)}`,
             )
             try {
@@ -137,7 +137,7 @@ export class StateNetwork extends BaseNetwork {
             response = { content: decoded.value as Uint8Array, utp: false }
             break
           case FoundContent.ENRS: {
-            this.logger.extend(`FOUNDCONTENT`)(`received ${decoded.value.length} ENRs`)
+            this.logger.extend('FOUNDCONTENT')(`received ${decoded.value.length} ENRs`)
             response = { enrs: decoded.value as Uint8Array[] }
             break
           }
@@ -158,7 +158,7 @@ export class StateNetwork extends BaseNetwork {
     }
   }
 
-  public store = async (contentKey: Uint8Array, content: Uint8Array, offer: boolean = true) => {
+  public store = async (contentKey: Uint8Array, content: Uint8Array, offer = true) => {
     const contentType = contentKey[0]
     try {
       if (offer) {

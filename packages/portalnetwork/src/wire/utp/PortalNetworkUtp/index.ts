@@ -28,7 +28,7 @@ export class PortalNetworkUTP {
 
   constructor(client: PortalNetwork) {
     this.client = client
-    this.logger = client.logger.extend(`uTP`)
+    this.logger = client.logger.extend('uTP')
     this.working = false
     this.requestManagers = {}
   }

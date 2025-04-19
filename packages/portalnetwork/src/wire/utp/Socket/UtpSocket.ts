@@ -6,7 +6,7 @@ import { ConnectionState, PacketType } from '../index.js'
 
 import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
-import type { INodeAddress , NetworkId } from '../../../index.js'
+import type { INodeAddress, NetworkId } from '../../../index.js'
 import type {
   ICreatePacketOpts,
   Packet,
@@ -143,7 +143,7 @@ export abstract class UtpSocket {
   abstract handleSynPacket(seqNr?: number): Promise<void>
 
   async handleFinAck(): Promise<boolean> {
-    this.logger(`FIN packet ACKed. Closing Socket.`)
+    this.logger('FIN packet ACKed. Closing Socket.')
     this.state = ConnectionState.Closed
     this._clearTimeout()
     return true

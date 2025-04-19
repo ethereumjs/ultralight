@@ -7,5 +7,5 @@ export default {
       await blsWasm.init(curve)
     }
     return blsWasm
-  }
+  },
 }

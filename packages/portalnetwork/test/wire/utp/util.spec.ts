@@ -71,6 +71,6 @@ describe('uTP utils tests', () => {
         decoded[0],
       ).slice(0, 5)}..."`,
     )
-    assert.deepEqual(contents, decoded, `Whole content array successfully encoded/decoded`)
+    assert.deepEqual(contents, decoded, 'Whole content array successfully encoded/decoded')
   })
 })

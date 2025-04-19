@@ -261,14 +261,14 @@ describe('Header With Proof serialization/deserialization tests', async () => {
   const deserializedBlockHeaderWithProof = BlockHeaderWithProof.deserialize(blockHeaderWithProof)
   assert.ok(
     verifyPreMergeHeaderProof(proof, bytesToHex(header.hash()), header.number),
-    `proof is valid`,
+    'proof is valid',
   )
   assert.equal(
     createBlockHeaderFromRLP(deserializedBlockHeaderWithProof.header, {
       setHardfork: true,
     }).number,
     header.number,
-    `header number matches`,
+    'header number matches',
   )
 
   it('should match epoch hash', async () => {

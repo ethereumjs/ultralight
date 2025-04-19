@@ -8,7 +8,6 @@
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
-
   },
   "app": {
     "withGlobalTauri": true,
@@ -24,11 +23,11 @@
     }
   },
   "plugins": {
-     "udp": {
-        "enable-broadcast": true,
-        "global-access": true,
-        "allowed-hosts": ["*:*"]
-      }
+    "udp": {
+      "enable-broadcast": true,
+      "global-access": true,
+      "allowed-hosts": ["*:*"]
+    }
   },
   "bundle": {
     "active": true,

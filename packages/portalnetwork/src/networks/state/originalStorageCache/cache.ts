@@ -35,8 +35,8 @@ export class OriginalStorageCache {
       this.map.set(addressHex, map)
     }
     const keyHex = bytesToUnprefixedHex(key)
-    if (map!.has(keyHex) === false) {
-      map!.set(keyHex, value)
+    if (map.has(keyHex) === false) {
+      map.set(keyHex, value)
     }
   }
 
