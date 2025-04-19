@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "engines": {
-    "node": "^20"
+    "node": "^22"
   },
   "devDependencies": {
     "@lodestar/api": "^1.12.0",

@@ -9,7 +9,7 @@
     "default": "./dist/index.js"
   },
   "engines": {
-    "node": "^20"
+    "node": "^22"
   },
   "scripts": {
     "dev": "tsc --watch",

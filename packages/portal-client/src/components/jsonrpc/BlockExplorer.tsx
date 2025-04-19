@@ -3,11 +3,10 @@ import { useJsonRpc } from '@/hooks/useJsonRpc'
 import { MethodInput } from '@/components/ui/MethodInput'
 import { ResponseViewer } from '@/components/ui/ResponseViewer'
 import Select from '@/components/ui/Select'
-import { methodRegistry, MethodType } from '@/utils/constants/methodRegistry'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
 import { useNotification } from '@/contexts/NotificationContext'
-
-import { APPROVED_METHODS } from '@/services/portalNetwork/types'
+import { methodRegistry, MethodType } from '@/utils/rpcMethods'
+import { APPROVED_METHODS } from '@/utils/constants/methodRegistry'
 
 const BlockExplorer: FC = () => {
   const [selectedMethod, setSelectedMethod] = useState<MethodType | ''>('')

@@ -37,7 +37,6 @@ export default defineConfig(async () => ({
   },
   resolve: {
     alias: {
-      debug: resolve(__dirname, 'src/utils/polyfills/debug-shim.ts'),
       process: resolve(__dirname, 'src/utils/polyfills/processBrowser.ts'),
       'bls-eth-wasm': resolve(__dirname, 'src/utils/polyfills/blsPatch.ts'),
       '@chainsafe/bls-keygen': resolve(__dirname, 'src/utils/polyfills/blsKeyGen.ts'),

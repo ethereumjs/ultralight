@@ -1,6 +1,6 @@
-import { NetworkId } from 'portalnetwork'
-import { assert, beforeEach, describe, it, vi } from 'vitest'
+import { describe, it, vi, beforeEach, assert } from 'vitest'
 import { createPortalClient } from '../../../src/services/portalNetwork/client'
+import { NetworkId } from 'portalnetwork'
 
 vi.mock('portalnetwork', () => {
   const MockNetworkId = {
@@ -27,8 +27,10 @@ vi.mock('portalnetwork', () => {
       [MockNetworkId.StateNetwork, { networkId: MockNetworkId.StateNetwork }],
     ]),
     start: vi.fn().mockResolvedValue(undefined),
+    storeNodeDetails: vi.fn().mockResolvedValue(undefined),
     stop: vi.fn().mockResolvedValue(undefined),
     bootstrap: vi.fn().mockResolvedValue(undefined),
+    enableLog: vi.fn().mockResolvedValue(undefined),
   }
 
   return {
