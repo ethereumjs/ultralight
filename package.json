@@ -8,8 +8,8 @@
 		"./packages/cli"
 	],
 	"engines": {
-		"npm": "^10",
-		"node": "^20"
+    "npm": "^11",
+    "node": "^22"
 	},
 	"scripts": {
 		"biome": "npx @biomejs/biome check --write --config-path ./config/biome.json",
