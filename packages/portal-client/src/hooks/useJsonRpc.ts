@@ -50,8 +50,8 @@ export const useJsonRpc = () => {
           responseType = 'ether'
           break
         case 'portal_findContent':
-          result = await sendFindNodes()
-          // result = await client.portal.sendFindContent(params[0], params[1])
+          result = await client.networks.get('0x500b').sendFindNodes(params[0], params[1])
+          console.log('resultt',result, params[0], params[1])
           responseType = 'generic'
           break
         default:

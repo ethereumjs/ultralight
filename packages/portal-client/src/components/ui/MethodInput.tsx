@@ -1,6 +1,6 @@
-import { InputValue } from '@/utils/types'
+import { InputValue, MethodParamConfig } from '@/utils/types'
 
-interface MethodInputProps {
+interface MethodInputProps extends MethodParamConfig{
   value: InputValue
   onChange: (value: string) => void
   className?: string
@@ -8,12 +8,12 @@ interface MethodInputProps {
   onSubmit: () => void
   onCancel: () => void
   isLoading: boolean
-  showIncludeFullTx?: boolean
   includeFullTx?: boolean
   onIncludeFullTxChange?: (value: boolean) => void
-  showBlockHeight?: boolean
   blockHeight?: string
   onBlockHeightChange?: (value: string) => void
+  distances?: string
+  onDistancesChange?: (value: string) => void
 }
 
 export const MethodInput: React.FC<MethodInputProps> = ({
@@ -24,22 +24,18 @@ export const MethodInput: React.FC<MethodInputProps> = ({
   onSubmit,
   onCancel,
   isLoading,
+  showDistances = false,
+  showBlockHeight = false,
   showIncludeFullTx = false,
   includeFullTx = false,
   onIncludeFullTxChange,
-  showBlockHeight = false,
-  blockHeight = 'latest',
   onBlockHeightChange,
+  blockHeight = '',
+  distances = '',
+  onDistancesChange,
 }) => {
   const defaultClasses =
     'flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
-
-  const handleBlockHeightChange = (value: string) => {
-    if (onBlockHeightChange) {
-      const normalizedValue = value.trim()
-      onBlockHeightChange(normalizedValue)
-    }
-  }
 
   return (
     <div className="flex flex-col space-y-4">
@@ -72,10 +68,25 @@ export const MethodInput: React.FC<MethodInputProps> = ({
           <input
             type="text"
             value={blockHeight}
-            onChange={(e) => handleBlockHeightChange(e.target.value)}
+            onChange={(e) => onBlockHeightChange?.(e.target.value)}
             placeholder="Block number"
             className="w-full bg-[#2A323C] text-gray-200 border border-gray-600 placeholder-gray-400 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"
           />
+        </div>
+      )}
+
+      {showDistances && (
+        <div>
+          <input
+            type="text"
+            value={distances}
+            onChange={(e) => onDistancesChange?.(e.target.value)}
+            placeholder="Comma-separated distances (e.g., 252,253,254)"
+            className="w-full bg-[#2A323C] text-gray-200 border border-gray-600 placeholder-gray-400 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          <div className="text-xs text-gray-400 mt-1">
+            Enter log2 distances (0-256) separated by commas
+          </div>
         </div>
       )}
 

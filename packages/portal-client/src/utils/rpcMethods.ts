@@ -57,9 +57,11 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
     paramPlaceholder: "Enter content ID",
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
   
-      const [nodeId, distance] = input.split(',')
+      let parts = input.split(',')
+      const nodeId = parts[0]
+      const distances = parts.slice(1)
       
-      return sendRequestHandle('portal_findContent', [nodeId, distance])
+      return sendRequestHandle('portal_findContent', [nodeId, distances])
     },
   },
 

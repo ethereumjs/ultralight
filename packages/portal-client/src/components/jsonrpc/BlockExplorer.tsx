@@ -7,12 +7,14 @@ import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { methodRegistry, MethodType } from '@/utils/rpcMethods'
 import { APPROVED_METHODS } from '@/utils/constants/methodRegistry'
+import { MethodParamConfig } from '@/utils/types'
 
 const BlockExplorer: FC = () => {
   const [selectedMethod, setSelectedMethod] = useState<MethodType | ''>('')
   const [inputValue, setInputValue] = useState('')
   const [includeFullTx, setIncludeFullTx] = useState(false)
   const [blockHeight, setBlockHeight] = useState('')
+  const [distances, setDistances] = useState('')
 
   const { result, setResult, sendRequestHandle } = useJsonRpc()
   const { isLoading, setIsLoading, cancelRequest, client } = usePortalNetwork()
@@ -32,6 +34,9 @@ const BlockExplorer: FC = () => {
           formattedInput = `${inputValue},${includeFullTx}`
         } else if (methodParamMap[selectedMethod]?.showBlockHeight) {        
           formattedInput = `${inputValue},${blockHeight}`
+        } else if (methodParamMap[selectedMethod]?.showDistances) {  
+          const distanceArray = distances.split(',').map(d => Number(d.trim()))    
+          formattedInput = `${inputValue},${distanceArray}`
         }
         await methodRegistry[selectedMethod].handler(formattedInput, sendRequestHandle)
       } catch (err) {
@@ -68,18 +73,25 @@ const BlockExplorer: FC = () => {
   }
 
   const methodParamMap = useMemo(() => {
-    const map: Record<string, { showIncludeFullTx?: boolean; showBlockHeight?: boolean }> = {}
-
+    const map = {} as Record<MethodType, MethodParamConfig>
     APPROVED_METHODS.forEach((method) => {
+      const config: MethodParamConfig = {}
+      
       if (method.includes('BlockBy')) {
-        map[method] = { showIncludeFullTx: true }
-      } else if (method === 'eth_getTransactionCount' || method === 'eth_getBalance') {
-        map[method] = { showBlockHeight: true }
-      } else {
-        map[method] = {}
+        config.showIncludeFullTx = true
+      } 
+      
+      if (method === 'eth_getTransactionCount' || method === 'eth_getBalance') {
+        config.showBlockHeight = true
       }
-    })
+      
+      if (method.includes('portal_')) {
+        config.showDistances = true
+      }
 
+      map[method] = config
+    })
+  
     return map
   }, [])
 
@@ -113,12 +125,15 @@ const BlockExplorer: FC = () => {
               onCancel={handleCancel}
               isLoading={isLoading}
               className="bg-[#2A323C] text-gray-200 border border-gray-600 placeholder-gray-400 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"
-              showIncludeFullTx={currentMethodConfig.showIncludeFullTx}
               includeFullTx={includeFullTx}
               onIncludeFullTxChange={setIncludeFullTx}
-              showBlockHeight={currentMethodConfig.showBlockHeight}
-              blockHeight={blockHeight}
               onBlockHeightChange={setBlockHeight}
+              onDistancesChange={setDistances}
+              showIncludeFullTx={currentMethodConfig.showIncludeFullTx}
+              showBlockHeight={currentMethodConfig.showBlockHeight}
+              showDistances={currentMethodConfig.showDistances}
+              blockHeight={blockHeight}
+              distances={distances}
             />
           </div>
         )}

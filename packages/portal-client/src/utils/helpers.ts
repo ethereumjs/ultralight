@@ -12,3 +12,8 @@ export const getConfigValue = (id: ConfigId): string => {
   //@ts-ignore
   return localStorage.getItem(localStorageKey) || config.defaultValue
 }
+
+// async getEnr(params: [NodeId]): Promise<GetEnrResult> {
+//   const [nodeId] = params
+//   return this._client.discv5.findEnr(nodeId)?.encodeTxt() ?? ''
+// }
