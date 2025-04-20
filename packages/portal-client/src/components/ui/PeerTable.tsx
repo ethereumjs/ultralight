@@ -1,3 +1,5 @@
+import { shortId } from 'portalnetwork'
+
 import { PeerItem } from '@/utils/types'
 
 interface PeerTableProps {
@@ -54,7 +56,7 @@ export const PeerTable = ({
                       className="font-mono text-sm cursor-pointer text-blue-500 hover:underline"
                       onClick={() => onViewDetails(peerData.nodeId)}
                     >
-                      {peerData.nodeId.substring(0, 10)}...{peerData.nodeId.substring(peerData.nodeId.length - 8)}
+                      {shortId(peerData.nodeId)}
                     </td>
                     <td>
                       <div className="flex items-center">

@@ -3,6 +3,6 @@ export const APPROVED_METHODS = [
   'eth_getBlockByNumber',
   'eth_getTransactionCount',
   'eth_getBalance',
-  'portal_findContent',
+  'portal_historyFindContent',
 ] as const
 

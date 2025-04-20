@@ -1,12 +1,13 @@
-import { MethodConfig } from '@/services/portalNetwork/types'
 import { hexToBytes, isHexString, isValidAddress } from '@ethereumjs/util'
-import { InputValue } from './types'
 import { APPROVED_METHODS } from './constants/methodRegistry'
+
+import { InputValue } from './types'
+import { MethodConfig } from '@/services/portalNetwork/types'
 
 export type MethodType = typeof APPROVED_METHODS[number]
 
 export const methodRegistry: Record<MethodType, MethodConfig> = {
-  'eth_getBlockByHash': {
+  eth_getBlockByHash: {
     name: 'Get Block By Hash',
     paramPlaceholder: 'Enter Block Hash',
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
@@ -17,7 +18,7 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
       return sendRequestHandle('eth_getBlockByHash', [hexToBytes(hash as `0x${string}`), includeFullTx])
     },
   },
-  'eth_getBlockByNumber': {
+  eth_getBlockByNumber: {
     name: 'Get Block By Number',
     paramPlaceholder: 'Enter Block Number',
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
@@ -28,7 +29,7 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
       return sendRequestHandle('eth_getBlockByNumber', [blockNumber, includeFullTx])
     },
   },
-  'eth_getTransactionCount': {
+  eth_getTransactionCount: {
     name: 'Get Transanctions By An Address',
     paramPlaceholder: 'Enter Address',
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
@@ -39,7 +40,7 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
       return sendRequestHandle('eth_getTransactionCount', [hexToBytes(address), blockHeight])
     },
   },
-  'eth_getBalance': {
+  eth_getBalance: {
     name: 'Get Balance Of An Address',
     paramPlaceholder: 'Enter Address',
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
@@ -52,7 +53,7 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
     },
   },
 
-  'portal_findContent': {
+  portal_historyFindContent: {
     name: "Find Content",
     paramPlaceholder: "Enter content ID",
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
@@ -61,7 +62,7 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
       const nodeId = parts[0]
       const distances = parts.slice(1)
       
-      return sendRequestHandle('portal_findContent', [nodeId, distances])
+      return sendRequestHandle('portal_historyFindContent', [nodeId, distances])
     },
   },
 

@@ -5,7 +5,7 @@ import { NotificationProvider } from '@/contexts/NotificationContext'
 import JsonRpc from '@/pages/JsonRpc'
 import Home from '@/pages/Home'
 import Config from '@/pages/Config'
-import Nodes from '@/pages/Nodes'
+import Peers from '@/pages/Peers'
 import PageNotFound from '@/pages/PageNotFound'
 import Header from '@/components/layout/Header'
 
@@ -22,7 +22,7 @@ const App: FC = () => {
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/jsonrpc" element={<JsonRpc />} />
-                    <Route path="/nodes" element={<Nodes />} />
+                    <Route path="/peers" element={<Peers />} />
                     <Route path="/config" element={<Config />} />
                     <Route path="*" element={<PageNotFound />} />
                   </Routes>

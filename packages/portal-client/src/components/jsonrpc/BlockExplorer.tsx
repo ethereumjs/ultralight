@@ -1,4 +1,5 @@
-import { FC, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useJsonRpc } from '@/hooks/useJsonRpc'
 import { MethodInput } from '@/components/ui/MethodInput'
 import { ResponseViewer } from '@/components/ui/ResponseViewer'
@@ -9,9 +10,13 @@ import { methodRegistry, MethodType } from '@/utils/rpcMethods'
 import { APPROVED_METHODS } from '@/utils/constants/methodRegistry'
 import { MethodParamConfig } from '@/utils/types'
 
-const BlockExplorer: FC = () => {
+interface BlockExplorerProps {
+  nodeId?: string
+}
+
+const BlockExplorer = ({nodeId}: BlockExplorerProps) => {
   const [selectedMethod, setSelectedMethod] = useState<MethodType | ''>('')
-  const [inputValue, setInputValue] = useState('')
+  const [inputValue, setInputValue] = useState(nodeId || '')
   const [includeFullTx, setIncludeFullTx] = useState(false)
   const [blockHeight, setBlockHeight] = useState('')
   const [distances, setDistances] = useState('')
@@ -19,11 +24,21 @@ const BlockExplorer: FC = () => {
   const { result, setResult, sendRequestHandle } = useJsonRpc()
   const { isLoading, setIsLoading, cancelRequest, client } = usePortalNetwork()
   const { notify } = useNotification()
+  const location = useLocation()
+  const isPeersRoute = location.pathname === '/peers'
 
-  const methodOptions = APPROVED_METHODS.map((method) => ({
-    value: method,
-    label: methodRegistry[method].name,
-  }))
+  const filteredMethods = useMemo(() => {
+    return isPeersRoute 
+      ? APPROVED_METHODS.filter(method => method.startsWith('portal_'))
+      : APPROVED_METHODS;
+  }, [isPeersRoute])
+
+  const methodOptions = useMemo(() => {
+    return filteredMethods.map((method) => ({
+      value: method,
+      label: methodRegistry[method].name,
+    }));
+  }, [filteredMethods])
 
   const handleSubmit = async () => {
     if (selectedMethod && methodRegistry[selectedMethod]) {
@@ -65,7 +80,7 @@ const BlockExplorer: FC = () => {
   }
 
   const reset = () => {
-    setInputValue('')
+    setInputValue(nodeId || '')
     setBlockHeight('')
     setIncludeFullTx(false)
     setResult(null)
@@ -74,7 +89,7 @@ const BlockExplorer: FC = () => {
 
   const methodParamMap = useMemo(() => {
     const map = {} as Record<MethodType, MethodParamConfig>
-    APPROVED_METHODS.forEach((method) => {
+    filteredMethods.forEach((method) => {
       const config: MethodParamConfig = {}
       
       if (method.includes('BlockBy')) {
@@ -100,6 +115,12 @@ const BlockExplorer: FC = () => {
       reset()
     }
   }, [client])
+
+  useEffect(() => {
+    if (nodeId) {
+      setInputValue(nodeId)
+    }
+  }, [nodeId])
 
   const currentMethodConfig = selectedMethod ? methodParamMap[selectedMethod] || {} : {}
 

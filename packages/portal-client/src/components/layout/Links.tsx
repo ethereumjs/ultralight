@@ -13,7 +13,7 @@ const Links = () => {
         <Link to="/jsonrpc">JsonRPC</Link>
       </li>
       <li>
-        <Link to="/nodes">Nodes</Link>
+        <Link to="/peers">Peers</Link>
       </li>
       <li>
         <Link to="/config">Config</Link>

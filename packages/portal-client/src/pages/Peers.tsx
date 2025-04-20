@@ -6,7 +6,7 @@ import { PeerDetail } from '@/components/ui/PeerDetail'
 import { NodeId, PeerItem } from '@/utils/types'
 import type { ENR } from '@chainsafe/enr'
 
-const Nodes = () => {
+const Peers = () => {
   const { client, isLoading, setIsLoading } = usePortalNetwork()
 
   const [peers, setPeers] = useState<PeerItem[]>([])
@@ -93,4 +93,4 @@ const Nodes = () => {
   )
 }
 
-export default Nodes
+export default Peers
