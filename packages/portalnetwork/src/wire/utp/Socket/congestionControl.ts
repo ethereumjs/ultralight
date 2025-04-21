@@ -1,5 +1,5 @@
-import { EventEmitter } from 'eventemitter3'
 import debug from 'debug'
+import { EventEmitter } from 'eventemitter3'
 
 import { DEFAULT_PACKET_SIZE, MAX_CWND_INCREASE_PACKETS_PER_RTT } from '../index.js'
 
@@ -13,7 +13,7 @@ export class CongestionControl extends EventEmitter {
   rtt: number
   rtt_var: number
   timeout: number
-  // eslint-disable-next-line no-undef
+
   timeoutCounter?: NodeJS.Timeout
   baseDelay: { delay: number; timestamp: number }
   ourDelay: number
@@ -44,7 +44,7 @@ export class CongestionControl extends EventEmitter {
       return true
     } else {
       this.logger(` cur_window: ${this.cur_window} - max_window ${this.max_window}`)
-      this.logger(`cur_window full.  waiting for in-flight packets to be acked`)
+      this.logger('cur_window full.  waiting for in-flight packets to be acked')
       return new Promise((resolve, reject) => {
         // Abort canSend promise if DATA packets not acked in a timely manner
         const abort = setTimeout(() => reject(false), 10000)

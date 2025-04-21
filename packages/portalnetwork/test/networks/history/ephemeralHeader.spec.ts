@@ -7,9 +7,9 @@ import {
   HistoryNetworkContentType,
   HistoryRadius,
   PingPongPayloadExtensions,
+  createPortalNetwork,
   getContentKey,
   getEphemeralHeaderDbKey,
-  createPortalNetwork,
 } from '../../../src/index.js'
 import latestBlocks from './testData/latest3Blocks.json'
 

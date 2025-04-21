@@ -134,7 +134,7 @@ const main = async () => {
     console.log('Caught interrupt signal.  Shuttind down...')
     process.exit(0)
   })
-  //eslint-disable-next-line
+   
   while (true) {
     await new Promise((resolve) => setTimeout(() => resolve(undefined), 13000))
     const optimisticUpdate = (await api.lightclient.getOptimisticUpdate()).response!

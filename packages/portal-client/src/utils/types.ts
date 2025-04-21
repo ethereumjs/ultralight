@@ -1,4 +1,4 @@
-export const enum ConfigId {
+export enum ConfigId {
   UdpPort = 'udp-port',
   NodeBindPort = 'node-bind-port',
 }

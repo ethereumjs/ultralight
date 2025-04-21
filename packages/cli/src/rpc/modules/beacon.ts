@@ -63,7 +63,7 @@ export class beacon {
     }
 
     return ssz.capella.LightClientHeader.toJson(
-      this._beacon.lightClient!.getHead() as capella.LightClientHeader,
+      this._beacon.lightClient.getHead() as capella.LightClientHeader,
     )
   }
 
@@ -82,7 +82,7 @@ export class beacon {
       }
     }
     return ssz.capella.LightClientHeader.toJson(
-      this._beacon.lightClient!.getFinalized() as capella.LightClientHeader,
+      this._beacon.lightClient.getFinalized() as capella.LightClientHeader,
     )
   }
 

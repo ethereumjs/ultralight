@@ -1,9 +1,9 @@
-import { assert, describe, expect, it } from 'vitest'
-import content from '../../testData/headersWithProofs.json'
-import { HistoryNetwork, NetworkId, createPortalNetwork } from '../../../src/index.js'
-import { keys } from '@libp2p/crypto'
 import { SignableENR } from '@chainsafe/enr'
 import { hexToBytes } from '@ethereumjs/util'
+import { keys } from '@libp2p/crypto'
+import { assert, describe, expect, it } from 'vitest'
+import { HistoryNetwork, NetworkId, createPortalNetwork } from '../../../src/index.js'
+import content from '../../testData/headersWithProofs.json'
 
 const privateKey =
   '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130'

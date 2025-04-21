@@ -28,7 +28,7 @@ export class PortalNetworkUTP {
 
   constructor(client: PortalNetwork) {
     this.client = client
-    this.logger = client.logger.extend(`uTP`)
+    this.logger = client.logger.extend('uTP')
     this.working = false
     this.requestManagers = {}
   }
@@ -95,9 +95,7 @@ export class PortalNetworkUTP {
 
   async handleNewRequest(params: INewRequest): Promise<ContentRequestType> {
     const { contentKeys, enr, connectionId, requestCode, version } = params
-    if (this.requestManagers[enr.nodeId] === undefined) {
-      this.requestManagers[enr.nodeId] = new RequestManager(enr.nodeId, this.logger)
-    }
+    this.requestManagers[enr.nodeId] ??= new RequestManager(enr.nodeId, this.logger)
     const content = params.contents ?? new Uint8Array()
     const sndId = this.startingIdNrs(connectionId)[requestCode].sndId
     const rcvId = this.startingIdNrs(connectionId)[requestCode].rcvId

@@ -2,8 +2,8 @@ import { distance } from '@chainsafe/discv5'
 import { SignableENR } from '@chainsafe/enr'
 import { Chain, Common, Hardfork } from '@ethereumjs/common'
 import { getGenesis } from '@ethereumjs/genesis'
-import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { ExtensionNode, Trie, decodeNode } from '@ethereumjs/mpt'
+import { DefaultStateManager } from '@ethereumjs/statemanager'
 import { bytesToHex, bytesToUnprefixedHex, hexToBytes, padToEven } from '@ethereumjs/util'
 import { VM } from '@ethereumjs/vm'
 import { privateKeyFromProtobuf } from '@libp2p/crypto/keys'
@@ -14,7 +14,7 @@ import {
   AccountTrieNodeContentKey,
   AccountTrieNodeOffer,
   NetworkId,
-  PortalNetwork,
+  type PortalNetwork,
   TransportLayer,
   createPortalNetwork,
   packNibbles,
@@ -152,7 +152,7 @@ export const genesisContent = async (
   )
   const trieNodeContent: [string, Uint8Array][] = Object.entries(allProofs).map(
     ([nodeHash, { nibbles, proof }]) => {
-      const path = packNibbles(nibbles as TNibble[])
+      const path = packNibbles(nibbles)
       const key: TAccountTrieNodeKey = {
         nodeHash: hexToBytes(nodeHash),
         path,

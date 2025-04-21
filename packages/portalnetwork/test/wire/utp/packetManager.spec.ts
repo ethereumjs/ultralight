@@ -12,8 +12,8 @@ const data = {
 describe('PacketManager', async () => {
   it('class constructor', () => {
     const packetManager = new PacketManager(data.rcvConnectionId, data.sndConnectionId, data.logger)
-    assert.ok(packetManager, 'should create a PacketManager instance')
-    assert.ok(packetManager.congestionControl, 'should have a congestionControl instance')
+    assert.exists(packetManager, 'should create a PacketManager instance')
+    assert.exists(packetManager.congestionControl, 'should have a congestionControl instance')
     const ccAttr = {
       cur_window: packetManager.congestionControl.cur_window,
       max_window: packetManager.congestionControl.max_window,

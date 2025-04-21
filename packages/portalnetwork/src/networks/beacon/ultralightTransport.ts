@@ -60,7 +60,7 @@ export class UltralightTransport implements LightClientTransport {
           decoded = decoded !== undefined ? res.content : undefined
       }
       if (decoded !== undefined) {
-        const updateRange = LightClientUpdatesByRange.deserialize(decoded as Uint8Array)
+        const updateRange = LightClientUpdatesByRange.deserialize(decoded)
         for (const update of updateRange) {
           const forkhash = update.slice(0, 4)
           const forkname = this.network.beaconConfig.forkDigest2ForkName(
@@ -121,7 +121,7 @@ export class UltralightTransport implements LightClientTransport {
       const forkhash = decoded.content.slice(0, 4) as Uint8Array
       forkname = this.network.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
       optimisticUpdate = ssz[forkname].LightClientOptimisticUpdate.deserialize(
-        (decoded.content as Uint8Array).slice(4),
+        decoded.content.slice(4),
       )
 
       return {
@@ -185,9 +185,7 @@ export class UltralightTransport implements LightClientTransport {
     if (decoded !== undefined && 'content' in decoded) {
       const forkhash = decoded.content.slice(0, 4) as Uint8Array
       forkname = this.network.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
-      finalityUpdate = ssz[forkname].LightClientFinalityUpdate.deserialize(
-        (decoded.content as Uint8Array).slice(4),
-      )
+      finalityUpdate = ssz[forkname].LightClientFinalityUpdate.deserialize(decoded.content.slice(4))
 
       return {
         version: forkname,

@@ -4,7 +4,7 @@ import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, beforeAll, describe, it } from 'vitest'
 import { TransportLayer } from '../../src/client/types.js'
-import { createPortalNetwork, getContentKey, PortalNetwork } from '../../src/index.js'
+import { type PortalNetwork, createPortalNetwork, getContentKey } from '../../src/index.js'
 import {
   BlockHeaderWithProof,
   HistoryNetworkContentType,
@@ -24,9 +24,9 @@ describe('gossip tests', () => {
     const enr1 = SignableENR.createFromPrivateKey(pk1)
     const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
     const enr2 = SignableENR.createFromPrivateKey(pk2)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5174`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/5174')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5175`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/5175')
     enr2.setLocationMultiaddr(initMa2)
     node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,

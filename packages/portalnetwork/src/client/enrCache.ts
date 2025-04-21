@@ -1,8 +1,8 @@
 import type { ENR } from '@chainsafe/enr'
-import { ScoredPeer, createPeerFromENR } from './peers.js'
-import type { INodeAddress } from './types'
 import type { NetworkId } from '../networks/types'
 import type { IClientInfo } from '../wire/payloadExtensions.js'
+import { ScoredPeer, createPeerFromENR } from './peers.js'
+import type { INodeAddress } from './types'
 
 type NodeId = string
 
@@ -41,8 +41,10 @@ export class ENRCache {
   public updateNodeAddress(nodeAddress: INodeAddress) {
     const peer = this.peers.get(nodeAddress.nodeId)
     if (peer === undefined) {
-      this.peers.set(nodeAddress.nodeId, new ScoredPeer({
-        nodeId: nodeAddress.nodeId,
+      this.peers.set(
+        nodeAddress.nodeId,
+        new ScoredPeer({
+          nodeId: nodeAddress.nodeId,
           nodeAddress: nodeAddress.socketAddr,
         }),
       )
@@ -91,7 +93,7 @@ export class ENRCache {
     },
   ) => {
     this.updateENR(enr)
-    const peer = this.peers.get(enr.nodeId)!  
+    const peer = this.peers.get(enr.nodeId)!
     peer.enr = enr
     peer.networks.set(network, { radius })
     if (capabilities !== undefined) {
@@ -103,9 +105,4 @@ export class ENRCache {
       peer.clientInfo = clientInfo
     }
   }
-
-
-
-
-
 }

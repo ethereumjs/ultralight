@@ -22,9 +22,9 @@ const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
 const enr2 = SignableENR.createFromPrivateKey(pk2)
 
 describe('black list test', async () => {
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5030`)
+  const initMa: any = multiaddr('/ip4/127.0.0.1/udp/5030')
   enr1.setLocationMultiaddr(initMa)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5031`)
+  const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/5031')
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,
@@ -76,9 +76,9 @@ describe('black list test', async () => {
 })
 
 describe('version conflict', async () => {
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5032`)
+  const initMa: any = multiaddr('/ip4/127.0.0.1/udp/5032')
   enr1.setLocationMultiaddr(initMa)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5033`)
+  const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/5033')
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,

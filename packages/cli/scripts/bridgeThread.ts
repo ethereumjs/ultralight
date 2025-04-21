@@ -185,7 +185,7 @@ const bridgeThread = async () => {
     })
   } else {
     const data = workerData
-    //eslint-disable-next-line
+     
     parentPort?.postMessage(`You said \"${data}\".`)
   }
 }

@@ -5,5 +5,5 @@ export function generateRandomSecretKey() {
 }
 
 export default {
-  generateRandomSecretKey
+  generateRandomSecretKey,
 }
