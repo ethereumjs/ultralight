@@ -3,6 +3,21 @@ import typescriptParser from "@typescript-eslint/parser";
 
 export default [
 	{
+		ignores: [
+			"node_modules/",
+			"coverage/",
+			"typedoc.js",
+			"docs/",
+			"config/tsconfig.lint.json",
+			"vitest.config.*.ts",
+			"vite.config.ts",
+			"scripts/",
+			"*.d.ts",
+			"**/dist/**",
+			"**/docs/**",
+		],
+	},
+	{
 		files: [
 			"packages/cli/**/*.ts",
 			"packages/portalnetwork/**/*.ts",
@@ -21,18 +36,7 @@ export default [
 		plugins: {
 			"@typescript-eslint": typescriptEslint,
 		},
-		ignores: [
-			"node_modules/",
-			"coverage/",
-			"typedoc.js",
-			"docs/",
-			"config/tsconfig.lint.json",
-			"vitest.config.*.ts",
-			"vite.config.ts",
-			"scripts/",
-			"*.d.ts",
-			"dist/",
-		],
+		
 		rules: {
 			"@typescript-eslint/no-floating-promises": "error",
 			"@typescript-eslint/no-misused-promises": "error",
