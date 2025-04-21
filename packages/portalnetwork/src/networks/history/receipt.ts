@@ -52,7 +52,7 @@ export class Receipt {
   }
 
   public static decodeReceiptBytes(encoded: Uint8Array): TxReceiptType {
-    return this.fromEncodedReceipt(encoded).decoded()
+    return Receipt.fromEncodedReceipt(encoded).decoded()
   }
 
   constructor(opts: IReceiptOpts) {
@@ -87,7 +87,7 @@ export class Receipt {
           cumulativeBlockGasUsed: this.cumulativeBlockGasUsed,
           bitvector: this.bitvector,
           logs: this.logs,
-          stateRoot: this.stateRoot!,
+          stateRoot: this.stateRoot,
           txType: this.txType,
         } as PreByzantiumTxReceiptWithType
       } else {
@@ -102,7 +102,7 @@ export class Receipt {
     } else {
       if (this.stateRoot instanceof Uint8Array) {
         return {
-          stateRoot: this.stateRoot!,
+          stateRoot: this.stateRoot,
           cumulativeBlockGasUsed: this.cumulativeBlockGasUsed,
           bitvector: this.bitvector,
           logs: this.logs,

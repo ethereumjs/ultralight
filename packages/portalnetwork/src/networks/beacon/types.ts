@@ -5,7 +5,7 @@ import {
   UintBigintType,
   VectorCompositeType,
 } from '@chainsafe/ssz'
-import { type ForkName } from '@lodestar/params'
+import type { ForkName } from '@lodestar/params'
 import { ssz } from '@lodestar/types'
 
 import { Bytes32Type } from '../types.js'
@@ -68,8 +68,8 @@ export const HistoricalSummariesWithProof = new ContainerType<{
 )
 
 export enum SyncStrategy {
-  TrustedBlockRoot,
-  PollNetwork,
+  TrustedBlockRoot = 0,
+  PollNetwork = 1,
 }
 
 export type HistoricalSummaries = Array<{

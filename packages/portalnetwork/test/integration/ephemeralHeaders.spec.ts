@@ -21,13 +21,19 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
   beforeAll(() => {
     headers = []
     headers.push(
-      createBlockFromRPC(latestBlocks[0] as JSONRPCBlock, [], { setHardfork: true }).header,
+      createBlockFromRPC(latestBlocks[0] as JSONRPCBlock, [], {
+        setHardfork: true,
+      }).header,
     )
     headers.push(
-      createBlockFromRPC(latestBlocks[1] as JSONRPCBlock, [], { setHardfork: true }).header,
+      createBlockFromRPC(latestBlocks[1] as JSONRPCBlock, [], {
+        setHardfork: true,
+      }).header,
     )
     headers.push(
-      createBlockFromRPC(latestBlocks[2] as JSONRPCBlock, [], { setHardfork: true }).header,
+      createBlockFromRPC(latestBlocks[2] as JSONRPCBlock, [], {
+        setHardfork: true,
+      }).header,
     )
     headerPayload = EphemeralHeaderPayload.serialize(headers.map((h) => h.serialize()))
     contentKey = getContentKey(HistoryNetworkContentType.EphemeralHeader, {
@@ -45,9 +51,9 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     const enr1 = SignableENR.createFromPrivateKey(pk1)
     const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
     const enr2 = SignableENR.createFromPrivateKey(pk2)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3198`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3198')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3199`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3199')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       supportedNetworks: [
@@ -83,7 +89,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     const network2 = node2.network()['0x500b']
     const res = await network2!.sendFindContent(node1.discv5.enr.toENR(), contentKey)
     assert.exists(res)
-    if ('content' in res!) {
+    if ('content' in res) {
       const payload = EphemeralHeaderPayload.deserialize(res.content)
       assert.equal(payload.length, headers.length)
       assert.deepEqual(payload[0], headers[0].serialize())
@@ -101,7 +107,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
 
     const res2 = await network2!.sendFindContent(node1.discv5.enr.toENR(), contentKeyForOneAncestor)
     assert.exists(res2)
-    if ('content' in res2!) {
+    if ('content' in res2) {
       const payload = EphemeralHeaderPayload.deserialize(res2.content)
       assert.equal(payload.length, 2, 'should only get a single ancestor')
     } else {
@@ -117,7 +123,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
       }),
     )
     assert.exists(res3)
-    if ('content' in res3!) {
+    if ('content' in res3) {
       const payload = EphemeralHeaderPayload.deserialize(res3.content)
       assert.equal(payload.length, 0, 'should not get any headers for a random blockhash')
     } else {

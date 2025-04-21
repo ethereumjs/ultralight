@@ -1,4 +1,3 @@
-import { useState, useCallback } from 'react'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
 import { formatBlockResponse } from 'portalnetwork'
 import { RPCResponse } from '@/utils/types'
@@ -8,12 +7,13 @@ export const useJsonRpc = () => {
   const { client, setIsLoading } = usePortalNetwork()
   const [result, setResult] = useState<RPCResponse | null>(null)
 
-  const sendRequestHandle = useCallback(async (method: string, params: any[] = []) => {
-    setResult(null)
+  const sendRequestHandle = useCallback(
+    async (method: string, params: any[] = []) => {
+      setResult(null)
 
-    if (!client) {
-      throw new Error('Portal Network client is not initialized')
-    }
+      if (client === undefined) {
+        throw new Error('Portal Network client is not initialized')
+      }
 
     try {
       setIsLoading(true)
@@ -123,6 +123,6 @@ export const useJsonRpc = () => {
   return {
     result,
     setResult,
-    sendRequestHandle
+    sendRequestHandle,
   }
 }

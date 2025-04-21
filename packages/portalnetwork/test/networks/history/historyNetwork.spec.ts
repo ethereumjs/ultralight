@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs'
+import { createRequire } from 'module'
 import {
   type BlockBytes,
   createBlockFromBytesArray,
@@ -6,8 +8,6 @@ import {
 } from '@ethereumjs/block'
 import * as RLP from '@ethereumjs/rlp'
 import { bytesToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
-import { readFileSync } from 'fs'
-import { createRequire } from 'module'
 import { assert, describe, it } from 'vitest'
 
 import {
@@ -17,11 +17,11 @@ import {
   HistoryNetworkContentType,
   NetworkId,
   TransportLayer,
+  createPortalNetwork,
   generatePreMergeHeaderProof,
   getContentKey,
   reassembleBlock,
   sszEncodeBlockBody,
-  createPortalNetwork,
 } from '../../../src/index.js'
 
 import type { HistoryNetwork } from '../../../src/index.js'
@@ -35,7 +35,7 @@ describe('store -- Headers and Epoch Accumulators', async () => {
     const epoch =
       '0x' +
       readFileSync(
-        `./test/networks/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent`,
+        './test/networks/history/testData/0x035ec1ffb8c3b146f42606c74ced973dc16ec5a107c0345858c343fc94780b4218.portalcontent',
         {
           encoding: 'hex',
         },
@@ -77,7 +77,9 @@ describe('store -- Block Bodies and Receipts', async () => {
   const network = node.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   const serializedBlock = testBlocks.block207686
   const blockRlp = RLP.decode(hexToBytes(serializedBlock.blockRlp))
-  const block = createBlockFromBytesArray(blockRlp as BlockBytes, { setHardfork: true })
+  const block = createBlockFromBytesArray(blockRlp as BlockBytes, {
+    setHardfork: true,
+  })
   const epoch =
     '0x' +
     readFileSync(
@@ -113,7 +115,7 @@ describe('store -- Block Bodies and Receipts', async () => {
   const body = await network.get(
     getContentKey(HistoryNetworkContentType.BlockBody, hexToBytes(serializedBlock.blockHash)),
   )
-  const rebuilt = reassembleBlock(header, hexToBytes(body!))
+  const rebuilt = reassembleBlock(header, hexToBytes(body))
 
   it('Should store and retrieve a block body from DB', async () => {
     assert.equal(
@@ -150,7 +152,7 @@ describe('Header Tests', async () => {
       const res = network.validateHeader(serializedHeaderWithProof, {
         blockHash: bytesToHex(header.hash()),
       })
-      assert.ok(res, 'validated post-merge proof')
+      assert.exists(res, 'validated post-merge proof')
     } catch (err: any) {
       assert.fail(err.message)
     }
@@ -177,7 +179,9 @@ describe('Header Tests', async () => {
       HistoryNetworkContentType.BlockHeader,
       hexToBytes(block1000.hash),
     )
-    await network.validateHeader(preMergeHeaderWithProof, { blockHash: block1000.hash })
+    await network.validateHeader(preMergeHeaderWithProof, {
+      blockHash: block1000.hash,
+    })
     await network.store(headerKey, preMergeHeaderWithProof)
   })
   it('should not store pre-Capella headers with various errors', async () => {
@@ -210,7 +214,7 @@ describe('Header Tests', async () => {
       await network.store(headerKey, fakeProof)
       assert.fail('should have thrown')
     } catch (err: any) {
-      assert.ok(err.message.includes('Unable to validate proof'))
+      assert.isTrue(err.message.includes('Unable to validate proof'))
     }
   })
 })

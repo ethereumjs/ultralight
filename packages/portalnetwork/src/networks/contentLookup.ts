@@ -106,7 +106,7 @@ export class ContentLookup {
         try {
           await Promise.any(promises)
         } catch (err) {
-          this.logger(`All requests errored`)
+          this.logger('All requests errored')
         }
         if (!this.finished) {
           this.logger(
@@ -134,13 +134,13 @@ export class ContentLookup {
         NodeId,
         NodeId[]
       >
-      for (const nodeId of Object.keys(this.contentTrace.responses!)) {
+      for (const nodeId of Object.keys(this.contentTrace.responses)) {
         this.contentTrace.metadata!['0x' + nodeId] = this.meta.get('0x' + nodeId)! as {
           enr: `enr:${string}`
           distance: `0x${string}`
         }
       }
-      for (const nodeId of this.contentTrace.cancelled!) {
+      for (const nodeId of this.contentTrace.cancelled) {
         this.contentTrace.metadata!['0x' + nodeId] = this.meta.get('0x' + nodeId)! as {
           enr: `enr:${string}`
           distance: `0x${string}`
@@ -192,7 +192,7 @@ export class ContentLookup {
         // findContent request returned ENRs of nodes closer to content
         this.logger(`received ${res.enrs.length} ENRs for closer nodes`)
         for (const enr of res.enrs) {
-          const decodedEnr = ENR.decode(enr as Uint8Array)
+          const decodedEnr = ENR.decode(enr)
           // // Skip if the node has an active uTP request
           if (this.network.portal.uTP.hasRequests(decodedEnr.nodeId) === true) {
             continue

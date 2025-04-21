@@ -108,7 +108,7 @@ export class PortalTrie {
     }
     const nextNodeHash =
       current instanceof BranchMPTNode
-        ? current.getBranch(parseInt(addressPath[consumedNibbles], 16))
+        ? current.getBranch(Number.parseInt(addressPath[consumedNibbles], 16))
         : current.value()
 
     if (nextNodeHash === undefined || nextNodeHash === null) {
@@ -191,7 +191,7 @@ export class PortalTrie {
     }
     const nextNodeHash =
       current instanceof BranchMPTNode
-        ? current.getBranch(parseInt(addressPath[consumedNibbles], 16))
+        ? current.getBranch(Number.parseInt(addressPath[consumedNibbles], 16))
         : current.value()
 
     if (nextNodeHash === undefined || nextNodeHash === null) {

@@ -4,7 +4,7 @@ import { bytesToHex, hexToBytes, padToEven } from '@ethereumjs/util'
 import debug from 'debug'
 import { MemoryLevel } from 'memory-level'
 
-import { type NetworkId } from './index.js'
+import type { NetworkId } from './index.js'
 
 import type { AbstractBatchOperation, AbstractLevel } from 'abstract-level'
 import type { Debugger } from 'debug'
@@ -37,11 +37,7 @@ export class NetworkDB {
     this.dataDir = db?.path
     this.streaming = new Set()
     this.logger = logger?.extend('DB') ?? debug(`${this.networkId}DB`)
-    this.contentId =
-      contentId ??
-      function (contentKey: Uint8Array) {
-        return bytesToHex(contentKey)
-      }
+    this.contentId = contentId ?? ((contentKey: Uint8Array) => bytesToHex(contentKey))
     this.maxStorage = maxStorage ?? 1024
     this.dbSize = dbSize
     this.approximateSize = 0
@@ -100,7 +96,7 @@ export class NetworkDB {
       this.logger(`Content ${key}.  currently streaming`)
     }
     const timeout = setTimeout(() => {
-      this.streaming.delete(<string>key)
+      this.streaming.delete(key)
     }, 1000)
     while (this.streaming.has(key)) {
       await new Promise((resolve) => setTimeout(resolve, 100))
@@ -142,10 +138,10 @@ export class NetworkDB {
     if (this.dbSize) {
       size = await this.dbSize()
     } else {
-    for await (const [key, value] of this.db.iterator()) {
-      try {
-        size += hexToBytes('0x' + padToEven(key.slice(2))).length
-        size += hexToBytes(value).length
+      for await (const [key, value] of this.db.iterator()) {
+        try {
+          size += hexToBytes('0x' + padToEven(key.slice(2))).length
+          size += hexToBytes(value).length
         } catch {
           // ignore
         }

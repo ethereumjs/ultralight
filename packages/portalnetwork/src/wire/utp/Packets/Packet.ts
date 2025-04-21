@@ -1,5 +1,5 @@
-import { createPacketHeader } from './index.js'
 import { concatBytes } from '@ethereumjs/util'
+import { createPacketHeader } from './index.js'
 import type {
   PacketHeader,
   PacketInput,
@@ -15,7 +15,7 @@ export class Packet<T extends PacketType> {
 
   public static fromBuffer(buffer: Uint8Array): Packet<PacketType> {
     const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength)
-    
+
     const metaData = {
       pType: buffer[0] >> 4,
       extension: view.getUint8(1),
@@ -64,7 +64,7 @@ export class Packet<T extends PacketType> {
   public encode(): Uint8Array {
     const buffer = this.header.encode()
     if (this.payload) {
-      return concatBytes(buffer, (this.payload))
+      return concatBytes(buffer, this.payload)
     }
     return buffer
   }

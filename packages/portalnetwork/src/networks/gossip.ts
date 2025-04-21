@@ -35,9 +35,7 @@ export class GossipManager {
    * @returns the current number of items in a peer's gossip queue
    */
   public enqueue(peer: Peer, key: Uint8Array): number {
-    if (this.gossipQueues[peer] === undefined) {
-      this.gossipQueues[peer] = []
-    }
+    this.gossipQueues[peer] ??= []
     if (this.network.routingTable.contentKeyKnownToPeer(peer, key) === false) {
       this.gossipQueues[peer].push(key)
     }
