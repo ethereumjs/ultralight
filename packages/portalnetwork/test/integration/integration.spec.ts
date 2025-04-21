@@ -1,11 +1,11 @@
+import { EventEmitter } from 'events'
+import { readFileSync } from 'fs'
+import { createRequire } from 'module'
 import { SignableENR } from '@chainsafe/enr'
 import { createBlockFromRLP, createBlockHeaderFromRLP } from '@ethereumjs/block'
 import { bytesToHex, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
-import { EventEmitter } from 'events'
-import { readFileSync } from 'fs'
-import { createRequire } from 'module'
 import { assert, describe, it } from 'vitest'
 
 import {
@@ -42,9 +42,9 @@ const enr1 = SignableENR.createFromPrivateKey(pk1)
 const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
 const enr2 = SignableENR.createFromPrivateKey(pk2)
 describe('gossip test', async () => {
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5034`)
+  const initMa: any = multiaddr('/ip4/127.0.0.1/udp/5034')
   enr1.setLocationMultiaddr(initMa)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/5035`)
+  const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/5035')
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,
@@ -74,7 +74,7 @@ describe('gossip test', async () => {
   const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
   network1.gossipManager.setPulse(10)
   const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-  await network1?.sendPing(network2?.enr!.toENR())
+  await network1?.sendPing(network2?.enr.toENR())
   it('has pinged node in routing table', () => {
     assert.equal(
       network1?.routingTable.getWithPending(
@@ -116,9 +116,9 @@ describe('gossip test', async () => {
 }, 40000)
 
 describe('FindContent', async () => {
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3070`)
+  const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3070')
   enr1.setLocationMultiaddr(initMa)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3071`)
+  const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3071')
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,
@@ -207,7 +207,7 @@ describe('FindContent', async () => {
     assert.equal(bytesToHex(findStateRoot!), bytesToHex(stateRoot), 'retrieved expected state root')
   })
 
-  await network1.sendPing(network2?.enr!.toENR())
+  await network1.sendPing(network2?.enr.toENR())
 
   const res = await network2.sendFindContent(
     node1.discv5.enr.toENR(),
@@ -231,9 +231,9 @@ describe('FindContent', async () => {
 })
 
 describe('eth_getBlockByHash', async () => {
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3080`)
+  const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3080')
   enr1.setLocationMultiaddr(initMa)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3081`)
+  const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3081')
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,
@@ -269,7 +269,7 @@ describe('eth_getBlockByHash', async () => {
     network1,
     AccumulatorProofType.serialize(witnesses),
   )
-  await network1.sendPing(network2?.enr!.toENR())
+  await network1.sendPing(network2?.enr.toENR())
 
   const retrieved = await network2.portal.ETH.getBlockByHash(
     hexToBytes(testBlockData[29].blockHash),
@@ -289,9 +289,9 @@ describe('eth_getBlockByHash', async () => {
 
 describe('Offer/Accept', () => {
   it('should send offer and get no accepts', async () => {
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3090`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3090')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3091`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3091')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
@@ -322,7 +322,7 @@ describe('Offer/Accept', () => {
     const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     await network2.setRadius(1n)
-    await network1.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     const veryFarFakeContentKey = hexToBytes(
       '0x00' + generateRandomNodeIdAtDistance(node2.discv5.enr.nodeId, 256),
     )
@@ -330,9 +330,9 @@ describe('Offer/Accept', () => {
     assert.deepEqual(res, BitArray.fromBoolArray([false]), 'no accepts should be received')
   })
   it('should send offer and get correct number of accepted content keys', async () => {
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3092`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3092')
     enr1.setLocationMultiaddr(initMa)
-    const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3093`)
+    const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3093')
     enr2.setLocationMultiaddr(initMa2)
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
@@ -362,7 +362,7 @@ describe('Offer/Accept', () => {
     await node2.start()
     const network1 = node1.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
     const network2 = node2.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-    await network1.sendPing(network2?.enr!.toENR())
+    await network1.sendPing(network2?.enr.toENR())
     const contentKeys: Uint8Array[] = []
 
     // Generate 2 content keys that are at log2 distance 253 and 254
@@ -381,18 +381,14 @@ describe('Offer/Accept', () => {
     await network2.setRadius(2n ** 253n - 1n)
     const res = await network1.sendOffer(node2.discv5.enr.toENR(), contentKeys)
     assert.ok(res instanceof BitArray, 'should get a bitarray')
-    assert.equal((res as BitArray).bitLen, 2, 'should get matching length accepts')
-    assert.equal(
-      (res as BitArray).getTrueBitIndexes().length,
-      1,
-      'should only accept one content key',
-    )
+    assert.equal(res.bitLen, 2, 'should get matching length accepts')
+    assert.equal(res.getTrueBitIndexes().length, 1, 'should only accept one content key')
 
     // Set node radius to 254
     await network2.setRadius(2n ** 254n - 1n)
     const res2 = await network1.sendOffer(node2.discv5.enr.toENR(), contentKeys)
     assert.ok(res2 instanceof BitArray, 'should get a bitarray')
-    assert.equal((res2 as BitArray).bitLen, 2, 'should get matching length accepts')
-    assert.equal((res2 as BitArray).getTrueBitIndexes().length, 2, 'should accept two content keys')
+    assert.equal(res2.bitLen, 2, 'should get matching length accepts')
+    assert.equal(res2.getTrueBitIndexes().length, 2, 'should accept two content keys')
   })
 })

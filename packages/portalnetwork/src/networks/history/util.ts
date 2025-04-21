@@ -163,10 +163,7 @@ export const decodeHistoryNetworkContentKey = (
   }
 }
 
-export const decodeSszBlockBody = (
-  sszBody: Uint8Array,
-  withdrawals: boolean = false,
-): BlockBodyContent => {
+export const decodeSszBlockBody = (sszBody: Uint8Array, withdrawals = false): BlockBodyContent => {
   if (withdrawals) {
     const body = PostShanghaiBlockBody.deserialize(sszBody)
     const txsRlp = body.allTransactions.map((sszTx) => sszTransactionType.deserialize(sszTx))
@@ -434,6 +431,6 @@ export const generatePreMergeHeaderProof = async (
     const proof = createProof(tree, proofInput) as SingleProof
     return proof.witnesses
   } catch (err: any) {
-    throw new Error('Error generating inclusion proof: ' + (err as any).message)
+    throw new Error('Error generating inclusion proof: ' + err.message)
   }
 }

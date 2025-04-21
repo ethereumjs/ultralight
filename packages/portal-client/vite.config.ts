@@ -1,11 +1,12 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { nodePolyfills } from 'vite-plugin-node-polyfills'
-import tsconfigPaths from 'vite-tsconfig-paths'
 import { builtinModules } from 'module'
 import { resolve } from 'path'
 import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
+import tsconfigPaths from 'vite-tsconfig-paths'
 
+// @ts-expect-error process is a Node.js global
 const host = process.env.TAURI_DEV_HOST
 
 export default defineConfig(async () => ({
@@ -88,7 +89,7 @@ export default defineConfig(async () => ({
   server: {
     port: 1420,
     strictPort: true,
-    host: host || false,
+    host: host ?? false,
     hmr: host
       ? {
           protocol: 'ws',

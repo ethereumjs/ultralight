@@ -169,7 +169,7 @@ export function encodingTest(
     assert.equal(
       Object.entries(decodedHeader).toString(),
       Object.entries(testHeader).toString(),
-      `Packet.fromBuffer(expectedResult) successfully rebuilt Test Packet`,
+      'Packet.fromBuffer(expectedResult) successfully rebuilt Test Packet',
     )
     const decodedEncoded = Packet.fromBuffer(encodedPacket)
     assert.equal(
@@ -192,7 +192,7 @@ export function encodingTest(
       assert.equal(
         bytesToHex(testData.payload!),
         bytesToHex(Uint8Array.from(decodedPacket.payload!)),
-        `Successfully encoded and decoded DATA Packet payload.`,
+        'Successfully encoded and decoded DATA Packet payload.',
       )
     }
   })

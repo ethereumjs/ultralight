@@ -160,7 +160,7 @@ export class eth {
     )
     try {
       const block = await this._client.ETH.getBlockByNumber(
-        parseInt(blockNumber),
+        Number.parseInt(blockNumber),
         includeTransactions,
       )
       if (block === undefined) throw new Error('block not found')
@@ -233,13 +233,13 @@ export class eth {
     if (blockHash !== undefined && (fromBlock !== undefined || toBlock !== undefined)) {
       throw {
         code: INVALID_PARAMS,
-        message: `Can only specify a blockHash if fromBlock or toBlock are not provided`,
+        message: 'Can only specify a blockHash if fromBlock or toBlock are not provided',
       }
     }
     let from: Block, to: Block
     if (blockHash !== undefined) {
       try {
-        from = to = (await this.getBlockByHash([blockHash, true])) as Block
+        from = to = await this.getBlockByHash([blockHash, true])
       } catch (error: any) {
         throw {
           code: INVALID_PARAMS,
@@ -248,12 +248,12 @@ export class eth {
       }
     } else {
       if (fromBlock === 'earliest') {
-        from = (await this.getBlockByNumber(['0', true])) as Block
+        from = await this.getBlockByNumber(['0', true])
       } else if (fromBlock === 'latest' || fromBlock === undefined) {
         throw new Error(`History Network does not support "latest" block`)
       } else {
         const blockNum = BigInt(fromBlock)
-        from = (await this.getBlockByNumber([blockNum.toString(), true])) as Block
+        from = await this.getBlockByNumber([blockNum.toString(), true])
       }
       if (toBlock === fromBlock) {
         to = from
@@ -289,10 +289,7 @@ export class eth {
         Array.from(
           { length: Number(to.header.number) - Number(from.header.number) + 1 } as any,
           async (_, i) =>
-            (await this.getBlockByNumber([
-              bigIntToHex(BigInt(i) + from.header.number),
-              true,
-            ])) as Block,
+            this.getBlockByNumber([bigIntToHex(BigInt(i) + from.header.number), true]),
         ),
       ) //@ts-ignore
       const logs = await getLogs(await blocks, addrs, formattedTopics)

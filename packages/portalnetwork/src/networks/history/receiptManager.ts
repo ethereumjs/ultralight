@@ -125,17 +125,17 @@ export async function getLogs(
   const returnedLogs: GetLogsReturn = []
   let returnedLogsSize = 0
   for (const block of blocks) {
-    const receipts = await getReceipts(bytesToHex(block!.hash()))
+    const receipts = await getReceipts(bytesToHex(block.hash()))
     if (receipts.length === 0) continue
     let logs: GetLogsReturn = []
     let logIndex = 0
     for (const [receiptIndex, receipt] of receipts.entries()) {
       block !== undefined &&
         logs.push(
-          ...receipt!.logs.map((log) => ({
+          ...receipt.logs.map((log) => ({
             log,
             block,
-            tx: block!.transactions[receiptIndex],
+            tx: block.transactions[receiptIndex],
             txIndex: receiptIndex,
             logIndex: logIndex++,
           })),
@@ -149,14 +149,14 @@ export async function getLogs(
         for (const [i, topic] of topics.entries()) {
           if (Array.isArray(topic)) {
             if (!topic.find((t) => equalsBytes(t, l.log[1][i]))) return false
-          } else if (!topic) {
+          } else if (topic === null) {
             // If null then can match any
           } else {
             // If a value is specified then it must match
             if (equalsBytes(topic, l.log[1][i]) === false) return false
           }
-          return true
         }
+        return true
       })
     }
     returnedLogs.push(...logs)
