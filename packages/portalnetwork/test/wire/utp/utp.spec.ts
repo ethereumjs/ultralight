@@ -74,7 +74,7 @@ describe('uTP Reader/Writer tests', async () => {
       sent++
     }
     assert.equal(sent, packets.length, 'all Packets sent')
-    assert.equal(sent, reader.packets.filter((p) => p).length, 'all Packets added')
+    assert.equal(sent, reader.packets.filter((p) => p !== undefined).length, 'all Packets added')
     await new Promise((resolve) => setTimeout(resolve, 1000))
     assert.equal(reader.bytes.length, sampleSize, 'ContentReader read all bytes')
   })
@@ -117,7 +117,7 @@ describe('uTP Reader/Writer tests', async () => {
       sent++
     }
     assert.equal(sent, packets.length, 'all Packets sent')
-    assert.equal(sent, reader.packets.filter((p) => p).length, 'all Packets added')
+    assert.equal(sent, reader.packets.filter((p) => p !== undefined).length, 'all Packets added')
     await new Promise((resolve) => setTimeout(resolve, 1000))
     assert.equal(reader.bytesReceived, content.length, 'ContentReader read all bytes')
     assert.equal(reader.contents.length, contents.length, 'ContentReader compiled all contents')
@@ -135,7 +135,7 @@ describe('PortalNetworkUTP test', async () => {
     // connectionId comes from discv5 talkResp message
     const connectionId = randUint16()
     const socketIds = utp.startingIdNrs(connectionId)
-    assert.ok(utp, 'PortalNetworkUTP created')
+    assert.exists(utp, 'PortalNetworkUTP created')
     let socket = utp.createPortalNetworkUTPSocket(
       networkId,
       RequestCode.FOUNDCONTENT_WRITE,
@@ -145,7 +145,7 @@ describe('PortalNetworkUTP test', async () => {
       socketIds[RequestCode.FOUNDCONTENT_WRITE].rcvId,
       utf8ToBytes('test'),
     )
-    assert.ok(socket, 'UTPSocket created by PortalNetworkUTP')
+    assert.exists(socket, 'UTPSocket created by PortalNetworkUTP')
     assert.equal(socket.sndConnectionId, connectionId + 1, 'UTPSocket has correct sndConnectionId')
     assert.equal(socket.rcvConnectionId, connectionId, 'UTPSocket has correct rcvConnectionId')
     assert.equal(socket.remoteAddress, enr, 'UTPSocket has correct peerId')

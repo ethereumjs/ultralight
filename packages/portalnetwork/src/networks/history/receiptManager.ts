@@ -149,14 +149,14 @@ export async function getLogs(
         for (const [i, topic] of topics.entries()) {
           if (Array.isArray(topic)) {
             if (!topic.find((t) => equalsBytes(t, l.log[1][i]))) return false
-          } else if (!topic) {
+          } else if (topic === null) {
             // If null then can match any
           } else {
             // If a value is specified then it must match
             if (equalsBytes(topic, l.log[1][i]) === false) return false
           }
-          return true
         }
+        return true
       })
     }
     returnedLogs.push(...logs)

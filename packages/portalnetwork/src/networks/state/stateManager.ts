@@ -119,9 +119,8 @@ export class UltralightStateManager implements StateManagerInterface {
   ): Promise<void> => {
     let account: Account | undefined
     // let account = await this.getAccount(address)
-    if (account === undefined) {
-      account = new Account()
-    }
+    account ??= new Account()
+
     account.nonce = accountFields.nonce ?? account.nonce
     account.balance = accountFields.balance ?? account.balance
     account.storageRoot = accountFields.storageRoot ?? account.storageRoot

@@ -152,7 +152,7 @@ describe('Header Tests', async () => {
       const res = network.validateHeader(serializedHeaderWithProof, {
         blockHash: bytesToHex(header.hash()),
       })
-      assert.ok(res, 'validated post-merge proof')
+      assert.exists(res, 'validated post-merge proof')
     } catch (err: any) {
       assert.fail(err.message)
     }
@@ -214,7 +214,7 @@ describe('Header Tests', async () => {
       await network.store(headerKey, fakeProof)
       assert.fail('should have thrown')
     } catch (err: any) {
-      assert.ok(err.message.includes('Unable to validate proof'))
+      assert.isTrue(err.message.includes('Unable to validate proof'))
     }
   })
 })

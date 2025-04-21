@@ -10,5 +10,5 @@ export const getConfigValue = (id: ConfigId): string => {
   const config = CONFIG_DEFAULTS.find((config) => config.id === id)
   const localStorageKey = id.toLowerCase().replace(/_/g, '-')
   //@ts-ignore
-  return localStorage.getItem(localStorageKey) || config.defaultValue
+  return localStorage.getItem(localStorageKey) ?? config.defaultValue
 }

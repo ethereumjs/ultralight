@@ -145,9 +145,7 @@ export class BeaconNetwork extends BaseNetwork {
     if (decoded !== undefined && 'content' in decoded) {
       const forkhash = decoded.content.slice(0, 4) as Uint8Array
       const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
-      const bootstrap = ssz[forkname].LightClientBootstrap.deserialize(
-        (decoded.content).slice(4),
-      )
+      const bootstrap = ssz[forkname].LightClientBootstrap.deserialize(decoded.content.slice(4))
       const headerHash = bytesToHex(
         ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
       )
@@ -249,10 +247,10 @@ export class BeaconNetwork extends BaseNetwork {
               if (res !== undefined && 'content' in res) {
                 try {
                   const fork = this.beaconConfig.forkDigest2ForkName(
-                    (res.content).slice(0, 4),
+                    res.content.slice(0, 4),
                   ) as LightClientForkName
                   // Verify bootstrap is valid
-                  ssz[fork].LightClientBootstrap.deserialize((res.content).slice(4))
+                  ssz[fork].LightClientBootstrap.deserialize(res.content.slice(4))
                   this.logger.extend('BOOTSTRAP')(`found a valid bootstrap - ${results[x][0]}`)
                   await this.store(bootstrapKey, res.content)
                   this.portal.removeListener('NodeAdded', this.getBootStrapVote)
@@ -872,7 +870,7 @@ export class BeaconNetwork extends BaseNetwork {
                 }
               }
             } else {
-              for await (const key of requestedKeys) {
+              for (const key of requestedKeys) {
                 let value = Uint8Array.from([])
                 try {
                   // We use `findContentLocally` instead of `get` so the content keys for

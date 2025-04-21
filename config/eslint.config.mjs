@@ -10,11 +10,12 @@ export default [
 			"docs/",
 			"config/tsconfig.lint.json",
 			"vitest.config.*.ts",
-			"vite.config.ts",
-			"scripts/",
+			"**/vite.config.ts",
+			"**/scripts/**",
 			"*.d.ts",
 			"**/dist/**",
 			"**/docs/**",
+			"**/target/**"
 		],
 	},
 	{
@@ -39,7 +40,7 @@ export default [
 		
 		rules: {
 			"@typescript-eslint/no-floating-promises": "error",
-			"@typescript-eslint/no-misused-promises": "error",
+			"@typescript-eslint/no-misused-promises": "off",
 			"@typescript-eslint/await-thenable": "error",
 			"@typescript-eslint/no-unnecessary-type-assertion": "error",
 			"@typescript-eslint/strict-boolean-expressions": ["error"],

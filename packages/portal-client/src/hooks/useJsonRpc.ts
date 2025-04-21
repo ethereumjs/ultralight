@@ -17,7 +17,7 @@ export const useJsonRpc = () => {
     async (method: string, params: any[] = []) => {
       setResult(null)
 
-      if (!client) {
+      if (client === undefined) {
         throw new Error('Portal Network client is not initialized')
       }
 

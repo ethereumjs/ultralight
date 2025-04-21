@@ -667,7 +667,7 @@ export abstract class BaseNetwork extends EventEmitter {
                 }
               }
             } else {
-              for await (const key of requestedKeys) {
+              for (const key of requestedKeys) {
                 let value = Uint8Array.from([])
                 try {
                   value = hexToBytes(await this.get(key))
