@@ -1,21 +1,20 @@
 import { shortId } from 'portalnetwork'
 
 import { PeerItem } from '@/utils/types'
+import type { ENR } from '@chainsafe/enr'
 
 interface PeerTableProps {
   peers: PeerItem[]
-  isLoading: boolean
   currentPage: number
   itemsPerPage: number
   totalPages: number
   onViewDetails: (nodeId: string) => void
-  onPingNode: (nodeId: string) => void
+  onPingNode: (enr: ENR) => void
   onPageChange: (page: number) => void
 }
 
 export const PeerTable = ({
   peers,
-  isLoading,
   currentPage,
   itemsPerPage,
   totalPages,
@@ -28,11 +27,7 @@ export const PeerTable = ({
 
   return (
     <>
-      {isLoading ? (
-        <div className="flex justify-center p-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      ) : peers.length === 0 ? (
+      {peers.length === 0 ? (
         <div className="text-center p-4 bg-base-200 rounded-lg">
           No connected peers found
         </div>
@@ -67,7 +62,7 @@ export const PeerTable = ({
                     <td>
                       <button 
                         className="btn btn-sm btn-primary"
-                        onClick={() => onPingNode(peerData.nodeId)}
+                        onClick={() => onPingNode(peerData.enr)}
                       >
                         Ping Node
                       </button>

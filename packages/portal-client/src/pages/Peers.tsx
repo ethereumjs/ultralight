@@ -1,13 +1,21 @@
 import { useEffect, useState } from 'react'
+import { decodeExtensionPayloadToJson, shortId } from 'portalnetwork'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
 import { PeerTable } from '@/components/ui/PeerTable'
 import { PeerDetail } from '@/components/ui/PeerDetail'
+import { useNotification } from '@/contexts/NotificationContext'
 
 import { NodeId, PeerItem } from '@/utils/types'
+import { IClientInfo } from 'portalnetwork'
 import type { ENR } from '@chainsafe/enr'
 
+type ExtensionPayload = {
+  ClientInfo: IClientInfo
+}
+
 const Peers = () => {
-  const { client, isLoading, setIsLoading } = usePortalNetwork()
+  const { client, setIsLoading } = usePortalNetwork()
+  const { notify } = useNotification()
 
   const [peers, setPeers] = useState<PeerItem[]>([])
   const [currentView, setCurrentView] = useState<'table' | 'detail'>('table')
@@ -29,7 +37,7 @@ const Peers = () => {
       const nodeId = enr.nodeId    
       return {
         nodeId,
-        enr: enr.encodeTxt(),
+        enr,
         status: client.discv5.connectedPeers.has(nodeId) 
           ? 'Connected' 
           : 'Disconnected',
@@ -55,8 +63,25 @@ const Peers = () => {
     setIsNodeConnected(client.discv5.connectedPeers.has(nodeId))
   }
 
-  const handlePingNode = (nodeId: NodeId) => {
-    console.log(`Pinging node: ${nodeId}`)
+  const handlePingNode = async (enr: ENR) => {
+    let extensionPayload: ExtensionPayload | null = null
+    try {
+
+      const pong = await client.networks.get('0x500b').sendPing(enr)
+      extensionPayload = decodeExtensionPayloadToJson(
+        pong.payloadType, 
+        pong.customPayload,
+      ) as ExtensionPayload
+      notify({  
+        message: `Pong received from ${extensionPayload.ClientInfo.clientName} node`,
+        type: 'info',
+      })
+    } catch (e) {
+      notify({
+        message: `PING/PONG with ${shortId(enr.nodeId)} was unsuccessful`,
+        type: 'error',
+      })
+    }
   }
 
 
@@ -74,7 +99,6 @@ const Peers = () => {
       {currentView === 'table' ? (
         <PeerTable
           peers={peers}
-          isLoading={isLoading}
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
           totalPages={totalPages}

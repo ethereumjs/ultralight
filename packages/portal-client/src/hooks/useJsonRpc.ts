@@ -49,6 +49,11 @@ export const useJsonRpc = () => {
           result = await client.ETH.getBalance(params[0], params[1])
           responseType = 'ether'
           break
+        case 'portal_historyPing':
+          result = await client.networks.get('0x500b').sendPing(params[0])
+          console.log('resultt',result, params[0])
+          responseType = 'generic'
+          break
         case 'portal_historyFindContent':
           result = await client.networks.get('0x500b').sendFindNodes(params[0], params[1])
           console.log('resultt',result, params[0], params[1])
