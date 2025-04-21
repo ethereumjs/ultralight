@@ -1,5 +1,5 @@
-import { BrowserLevel } from 'browser-level'
 import { keys } from '@libp2p/crypto'
+import { BrowserLevel } from 'browser-level'
 import { PRIVATE_KEY_DB_KEY } from './types'
 
 export function createDatabase(

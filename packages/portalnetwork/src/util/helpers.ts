@@ -258,7 +258,6 @@ export function formatBlockResponse(block: Block, includeTransactions: boolean) 
       : {}
 
   const transactions = block.transactions.map((tx, txIndex) =>
-     
     includeTransactions ? toJSONRPCTx(tx, block, txIndex) : bytesToHex(tx.hash()),
   )
 

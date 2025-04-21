@@ -239,7 +239,7 @@ export class eth {
     let from: Block, to: Block
     if (blockHash !== undefined) {
       try {
-        from = to = (await this.getBlockByHash([blockHash, true]))
+        from = to = await this.getBlockByHash([blockHash, true])
       } catch (error: any) {
         throw {
           code: INVALID_PARAMS,
@@ -248,12 +248,12 @@ export class eth {
       }
     } else {
       if (fromBlock === 'earliest') {
-        from = (await this.getBlockByNumber(['0', true]))
+        from = await this.getBlockByNumber(['0', true])
       } else if (fromBlock === 'latest' || fromBlock === undefined) {
         throw new Error(`History Network does not support "latest" block`)
       } else {
         const blockNum = BigInt(fromBlock)
-        from = (await this.getBlockByNumber([blockNum.toString(), true]))
+        from = await this.getBlockByNumber([blockNum.toString(), true])
       }
       if (toBlock === fromBlock) {
         to = from
@@ -289,10 +289,7 @@ export class eth {
         Array.from(
           { length: Number(to.header.number) - Number(from.header.number) + 1 } as any,
           async (_, i) =>
-            (this.getBlockByNumber([
-              bigIntToHex(BigInt(i) + from.header.number),
-              true,
-            ])),
+            this.getBlockByNumber([bigIntToHex(BigInt(i) + from.header.number), true]),
         ),
       ) //@ts-ignore
       const logs = await getLogs(await blocks, addrs, formattedTopics)

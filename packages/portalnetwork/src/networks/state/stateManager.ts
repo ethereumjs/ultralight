@@ -117,9 +117,9 @@ export class UltralightStateManager implements StateManagerInterface {
     address: Address,
     accountFields: Partial<Pick<Account, 'nonce' | 'balance' | 'storageRoot' | 'codeHash'>>,
   ): Promise<void> => {
-    let account: Account | undefined
+    // let account: Account | undefined
     // let account = await this.getAccount(address)
-    account ??= new Account()
+    const account = new Account()
 
     account.nonce = accountFields.nonce ?? account.nonce
     account.balance = accountFields.balance ?? account.balance

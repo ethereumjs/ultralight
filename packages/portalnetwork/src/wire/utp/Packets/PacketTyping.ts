@@ -28,7 +28,6 @@ export enum HeaderExtension {
   selectiveAck = 1,
 }
 
- 
 interface IHeaderInput<T extends PacketType> {
   pType: PacketType
   version: Uint8
