@@ -95,13 +95,6 @@ export class WriteSocket extends UtpSocket {
   }
   async sendDataPacket(bytes: Uint8Array): Promise<void> {
     this.state = ConnectionState.Connected
-    try {
-      await this.packetManager.congestionControl.canSend()
-    } catch (e) {
-      this.logger(`DATA packet not acked.  Closing connection to ${this.remoteAddress}`)
-      await this.sendResetPacket()
-      this.close()
-    }
     const packet = this.createPacket<PacketType.ST_DATA>({
       pType: PacketType.ST_DATA,
       payload: bytes,
