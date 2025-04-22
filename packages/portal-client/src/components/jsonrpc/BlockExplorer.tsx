@@ -1,4 +1,5 @@
-import { FC, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useJsonRpc } from '@/hooks/useJsonRpc'
 import { MethodInput } from '@/components/ui/MethodInput'
 import { ResponseViewer } from '@/components/ui/ResponseViewer'
@@ -7,21 +8,37 @@ import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { methodRegistry, MethodType } from '@/utils/rpcMethods'
 import { APPROVED_METHODS } from '@/utils/constants/methodRegistry'
+import { MethodParamConfig } from '@/utils/types'
 
-const BlockExplorer: FC = () => {
+interface BlockExplorerProps {
+  nodeId?: string
+}
+
+const BlockExplorer = ({nodeId}: BlockExplorerProps) => {
   const [selectedMethod, setSelectedMethod] = useState<MethodType | ''>('')
-  const [inputValue, setInputValue] = useState('')
+  const [inputValue, setInputValue] = useState(nodeId || '')
   const [includeFullTx, setIncludeFullTx] = useState(false)
   const [blockHeight, setBlockHeight] = useState('')
+  const [distances, setDistances] = useState('')
 
   const { result, setResult, sendRequestHandle } = useJsonRpc()
-  const { isLoading, setIsLoading, cancelRequest, client } = usePortalNetwork()
+  const { setIsLoading, cancelRequest, client } = usePortalNetwork()
   const { notify } = useNotification()
+  const location = useLocation()
+  const isPeersRoute = location.pathname === '/peers'
 
-  const methodOptions = APPROVED_METHODS.map((method) => ({
-    value: method,
-    label: methodRegistry[method].name,
-  }))
+  const filteredMethods = useMemo(() => {
+    return isPeersRoute 
+      ? APPROVED_METHODS.filter(method => method.startsWith('portal_'))
+      : APPROVED_METHODS;
+  }, [isPeersRoute])
+
+  const methodOptions = useMemo(() => {
+    return filteredMethods.map((method) => ({
+      value: method,
+      label: methodRegistry[method].name,
+    }));
+  }, [filteredMethods])
 
   const handleSubmit = async () => {
     if (selectedMethod && methodRegistry[selectedMethod]) {
@@ -32,6 +49,9 @@ const BlockExplorer: FC = () => {
           formattedInput = `${inputValue},${includeFullTx}`
         } else if (methodParamMap[selectedMethod]?.showBlockHeight) {        
           formattedInput = `${inputValue},${blockHeight}`
+        } else if (methodParamMap[selectedMethod]?.showDistances) {  
+          const distanceArray = distances.split(',').map(d => Number(d.trim()))    
+          formattedInput = `${inputValue},${distanceArray}`
         }
         await methodRegistry[selectedMethod].handler(formattedInput, sendRequestHandle)
       } catch (err) {
@@ -60,7 +80,7 @@ const BlockExplorer: FC = () => {
   }
 
   const reset = () => {
-    setInputValue('')
+    setInputValue(nodeId || '')
     setBlockHeight('')
     setIncludeFullTx(false)
     setResult(null)
@@ -68,18 +88,25 @@ const BlockExplorer: FC = () => {
   }
 
   const methodParamMap = useMemo(() => {
-    const map: Record<string, { showIncludeFullTx?: boolean; showBlockHeight?: boolean }> = {}
-
-    APPROVED_METHODS.forEach((method) => {
+    const map = {} as Record<MethodType, MethodParamConfig>
+    filteredMethods.forEach((method) => {
+      const config: MethodParamConfig = {}
+      
       if (method.includes('BlockBy')) {
-        map[method] = { showIncludeFullTx: true }
-      } else if (method === 'eth_getTransactionCount' || method === 'eth_getBalance') {
-        map[method] = { showBlockHeight: true }
-      } else {
-        map[method] = {}
+        config.showIncludeFullTx = true
+      } 
+      
+      if (method === 'eth_getTransactionCount' || method === 'eth_getBalance') {
+        config.showBlockHeight = true
       }
-    })
+      
+      if (method.includes('portal_')) {
+        config.showDistances = true
+      }
 
+      map[method] = config
+    })
+  
     return map
   }, [])
 
@@ -88,6 +115,12 @@ const BlockExplorer: FC = () => {
       reset()
     }
   }, [client])
+
+  useEffect(() => {
+    if (nodeId) {
+      setInputValue(nodeId)
+    }
+  }, [nodeId])
 
   const currentMethodConfig = selectedMethod ? methodParamMap[selectedMethod] || {} : {}
 
@@ -111,18 +144,19 @@ const BlockExplorer: FC = () => {
               placeholder={methodRegistry[selectedMethod].paramPlaceholder}
               onSubmit={handleSubmit}
               onCancel={handleCancel}
-              isLoading={isLoading}
               className="bg-[#2A323C] text-gray-200 border border-gray-600 placeholder-gray-400 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"
-              showIncludeFullTx={currentMethodConfig.showIncludeFullTx}
               includeFullTx={includeFullTx}
               onIncludeFullTxChange={setIncludeFullTx}
-              showBlockHeight={currentMethodConfig.showBlockHeight}
-              blockHeight={blockHeight}
               onBlockHeightChange={setBlockHeight}
+              onDistancesChange={setDistances}
+              showIncludeFullTx={currentMethodConfig.showIncludeFullTx}
+              showBlockHeight={currentMethodConfig.showBlockHeight}
+              showDistances={currentMethodConfig.showDistances}
+              blockHeight={blockHeight}
+              distances={distances}
             />
           </div>
         )}
-        {isLoading && <div className="text-center text-gray-400">Loading...</div>}
         {result && <ResponseViewer data={result} />}
       </div>
     </div>

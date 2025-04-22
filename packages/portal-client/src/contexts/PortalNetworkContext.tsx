@@ -9,8 +9,17 @@ import {
 import { createPortalClient } from '@/services/portalNetwork/client'
 import { usePersistedState } from '@/hooks/usePersistedState'
 
+import { 
+  NetworkId,
+  type HistoryNetwork, 
+  type PortalNetwork, 
+  type StateNetwork,
+ } from 'portalnetwork'
+
 type PortalNetworkContextType = {
-  client: any | null
+  client: PortalNetwork | null
+  historyNetwork: HistoryNetwork | null
+  stateNetwork: StateNetwork | null
   isLoading: boolean
   setIsLoading: (loading: boolean) => void
   initialize: (customPort: number) => Promise<void>
@@ -23,6 +32,8 @@ type PortalNetworkContextType = {
 
 const PortalNetworkContext = createContext<PortalNetworkContextType>({
   client: null,
+  historyNetwork: null,
+  stateNetwork: null,
   isLoading: true,
   setIsLoading: () => {},
   isNetworkReady: false,
@@ -42,7 +53,9 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   children,
 }) => {
   const abortControllerRef = useRef<AbortController | null>(null)
-  const [client, setClient] = useState<any | null>(null)
+  const [client, setClient] = useState<PortalNetwork | null>(null)
+  const [historyNetwork, setHistoryNetwork] = useState<HistoryNetwork | null>(null)
+  const [stateNetwork, setStateNetwork] = useState<StateNetwork | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isNetworkReady, setIsNetworkReady] = usePersistedState<boolean>(
     'portal-network-ready',
@@ -57,6 +70,8 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     try {
       const portalClient = await createPortalClient(port)
       setClient(portalClient)
+      setHistoryNetwork(portalClient.networks.get(NetworkId.HistoryNetwork))
+      setStateNetwork(portalClient.networks.get(NetworkId.StateNetwork))
       setIsLoading(false)
       setIsNetworkReady(true)
     } catch (err) {
@@ -72,6 +87,8 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
       try {
         await client.stop()
         setClient(null)
+        setHistoryNetwork(null)
+        setStateNetwork(null)
         setIsNetworkReady(false)
         localStorage.removeItem('portal-network-ready')
       } catch (err) {
@@ -100,6 +117,8 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
 
   const contextValue: PortalNetworkContextType = {
     client,
+    historyNetwork,
+    stateNetwork,
     isLoading,
     setIsLoading,
     isNetworkReady,

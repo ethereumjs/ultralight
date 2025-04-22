@@ -1,7 +1,8 @@
-import { MethodConfig } from '@/services/portalNetwork/types'
 import { hexToBytes, isHexString, isValidAddress } from '@ethereumjs/util'
-import { InputValue } from './types'
 import { APPROVED_METHODS } from './constants/methodRegistry'
+
+import { InputValue } from './types'
+import { MethodConfig } from '@/services/portalNetwork/types'
 
 export type MethodType = (typeof APPROVED_METHODS)[number]
 
@@ -37,7 +38,7 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
       return sendRequestHandle('eth_getBlockByNumber', [blockNumber, includeFullTx])
     },
   },
-  'eth_getTransactionCount': {
+  eth_getTransactionCount: {
     name: 'Get Transanctions By An Address',
     paramPlaceholder: 'Enter Address',
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
@@ -48,7 +49,7 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
       return sendRequestHandle('eth_getTransactionCount', [hexToBytes(address), blockHeight])
     },
   },
-  'eth_getBalance': {
+  eth_getBalance: {
     name: 'Get Balance Of An Address',
     paramPlaceholder: 'Enter Address',
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
@@ -60,4 +61,27 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
       return sendRequestHandle('eth_getBalance', [hexToBytes(address), blockHeight])
     },
   },
+  portal_historyPing: {
+    name: "Ping a node",
+    paramPlaceholder: "Enter node enr",
+    handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
+  
+      let enr = input.split(',')
+      
+      return sendRequestHandle('portal_historyPing', [enr])
+    },
+  },
+  portal_historyFindContent: {
+    name: "Find Content",
+    paramPlaceholder: "Enter content ID",
+    handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
+  
+      let parts = input.split(',')
+      const nodeId = parts[0]
+      const distances = parts.slice(1)
+      
+      return sendRequestHandle('portal_historyFindContent', [nodeId, distances])
+    },
+  },
+
 }
