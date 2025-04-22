@@ -5,7 +5,7 @@ import { RPCResponse } from '@/utils/types'
 
 
 export const useJsonRpc = () => {
-  const { client, setIsLoading } = usePortalNetwork()
+  const { client, historyNetwork, setIsLoading } = usePortalNetwork()
   const [result, setResult] = useState<RPCResponse | null>(null)
 
   const sendRequestHandle = useCallback(
@@ -31,9 +31,9 @@ export const useJsonRpc = () => {
           responseType = 'block'
           break
         case 'eth_getTransactionCount':
-        result = await client.ETH.getTransactionCount(params[0], params[1])
-        responseType = 'bigNumber'
-        break
+          result = await client.ETH.getTransactionCount(params[0], params[1])
+          responseType = 'bigNumber'
+          break
         case 'eth_getCode':
           result = await client.ETH.getCode(params[0], params[1])
           responseType = 'code'
@@ -51,12 +51,12 @@ export const useJsonRpc = () => {
           responseType = 'ether'
           break
         case 'portal_historyPing':
-          result = await client.networks.get('0x500b').sendPing(params[0])
+          result = await historyNetwork?.sendPing(params[0])
           console.log('resultt',result, params[0])
           responseType = 'generic'
           break
         case 'portal_historyFindContent':
-          result = await client.networks.get('0x500b').sendFindNodes(params[0], params[1])
+          result = await historyNetwork?.sendFindNodes(params[0], params[1])
           console.log('resultt',result, params[0], params[1])
           responseType = 'generic'
           break

@@ -100,7 +100,7 @@ const BlockExplorer = ({nodeId}: BlockExplorerProps) => {
         config.showBlockHeight = true
       }
       
-      if (method.includes('portal_')) {
+      if (method.includes('portal_historyFindContent')) {
         config.showDistances = true
       }
 

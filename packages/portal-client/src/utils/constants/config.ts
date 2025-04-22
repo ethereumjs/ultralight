@@ -1,6 +1,6 @@
 import { ConfigId } from '../types'
 
-export const DEFAULT_DB_SIZE = 1024 * 1024 * 1024
+export const DEFAULT_DB_SIZE = 1024 * 1024 * 1024 * 1024
 export const STARTUP_DELAY_MS = 1000
 
 export const CONFIG_DEFAULTS: {

@@ -25,24 +25,21 @@ const Peers = () => {
   const itemsPerPage = 10
   const [currentPage, setCurrentPage] = useState(1)
 
- 
-
   useEffect(() => {
     const fetchPeers = async () => {
       try {
         setIsLoading(true)
-        const enrs = client.discv5.kadValues()
-    
-    const formattedPeers: PeerItem[] = enrs.map((enr: ENR) => {
-      const nodeId = enr.nodeId    
-      return {
-        nodeId,
-        enr,
-        status: client.discv5.connectedPeers.has(nodeId) 
-          ? 'Connected' 
-          : 'Disconnected',
-      }
-    })
+        const enrs = client?.discv5.kadValues()
+        const formattedPeers: PeerItem[] = (enrs ?? []).map((enr: ENR) => {
+          const nodeId = enr.nodeId
+          const connectedPeers = (client?.discv5 as any).connectedPeers
+          
+          return {
+            nodeId,
+            enr,
+            status: connectedPeers.has(nodeId) ? 'Connected' : 'Disconnected'
+          }
+        })      
         
         setPeers(formattedPeers)
       } catch (error) {
@@ -60,14 +57,22 @@ const Peers = () => {
   const handleViewDetails = (nodeId: NodeId) => {
     setSelectedNodeId(nodeId)
     setCurrentView('detail')
-    setIsNodeConnected(client.discv5.connectedPeers.has(nodeId))
+    const connectedPeers = (client?.discv5 as any).connectedPeers 
+    const isConnected = connectedPeers.has(nodeId)
+    setIsNodeConnected(isConnected)
   }
 
   const handlePingNode = async (enr: ENR) => {
     let extensionPayload: ExtensionPayload | null = null
     try {
       setIsLoading(true)
-      const pong = await historyNetwork.sendPing(enr)
+      const pong = await historyNetwork?.sendPing(enr)
+      if (!pong) {
+        return notify({
+          message: `PING/PONG with ${shortId(enr.nodeId)} was unsuccessful`,
+          type: 'error',
+        })
+      }
       extensionPayload = decodeExtensionPayloadToJson(
         pong.payloadType, 
         pong.customPayload,
