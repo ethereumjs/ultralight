@@ -12,8 +12,8 @@ interface MethodInputProps extends MethodParamConfig{
   onIncludeFullTxChange?: (value: boolean) => void
   blockHeight?: string
   onBlockHeightChange?: (value: string) => void
-  distances?: string
-  onDistancesChange?: (value: string) => void
+  contentKey?: string
+  onContentKeyChange?: (value: string) => void
 }
 
 export const MethodInput: React.FC<MethodInputProps> = ({
@@ -30,8 +30,8 @@ export const MethodInput: React.FC<MethodInputProps> = ({
   onIncludeFullTxChange,
   onBlockHeightChange,
   blockHeight = '',
-  distances = '',
-  onDistancesChange,
+  contentKey = '',
+  onContentKeyChange,
 }) => {
   const { isLoading } = usePortalNetwork()
   const defaultClasses =
@@ -79,9 +79,9 @@ export const MethodInput: React.FC<MethodInputProps> = ({
         <div>
           <input
             type="text"
-            value={distances}
-            onChange={(e) => onDistancesChange?.(e.target.value)}
-            placeholder="Comma-separated distances (e.g., 252,253,254)"
+            value={contentKey}
+            onChange={(e) => onContentKeyChange?.(e.target.value)}
+            placeholder="Content key"
             className="w-full bg-[#2A323C] text-gray-200 border border-gray-600 placeholder-gray-400 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"
           />
           <div className="text-xs text-gray-400 mt-1">

@@ -76,7 +76,7 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
   },
   portal_historyFindContent: {
     name: 'Find Content',
-    paramPlaceholder: 'Enter content Key',
+    paramPlaceholder: 'Enter enr',
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
   
       let parts = input.split(',')

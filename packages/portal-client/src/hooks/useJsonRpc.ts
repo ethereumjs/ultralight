@@ -1,5 +1,6 @@
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
 import type { RPCResponse } from '@/utils/types'
+import { ENR } from '@chainsafe/enr'
 import { decodeExtensionPayloadToJson, formatBlockResponse } from 'portalnetwork'
 import { useCallback, useState } from 'react'
 
@@ -63,10 +64,25 @@ export const useJsonRpc = () => {
             responseType = 'generic'
             break
           }
-          case 'portal_historyFindContent':
-            result = await historyNetwork?.sendFindNodes(params[0], params[1])
+          case 'portal_historyFindContent': {
+            const res = (await historyNetwork?.sendFindContent(params[0], params[1])) as {
+              enrs: Uint8Array[]
+              trace?: any
+            }
+
+            if (!res) {
+              throw new Error('Content not received')
+            }
+
+            result = {
+              ...res,
+              enrs: res.enrs.map((enr) => ENR.decode(enr).encodeTxt()),
+              type: 'enrs' as const,
+            }
+
             responseType = 'generic'
             break
+          }
           default:
             throw new Error(`Unsupported method: ${method}`)
         }

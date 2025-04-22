@@ -15,7 +15,7 @@ const BlockExplorer = () => {
   const [inputValue, setInputValue] = useState('')
   const [includeFullTx, setIncludeFullTx] = useState(false)
   const [blockHeight, setBlockHeight] = useState('')
-  const [distances, setDistances] = useState('')
+  const [contentKey, setContentKey] = useState('')
 
   const { result, setResult, sendRequestHandle } = useJsonRpc()
   const { setIsLoading, cancelRequest, client } = usePortalNetwork()
@@ -45,9 +45,8 @@ const BlockExplorer = () => {
           formattedInput = `${inputValue},${includeFullTx}`
         } else if (methodParamMap[selectedMethod]?.showBlockHeight) {        
           formattedInput = `${inputValue},${blockHeight}`
-        } else if (methodParamMap[selectedMethod]?.showDistances) {  
-          const distanceArray = distances.split(',').map(d => Number(d.trim()))    
-          formattedInput = `${inputValue},${distanceArray}`
+        } else if (methodParamMap[selectedMethod]?.showDistances) {     
+          formattedInput = `${inputValue},${contentKey}`
         }
         await methodRegistry[selectedMethod].handler(formattedInput, sendRequestHandle)
       } catch (err) {
@@ -78,7 +77,7 @@ const BlockExplorer = () => {
   const reset = () => {
     setInputValue('')
     setBlockHeight('')
-    setDistances('')
+    setContentKey('')
     setIncludeFullTx(false)
     setResult(null)
     setIsLoading(false)
@@ -139,12 +138,12 @@ const BlockExplorer = () => {
               includeFullTx={includeFullTx}
               onIncludeFullTxChange={setIncludeFullTx}
               onBlockHeightChange={setBlockHeight}
-              onDistancesChange={setDistances}
+              onContentKeyChange={setContentKey}
               showIncludeFullTx={currentMethodConfig.showIncludeFullTx}
               showBlockHeight={currentMethodConfig.showBlockHeight}
               showDistances={currentMethodConfig.showDistances}
               blockHeight={blockHeight}
-              distances={distances}
+              contentKey={contentKey}
             />
           </div>
         )}
