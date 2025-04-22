@@ -40,7 +40,7 @@ export const PeerDetail = ({
           <div className={`w-3 h-3 ml-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
         </div> 
       </div>
-      <BlockExplorer nodeId={peer.nodeId} />
+      <BlockExplorer />
     </div>
   )
 }

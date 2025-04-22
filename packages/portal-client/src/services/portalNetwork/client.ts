@@ -59,7 +59,6 @@ export const createPortalClient = async (port: number): Promise<PortalNetwork> =
 
   await client.start()
   await client.storeNodeDetails()
-  console.log('clientt ', client)
 
   client.enableLog('*Portal*')
 

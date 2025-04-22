@@ -10,13 +10,9 @@ import { methodRegistry, MethodType } from '@/utils/rpcMethods'
 import { APPROVED_METHODS } from '@/utils/constants/methodRegistry'
 import { MethodParamConfig } from '@/utils/types'
 
-interface BlockExplorerProps {
-  nodeId?: string
-}
-
-const BlockExplorer = ({nodeId}: BlockExplorerProps) => {
+const BlockExplorer = () => {
   const [selectedMethod, setSelectedMethod] = useState<MethodType | ''>('')
-  const [inputValue, setInputValue] = useState(nodeId || '')
+  const [inputValue, setInputValue] = useState('')
   const [includeFullTx, setIncludeFullTx] = useState(false)
   const [blockHeight, setBlockHeight] = useState('')
   const [distances, setDistances] = useState('')
@@ -116,12 +112,6 @@ const BlockExplorer = ({nodeId}: BlockExplorerProps) => {
       reset()
     }
   }, [client])
-
-  useEffect(() => {
-    if (nodeId) {
-      setInputValue(nodeId)
-    }
-  }, [nodeId])
 
   const currentMethodConfig = selectedMethod ? methodParamMap[selectedMethod] || {} : {}
 

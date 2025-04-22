@@ -2,8 +2,6 @@ import { useCallback, useState } from 'react'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
 import { decodeExtensionPayloadToJson, formatBlockResponse } from 'portalnetwork'
 import { RPCResponse } from '@/utils/types'
-import { ENR } from '@chainsafe/enr'
-
 
 export const useJsonRpc = () => {
   const { client, historyNetwork, setIsLoading } = usePortalNetwork()
@@ -69,7 +67,6 @@ export const useJsonRpc = () => {
           break
         case 'portal_historyFindContent':
           result = await historyNetwork?.sendFindNodes(params[0], params[1])
-          console.log('resultt',result, params[0], params[1])
           responseType = 'generic'
           break
         default:
@@ -79,7 +76,6 @@ export const useJsonRpc = () => {
       if (result === undefined) {
         throw new Error('No result returned from the request')
       }
-
       switch (responseType) {
         case 'block':
           setResult({ 
