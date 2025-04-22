@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
+import type { RPCResponse } from '@/utils/types'
 import { decodeExtensionPayloadToJson, formatBlockResponse } from 'portalnetwork'
-import { RPCResponse } from '@/utils/types'
+import { useCallback, useState } from 'react'
 
 export const useJsonRpc = () => {
   const { client, historyNetwork, setIsLoading } = usePortalNetwork()
@@ -49,7 +49,7 @@ export const useJsonRpc = () => {
             result = await client.ETH.getBalance(params[0], params[1])
             responseType = 'ether'
             break
-          case 'portal_historyPing':
+          case 'portal_historyPing': {
             const res = await historyNetwork?.sendPing(params[0])
             if (!res) {
               throw new Error('Pong not received')
@@ -62,6 +62,7 @@ export const useJsonRpc = () => {
 
             responseType = 'generic'
             break
+          }
           case 'portal_historyFindContent':
             result = await historyNetwork?.sendFindNodes(params[0], params[1])
             responseType = 'generic'
