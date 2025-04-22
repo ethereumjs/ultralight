@@ -20,6 +20,7 @@ import { RunStatusCode } from '@lodestar/light-client'
 import type { Debugger } from 'debug'
 import type { BeaconNetwork, HistoryNetwork, PortalNetwork, StateNetwork } from 'portalnetwork'
 import type { GetEnrResult } from '../schema/types.js'
+import { BitArray } from '@chainsafe/ssz'
 
 const methods = [
   // state
@@ -573,7 +574,7 @@ export class portal {
     )
 
     let encodedPayload = undefined
-    if (payload !== undefined) {
+    if (payload !== undefined && payload !== null) {
       encodedPayload = encodeExtensionPayloadFromJson(extension, payload)
     }
     const pong = await this._history.sendPing(encodedENR, extension, encodedPayload)
@@ -597,7 +598,7 @@ export class portal {
       `PING request received on StateNetwork for ${shortId(encodedENR.nodeId)} with extension ${extension}`,
     )
     let encodedPayload = undefined
-    if (payload !== undefined) {
+    if (payload !== undefined && payload !== null) {
       encodedPayload = encodeExtensionPayloadFromJson(extension, payload)
     }
     const pong = await this._state.sendPing(encodedENR, extension, encodedPayload)
@@ -623,7 +624,7 @@ export class portal {
     )
 
     let encodedPayload = undefined
-    if (payload !== undefined) {
+    if (payload !== undefined && payload !== null) {
       encodedPayload = encodeExtensionPayloadFromJson(extension, payload)
     }
 
@@ -1159,14 +1160,11 @@ export class portal {
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))
     const enr = ENR.decodeTxt(enrHex)
-    if (this._history.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
-      const res = await this._history.sendPing(enr)
-      if (res === undefined) {
-        return '0x'
-      }
-    }
     const res = await this._history.sendOffer(enr, contentKeys, contentValues)
-    return res
+    if (res === undefined) {
+      return '0x'
+    }
+    return res instanceof BitArray ? bytesToHex(res.uint8Array) : bytesToHex(res)
   }
   async stateOffer(
     params: [string, [string, string][]],
@@ -1175,14 +1173,11 @@ export class portal {
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))
     const enr = ENR.decodeTxt(enrHex)
-    if (this._state.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
-      const res = await this._state.sendPing(enr)
-      if (res === undefined) {
-        return '0x'
-      }
-    }
     const res = await this._state.sendOffer(enr, contentKeys, contentValues)
-    return res
+    if (res === undefined) {
+      return '0x'
+    }
+    return res instanceof BitArray ? bytesToHex(res.uint8Array) : bytesToHex(res)
   }
   async beaconOffer(
     params: [string, [string, string][]],
@@ -1191,14 +1186,11 @@ export class portal {
     const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
     const contentValues = contentItems.map((item) => hexToBytes(item[1]))
     const enr = ENR.decodeTxt(enrHex)
-    if (this._beacon.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
-      const res = await this._beacon.sendPing(enr)
-      if (res === undefined) {
-        return '0x'
-      }
-    }
     const res = await this._beacon.sendOffer(enr, contentKeys, contentValues)
-    return res
+    if (res === undefined) {
+      return '0x'
+    }
+    return res instanceof BitArray ? bytesToHex(res.uint8Array) : bytesToHex(res)
   }
 
   // portal_*Gossip
