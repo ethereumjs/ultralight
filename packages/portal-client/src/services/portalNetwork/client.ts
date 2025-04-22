@@ -12,7 +12,7 @@ import type { PortalNetwork } from 'portalnetwork'
 let client: PortalNetwork
 
 export const createPortalClient = async (port: number): Promise<PortalNetwork> => {
-  const db = createDatabase('network_db', { prefix: '' })
+  const db = createDatabase('network_db', { prefix: '', version: 2 })
 
   const createNetwork = async (rebuildFromMemory: boolean): Promise<PortalNetwork> => {
     let privateKey: any

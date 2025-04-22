@@ -80,8 +80,9 @@ const BlockExplorer = ({nodeId}: BlockExplorerProps) => {
   }
 
   const reset = () => {
-    setInputValue(nodeId || '')
+    setInputValue('')
     setBlockHeight('')
+    setDistances('')
     setIncludeFullTx(false)
     setResult(null)
     setIsLoading(false)

@@ -3,6 +3,7 @@ import { APPROVED_METHODS } from './constants/methodRegistry'
 
 import { InputValue } from './types'
 import { MethodConfig } from '@/services/portalNetwork/types'
+import { ENR } from '@chainsafe/enr'
 
 export type MethodType = (typeof APPROVED_METHODS)[number]
 
@@ -62,18 +63,20 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
     },
   },
   portal_historyPing: {
-    name: "Ping a node",
-    paramPlaceholder: "Enter node enr",
+    name: 'Ping a node',
+    paramPlaceholder: 'Enter node enr',
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
   
-      let enr = input.split(',')
+      const enr = input.split(',')
+      .filter(enr => enr.trim())
+      .map(enr => ENR.decodeTxt(enr))
       
-      return sendRequestHandle('portal_historyPing', [enr])
+      return sendRequestHandle('portal_historyPing', enr)
     },
   },
   portal_historyFindContent: {
-    name: "Find Content",
-    paramPlaceholder: "Enter content ID",
+    name: 'Find Content',
+    paramPlaceholder: 'Enter content ID',
     handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
   
       let parts = input.split(',')

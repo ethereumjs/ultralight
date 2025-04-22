@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react'
 import { usePortalNetwork } from '@/contexts/PortalNetworkContext'
-import { formatBlockResponse } from 'portalnetwork'
+import { decodeExtensionPayloadToJson, formatBlockResponse } from 'portalnetwork'
 import { RPCResponse } from '@/utils/types'
+import { ENR } from '@chainsafe/enr'
 
 
 export const useJsonRpc = () => {
@@ -51,8 +52,19 @@ export const useJsonRpc = () => {
           responseType = 'ether'
           break
         case 'portal_historyPing':
-          result = await historyNetwork?.sendPing(params[0])
-          console.log('resultt',result, params[0])
+          const res = await historyNetwork?.sendPing(params[0])
+          if (!res) {
+            throw new Error('Pong not received')
+          }
+          const { customPayload, ...rest } = res
+          result = {
+            ...rest,
+            extensionPayload: decodeExtensionPayloadToJson(
+              res.payloadType, 
+              res.customPayload
+            )
+          }
+
           responseType = 'generic'
           break
         case 'portal_historyFindContent':
@@ -63,9 +75,11 @@ export const useJsonRpc = () => {
         default:
           throw new Error(`Unsupported method: ${method}`)
       }
+
       if (result === undefined) {
         throw new Error('No result returned from the request')
       }
+
       switch (responseType) {
         case 'block':
           setResult({ 

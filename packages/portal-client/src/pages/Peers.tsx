@@ -5,7 +5,7 @@ import { PeerTable } from '@/components/ui/PeerTable'
 import { PeerDetail } from '@/components/ui/PeerDetail'
 import { useNotification } from '@/contexts/NotificationContext'
 
-import { NodeId, PeerItem } from '@/utils/types'
+import { PeerItem } from '@/utils/types'
 import { IClientInfo } from 'portalnetwork'
 import type { ENR } from '@chainsafe/enr'
 
@@ -19,7 +19,7 @@ const Peers = () => {
 
   const [peers, setPeers] = useState<PeerItem[]>([])
   const [currentView, setCurrentView] = useState<'table' | 'detail'>('table')
-  const [selectedNodeId, setSelectedNodeId] = useState<NodeId | null>(null)
+  const [selectedPeer, setSelectedPeer] = useState<PeerItem | null>(null)
   const [isNodeConnected, setIsNodeConnected] = useState(false)
   
   const itemsPerPage = 10
@@ -54,11 +54,11 @@ const Peers = () => {
     return () => clearInterval(intervalId)
   }, [client, setIsLoading])
 
-  const handleViewDetails = (nodeId: NodeId) => {
-    setSelectedNodeId(nodeId)
+  const handleViewDetails = (peer: PeerItem) => {
+    setSelectedPeer(peer)
     setCurrentView('detail')
     const connectedPeers = (client?.discv5 as any).connectedPeers 
-    const isConnected = connectedPeers.has(nodeId)
+    const isConnected = connectedPeers.has(peer.nodeId)
     setIsNodeConnected(isConnected)
   }
 
@@ -94,7 +94,7 @@ const Peers = () => {
 
   const handleReturnToTable = () => {
     setCurrentView('table')
-    setSelectedNodeId(null)
+    setSelectedPeer(null)
   }
 
   const totalPages = Math.ceil(peers.length / itemsPerPage)
@@ -113,9 +113,9 @@ const Peers = () => {
           onPingNode={handlePingNode}
           onPageChange={setCurrentPage}
         />
-      ) : selectedNodeId ? (
+      ) : selectedPeer ? (
         <PeerDetail
-          nodeId={selectedNodeId}
+          peer={selectedPeer}
           isConnected={isNodeConnected}
           onReturn={handleReturnToTable}
         />

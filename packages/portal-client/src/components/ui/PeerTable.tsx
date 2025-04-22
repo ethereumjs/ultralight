@@ -8,7 +8,7 @@ interface PeerTableProps {
   currentPage: number
   itemsPerPage: number
   totalPages: number
-  onViewDetails: (nodeId: string) => void
+  onViewDetails: (peer: PeerItem) => void
   onPingNode: (enr: ENR) => void
   onPageChange: (page: number) => void
 }
@@ -49,7 +49,7 @@ export const PeerTable = ({
                     <td>{indexOfFirstItem + index + 1}</td>
                     <td 
                       className="font-mono text-sm cursor-pointer text-blue-500 hover:underline"
-                      onClick={() => onViewDetails(peerData.nodeId)}
+                      onClick={() => onViewDetails(peerData)}
                     >
                       {shortId(peerData.nodeId)}
                     </td>
