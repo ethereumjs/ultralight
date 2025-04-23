@@ -374,11 +374,11 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
   public sendPortalNetworkResponse = async (
     src: INodeAddress,
-    requestId: bigint,
+    requestId: Uint8Array,
     payload: Uint8Array,
   ) => {
     this.eventLog &&
-      this.emit('SendTalkResp', src.nodeId, requestId.toString(16), bytesToHex(payload))
+      this.emit('SendTalkResp', src.nodeId, bytesToHex(requestId), bytesToHex(payload))
     try {
       await this.discv5.sendTalkResp(src, requestId, payload)
     } catch (err: any) {
