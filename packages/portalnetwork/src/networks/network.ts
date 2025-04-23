@@ -160,7 +160,7 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
-  sendResponse(src: INodeAddress, requestId: bigint, payload: Uint8Array): Promise<void> {
+  sendResponse(src: INodeAddress, requestId: Uint8Array, payload: Uint8Array): Promise<void> {
     return this.portal.sendPortalNetworkResponse(src, requestId, payload)
   }
   findEnr(nodeId: string): ENR | undefined {
@@ -407,7 +407,7 @@ export abstract class BaseNetwork extends EventEmitter {
 
   handlePing = async (
     src: INodeAddress,
-    id: bigint,
+    id: Uint8Array,
     pingMessage: PingMessage,
     _version: Version,
   ) => {
@@ -479,7 +479,7 @@ export abstract class BaseNetwork extends EventEmitter {
 
   sendPong = async (
     src: INodeAddress,
-    requestId: bigint,
+    requestId: Uint8Array,
     customPayload: Uint8Array,
     payloadType: number,
   ) => {
@@ -542,7 +542,7 @@ export abstract class BaseNetwork extends EventEmitter {
 
   private handleFindNodes = async (
     src: INodeAddress,
-    requestId: bigint,
+    requestId: Uint8Array,
     payload: FindNodesMessage,
     version: Version,
   ) => {
@@ -699,7 +699,7 @@ export abstract class BaseNetwork extends EventEmitter {
 
   protected handleOffer = async (
     src: INodeAddress,
-    requestId: bigint,
+    requestId: Uint8Array,
     msg: OfferMessage,
     version: Version,
   ) => {
@@ -819,7 +819,7 @@ export abstract class BaseNetwork extends EventEmitter {
 
   protected sendAccept = async <V extends Version>(
     src: INodeAddress,
-    requestId: bigint,
+    requestId: Uint8Array,
     desiredContentAccepts: V extends 0 ? boolean[] : V extends 1 ? number[] : never,
     desiredContentKeys: Uint8Array[],
     version = 0,
@@ -896,7 +896,7 @@ export abstract class BaseNetwork extends EventEmitter {
 
   protected handleFindContent = async (
     src: INodeAddress,
-    requestId: bigint,
+    requestId: Uint8Array,
     decodedContentMessage: FindContentMessage,
     _version: Version,
   ) => {
@@ -980,7 +980,7 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
-  protected enrResponse = async (contentKey: Uint8Array, src: INodeAddress, requestId: bigint) => {
+  protected enrResponse = async (contentKey: Uint8Array, src: INodeAddress, requestId: Uint8Array) => {
     const lookupKey = this.contentKeyToId(contentKey)
     // Discv5 calls for maximum of 16 nodes per NODES message
     const ENRs = this.routingTable.nearest(lookupKey, 16)
