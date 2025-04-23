@@ -65,23 +65,26 @@ export const useJsonRpc = () => {
             break
           }
           case 'portal_historyFindContent': {
-            const res = (await historyNetwork?.sendFindContent(params[0], params[1])) as {
-              enrs: Uint8Array[]
-              trace?: any
-            }
-
+            const res = await historyNetwork?.sendFindContent(params[0], params[1]);
+            
             if (!res) {
-              throw new Error('Content not received')
+              throw new Error('Content not received');
             }
-
-            result = {
-              ...res,
-              enrs: res.enrs.map((enr) => ENR.decode(enr).encodeTxt()),
-              type: 'enrs' as const,
+            if ('enrs' in res) {
+              result = {
+                ...res,
+                enrs: res.enrs.map(enr => ENR.decode(enr).encodeTxt()),
+                type: 'enrs' as const
+              };
+            } else {
+              result = {
+                ...res,
+                type: 'content' as const
+              };
             }
-
-            responseType = 'generic'
-            break
+          
+            responseType = 'generic';
+            break;
           }
           default:
             throw new Error(`Unsupported method: ${method}`)
