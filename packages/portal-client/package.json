@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@chainsafe/bls": "^8.1.0",
-    "@chainsafe/discv5": "^11.0.1",
+    "@chainsafe/discv5": "^11.0.2",
     "@chainsafe/enr": "^5.0.1",
     "@ethereumjs/common": "^10.0.0-rc.1",
     "@ethereumjs/util": "^10.0.0-rc.1",
