@@ -1,4 +1,5 @@
 import { execSync } from 'child_process'
+import { readFileSync } from 'fs'
 import http from 'http'
 import debug from 'debug'
 import jayson from 'jayson/promise/index.js'
@@ -6,7 +7,6 @@ import { cliConfig, createPortalNetwork } from 'portalnetwork'
 import * as PromClient from 'prom-client'
 import { args } from './cliArgs.js'
 import { RPCManager } from './rpc/rpc.js'
-import { readFileSync } from 'fs'
 import { dirSize } from './util.js'
 
 const register = new PromClient.Registry()
@@ -37,6 +37,7 @@ const main = async () => {
   portalConfig.operatingSystemAndCpuArchitecture = args.arch
   portalConfig.shortCommit = args.commit ?? execSync('git rev-parse HEAD').toString().slice(0, 7)
   portalConfig.dbSize = dirSize
+  portalConfig.supportedVersions = [0, 1]
   const portal = await createPortalNetwork(portalConfig)
 
   log(`discv5Config: ${JSON.stringify(portal.discv5['config'], null, 2)}`)
@@ -72,8 +73,8 @@ const main = async () => {
         // but the docs recommend this pattern for custom routing
         // https://github.com/tedeh/jayson/blob/HEAD/examples/method_routing/server.js
         if (this.getMethod(method) === undefined && web3) {
-          return new jayson.Method(async function () {
-            const res = await web3!.request(method, params)
+          return new jayson.Method(async () => {
+            const res = await web3.request(method, params)
             if (res.result !== undefined) return res.result
             else return res.error
           })

@@ -1,18 +1,18 @@
+import { DEFAULT_DB_SIZE, STARTUP_DELAY_MS } from '@/utils/constants/config'
 import { SignableENR } from '@chainsafe/enr'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
-import { NetworkId, TransportLayer, createPortalNetwork, DEFAULT_BOOTNODES } from 'portalnetwork'
+import { DEFAULT_BOOTNODES, NetworkId, TransportLayer, createPortalNetwork } from 'portalnetwork'
 import { createDatabase } from './db'
 import { TauriUDPTransportService } from './transports'
-import { DEFAULT_DB_SIZE, STARTUP_DELAY_MS } from '@/utils/constants/config'
 
-import type { PortalNetwork } from 'portalnetwork'
 import type { Multiaddr } from '@multiformats/multiaddr'
+import type { PortalNetwork } from 'portalnetwork'
 
 let client: PortalNetwork
 
 export const createPortalClient = async (port: number): Promise<PortalNetwork> => {
-  const db = createDatabase('db', { prefix: 'portalclient_' })
+  const db = createDatabase('network_db', { prefix: '', version: 2 })
 
   const createNetwork = async (rebuildFromMemory: boolean): Promise<PortalNetwork> => {
     let privateKey: any

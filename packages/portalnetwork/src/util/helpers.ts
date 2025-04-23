@@ -129,7 +129,7 @@ export const ethJsBlockToEthersBlock = (
   )
 }
 
-export interface ExtendedTransactionResponse {}
+export type ExtendedTransactionResponse = {}
 
 /**
  *
@@ -258,7 +258,6 @@ export function formatBlockResponse(block: Block, includeTransactions: boolean) 
       : {}
 
   const transactions = block.transactions.map((tx, txIndex) =>
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     includeTransactions ? toJSONRPCTx(tx, block, txIndex) : bytesToHex(tx.hash()),
   )
 

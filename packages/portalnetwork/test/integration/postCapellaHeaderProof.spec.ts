@@ -1,3 +1,4 @@
+import { readFileSync } from 'fs'
 import { SignableENR } from '@chainsafe/enr'
 import { concatBytes, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
@@ -7,7 +8,6 @@ import { genesisData } from '@lodestar/config/networks'
 import { computeEpochAtSlot, getChainForkConfigFromNetwork } from '@lodestar/light-client/utils'
 import { ssz } from '@lodestar/types'
 import { multiaddr } from '@multiformats/multiaddr'
-import { readFileSync } from 'fs'
 import { assert, describe, it, vi } from 'vitest'
 import {
   BeaconNetworkContentType,
@@ -31,7 +31,7 @@ describe('Block Bridge Data Test', () => {
     ]
     const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
     const enr1 = SignableENR.createFromPrivateKey(pk1)
-    const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/5033`)
+    const initMa: any = multiaddr('/ip4/127.0.0.1/udp/5033')
 
     const client = await createPortalNetwork({
       supportedNetworks: [

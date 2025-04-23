@@ -37,7 +37,7 @@ export class WriteSocket extends UtpSocket {
     this.setSeqNr(startingNr)
     this.logger(`Setting seqNr to ${this.seqNr}.  Sending SYN-ACK`)
     await this.sendSynAckPacket()
-    this.logger(`SYN-ACK sent.  Starting DATA stream.`)
+    this.logger('SYN-ACK sent.  Starting DATA stream.')
     this.setWriter(startingNr)
   }
   async handleStatePacket(ackNr: number, timestamp: number): Promise<void> {
@@ -71,7 +71,9 @@ export class WriteSocket extends UtpSocket {
     this._clearTimeout()
   }
   logProgress() {
-    const needed = this.writer!.dataChunks.filter((n) => !this.ackNrs.includes(n[0])).map((n) => n[0])
+    const needed = this.writer!.dataChunks.filter((n) => !this.ackNrs.includes(n[0])).map(
+      (n) => n[0],
+    )
     this.logger(
       `AckNr's received (${this.ackNrs.length}/${
         this.writer!.sentChunks.length
@@ -93,13 +95,6 @@ export class WriteSocket extends UtpSocket {
   }
   async sendDataPacket(bytes: Uint8Array): Promise<void> {
     this.state = ConnectionState.Connected
-    try {
-      await this.packetManager.congestionControl.canSend()
-    } catch (e) {
-      this.logger(`DATA packet not acked.  Closing connection to ${this.remoteAddress}`)
-      await this.sendResetPacket()
-      this.close()
-    }
     const packet = this.createPacket<PacketType.ST_DATA>({
       pType: PacketType.ST_DATA,
       payload: bytes,

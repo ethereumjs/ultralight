@@ -13,6 +13,9 @@ const Links = () => {
         <Link to="/jsonrpc">JsonRPC</Link>
       </li>
       <li>
+        <Link to="/peers">Peers</Link>
+      </li>
+      <li>
         <Link to="/config">Config</Link>
       </li>
     </ul>

@@ -3,11 +3,11 @@ import type { NodeId } from '@chainsafe/enr'
 import type { AbstractLevel } from 'abstract-level'
 
 import type { ITransportService } from '@chainsafe/discv5'
-import type { NetworkId } from '../index.js'
-import type { PortalNetworkRoutingTable } from './routingTable.js'
-import type { Multiaddr } from '@multiformats/multiaddr'
-import type { IRateLimiter } from '../transports/rateLimiter.js'
 import { ListBasicType, UintNumberType } from '@chainsafe/ssz'
+import type { Multiaddr } from '@multiformats/multiaddr'
+import type { NetworkId } from '../index.js'
+import type { IRateLimiter } from '../transports/rateLimiter.js'
+import type { PortalNetworkRoutingTable } from './routingTable.js'
 
 /** A representation of an unsigned contactable node. */
 export interface INodeAddress {
@@ -33,14 +33,13 @@ export enum TransportLayer {
   TAURI = 'tauri',
 }
 
-
 export interface TransportServices {
   createTauriTransport?: (
     bindAddr: Multiaddr,
     nodeId: string,
     rateLimiter?: IRateLimiter,
   ) => ITransportService
-  
+
   createWebSocketTransport?: (
     bindAddr: Multiaddr,
     nodeId: string,

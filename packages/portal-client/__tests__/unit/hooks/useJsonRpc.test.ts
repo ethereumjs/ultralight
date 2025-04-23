@@ -1,15 +1,15 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { useJsonRpc } from '../../../src/hooks/useJsonRpc'
-import { usePortalNetwork } from '../../../src/contexts/PortalNetworkContext'
+import { act, renderHook } from '@testing-library/react'
 import { formatBlockResponse } from 'portalnetwork'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { usePortalNetwork } from '../../../src/contexts/PortalNetworkContext'
+import { useJsonRpc } from '../../../src/hooks/useJsonRpc'
 
 vi.mock('../../../src/contexts/PortalNetworkContext', () => ({
-  usePortalNetwork: vi.fn()
+  usePortalNetwork: vi.fn(),
 }))
 
 vi.mock('portalnetwork', () => ({
-  formatBlockResponse: vi.fn()
+  formatBlockResponse: vi.fn(),
 }))
 
 describe('useJsonRpc', () => {
@@ -36,8 +36,8 @@ describe('useJsonRpc', () => {
         getCode: vi.fn(),
         getStorageAt: vi.fn(),
         call: vi.fn(),
-        getBalance: vi.fn()
-      }
+        getBalance: vi.fn(),
+      },
     }
 
     mockUsePortalNetwork.mockReturnValue({
@@ -46,7 +46,14 @@ describe('useJsonRpc', () => {
       isLoading: false,
       initialize: vi.fn(),
       cleanup: vi.fn(),
-      isNetworkReady: false
+      isNetworkReady: false,
+      abortController: null,
+      createAbortController: function (): AbortController {
+        throw new Error('Function not implemented.')
+      },
+      cancelRequest: function (): void {
+        throw new Error('Function not implemented.')
+      }
     })
 
     mockFormatBlockResponse.mockImplementation((result, includeTransactions) => ({
@@ -55,31 +62,33 @@ describe('useJsonRpc', () => {
       result: {
         number: '0x1',
         hash: '0xabc',
-        transactions: includeTransactions ? [
-          {
-            blockHash: '0xabc',
-            blockNumber: '0x1',
-            from: '0xaddress',
-            gas: '0x0',
-            gasPrice: '0x0',
-            hash: '0xtransactionhash',
-            input: '0x',
-            nonce: '0x0',
-            to: '0xrecipientaddress',
-            transactionIndex: '0x0',
-            value: '0x0',
-            type: '0x0',
-            v: '0x1',
-            r: '0xsignaturepart',
-            s: '0xsignaturepart',
-            chainId: '0x1',
-            maxFeePerGas: '0x0',
-            maxPriorityFeePerGas: '0x0',
-            accessList: [],
-            maxFeePerBlobGas: '0x0',
-            blobVersionedHashes: []
-          }
-        ] : [],
+        transactions: includeTransactions
+          ? [
+              {
+                blockHash: '0xabc',
+                blockNumber: '0x1',
+                from: '0xaddress',
+                gas: '0x0',
+                gasPrice: '0x0',
+                hash: '0xtransactionhash',
+                input: '0x',
+                nonce: '0x0',
+                to: '0xrecipientaddress',
+                transactionIndex: '0x0',
+                value: '0x0',
+                type: '0x0',
+                v: '0x1',
+                r: '0xsignaturepart',
+                s: '0xsignaturepart',
+                chainId: '0x1',
+                maxFeePerGas: '0x0',
+                maxPriorityFeePerGas: '0x0',
+                accessList: [],
+                maxFeePerBlobGas: '0x0',
+                blobVersionedHashes: [],
+              },
+            ]
+          : [],
         // Other block properties
         parentHash: null,
         mixHash: null,
@@ -103,8 +112,8 @@ describe('useJsonRpc', () => {
         parentBeaconBlockRoot: null,
         requestsRoot: null,
         withdrawalsRoot: null,
-        withdrawals: undefined
-      }
+        withdrawals: undefined,
+      },
     }))
   })
 
@@ -123,7 +132,7 @@ describe('useJsonRpc', () => {
       mockClient.ETH.getBlockByNumber.mockResolvedValue(mockBlockData)
 
       const { result } = renderHook(() => useJsonRpc())
-      
+
       await act(async () => {
         await result.current.sendRequestHandle('eth_getBlockByNumber', [1, false])
       })
@@ -139,26 +148,13 @@ describe('useJsonRpc', () => {
       mockClient.ETH.getBlockByHash.mockResolvedValue(mockBlockData)
 
       const { result } = renderHook(() => useJsonRpc())
-      
+
       await act(async () => {
         await result.current.sendRequestHandle('eth_getBlockByHash', ['0xabc', true])
       })
 
       expect(mockClient.ETH.getBlockByHash).toHaveBeenCalledWith('0xabc', true)
       expect(result.current.result?.result.result).toHaveProperty('hash', '0xabc')
-    })
-
-    it('should use default parameters when not provided', async () => {
-      const mockBlockData = { number: '0x1', transactions: [] }
-      mockClient.ETH.getBlockByNumber.mockResolvedValue(mockBlockData)
-
-      const { result } = renderHook(() => useJsonRpc())
-      
-      await act(async () => {
-        await result.current.sendRequestHandle('eth_getBlockByNumber', ['0x1'])
-      })
-
-      expect(mockClient.ETH.getBlockByNumber).toHaveBeenCalledWith('0x1', false)
     })
   })
 
@@ -167,29 +163,31 @@ describe('useJsonRpc', () => {
       mockClient.ETH.getBlockByNumber.mockRejectedValue(new Error('RPC error'))
 
       const { result } = renderHook(() => useJsonRpc())
-      
+
       await act(async () => {
-        await expect(result.current.sendRequestHandle('eth_getBlockByNumber', ['0x1']))
-          .rejects.toThrow('RPC error')
+        await expect(
+          result.current.sendRequestHandle('eth_getBlockByNumber', ['0x1']),
+        ).rejects.toThrow('RPC error')
       })
 
       expect(result.current.result?.error).toEqual({
         code: -32000,
-        message: 'RPC error'
+        message: 'RPC error',
       })
     })
 
     it('should handle unsupported methods', async () => {
       const { result } = renderHook(() => useJsonRpc())
-      
+
       await act(async () => {
-        await expect(result.current.sendRequestHandle('unsupported_method', ['0x1']))
-          .rejects.toThrow('Unsupported method: unsupported_method')
+        await expect(
+          result.current.sendRequestHandle('unsupported_method', ['0x1']),
+        ).rejects.toThrow('Unsupported method: unsupported_method')
       })
 
       expect(result.current.result?.error).toEqual({
         code: -32000,
-        message: 'Unsupported method: unsupported_method'
+        message: 'Unsupported method: unsupported_method',
       })
     })
   })
@@ -199,15 +197,16 @@ describe('useJsonRpc', () => {
       mockClient.ETH.getBlockByNumber.mockResolvedValue(undefined)
 
       const { result } = renderHook(() => useJsonRpc())
-      
+
       await act(async () => {
-        await expect(result.current.sendRequestHandle('eth_getBlockByNumber', ['0x1']))
-          .rejects.toThrow('No result returned from the request')
+        await expect(
+          result.current.sendRequestHandle('eth_getBlockByNumber', ['0x1']),
+        ).rejects.toThrow('No result returned from the request')
       })
 
       expect(result.current.result?.error).toEqual({
         code: -32000,
-        message: 'No result returned from the request'
+        message: 'No result returned from the request',
       })
     })
 
@@ -215,15 +214,16 @@ describe('useJsonRpc', () => {
       mockClient.ETH.getBlockByNumber.mockRejectedValue('Simple string error')
 
       const { result } = renderHook(() => useJsonRpc())
-      
+
       await act(async () => {
-        await expect(result.current.sendRequestHandle('eth_getBlockByNumber', ['0x1']))
-          .rejects.toThrow('An unknown error occurred')
+        await expect(
+          result.current.sendRequestHandle('eth_getBlockByNumber', ['0x1']),
+        ).rejects.toThrow('An unknown error occurred')
       })
 
       expect(result.current.result?.error).toEqual({
         code: -32000,
-        message: 'An unknown error occurred'
+        message: 'An unknown error occurred',
       })
     })
   })

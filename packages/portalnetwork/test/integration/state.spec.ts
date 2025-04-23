@@ -34,9 +34,9 @@ const enr1 = SignableENR.createFromPrivateKey(pk1)
 const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
 const enr2 = SignableENR.createFromPrivateKey(pk2)
 describe('AccountTrieNode Gossip / Request', async () => {
-  const initMa: any = multiaddr(`/ip4/127.0.0.1/udp/3020`)
+  const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3020')
   enr1.setLocationMultiaddr(initMa)
-  const initMa2: any = multiaddr(`/ip4/127.0.0.1/udp/3021`)
+  const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3021')
   enr2.setLocationMultiaddr(initMa2)
   const node1 = await createPortalNetwork({
     transport: TransportLayer.NODE,
@@ -95,7 +95,7 @@ describe('AccountTrieNode Gossip / Request', async () => {
     const requested = await network2.findContentLocally(hexToBytes(contentKey))
     expect(requested, `Expected content for ${contentKey}`).toBeDefined()
     expect(requested).instanceOf(Uint8Array)
-    assert.equal(bytesToHex(requested!), bytesToHex(expected), 'retrieved value is correct')
+    assert.equal(bytesToHex(requested), bytesToHex(expected), 'retrieved value is correct')
   })
 })
 

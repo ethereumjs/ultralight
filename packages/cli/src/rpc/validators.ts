@@ -38,8 +38,8 @@ function isTruthy<T>(value: T | Falsy): value is T {
  * @param validators array of validators
  */
 export function middleware(method: any, requiredParamsCount: number, validators: any[] = []): any {
-  return function (params: any[] = []) {
-    return new Promise((resolve, reject) => {
+  return (params: any[] = []) =>
+    new Promise((resolve, reject) => {
       if (params.length < requiredParamsCount) {
         const error = {
           code: INVALID_PARAMS,
@@ -61,7 +61,6 @@ export function middleware(method: any, requiredParamsCount: number, validators:
 
       resolve(method(params))
     })
-  }
 }
 
 /**
@@ -117,7 +116,7 @@ export const validators = {
           ]}`,
         }
       }
-      if ((<string>params[index]).startsWith('0x')) {
+      if (params[index].startsWith('0x')) {
         params[index] = params[index].slice(2)
       }
     }
@@ -535,4 +534,3 @@ export const validators = {
     }
   },
 }
-

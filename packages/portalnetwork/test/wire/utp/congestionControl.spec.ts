@@ -5,7 +5,7 @@ import { CongestionControl, DEFAULT_PACKET_SIZE } from '../../../src/index.js'
 describe('CongestionControl', async () => {
   it('class contructor', () => {
     const congestionControl = new CongestionControl()
-    assert.ok(congestionControl, 'CongestionControl created')
+    assert.exists(congestionControl, 'CongestionControl created')
     assert.equal(congestionControl.cur_window, 0, 'cur_window initialized to 0')
     assert.equal(
       congestionControl.max_window,

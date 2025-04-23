@@ -54,10 +54,10 @@ import { getBeaconContentKey } from './util.js'
 import type { BeaconConfig } from '@lodestar/config'
 import type { LightClientUpdate } from '@lodestar/types'
 import type { Debugger } from 'debug'
+import type { INodeAddress } from '../../index.js'
 import type { AcceptMessage, FindContentMessage, OfferMessage, Version } from '../../wire/types.js'
 import type { ContentLookupResponse } from '../types.js'
 import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
-import type { INodeAddress } from '../../index.js'
 
 export class BeaconNetwork extends BaseNetwork {
   networkId: NetworkId.BeaconChainNetwork
@@ -145,9 +145,7 @@ export class BeaconNetwork extends BaseNetwork {
     if (decoded !== undefined && 'content' in decoded) {
       const forkhash = decoded.content.slice(0, 4) as Uint8Array
       const forkname = this.beaconConfig.forkDigest2ForkName(forkhash) as LightClientForkName
-      const bootstrap = ssz[forkname].LightClientBootstrap.deserialize(
-        (decoded.content as Uint8Array).slice(4),
-      )
+      const bootstrap = ssz[forkname].LightClientBootstrap.deserialize(decoded.content.slice(4))
       const headerHash = bytesToHex(
         ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
       )
@@ -195,7 +193,7 @@ export class BeaconNetwork extends BaseNetwork {
         const range = await this.sendFindContent(enr, rangeKey)
         if (range === undefined || 'enrs' in range) return // If we don't get a range, exit early
 
-        const updates = LightClientUpdatesByRange.deserialize(range.content as Uint8Array)
+        const updates = LightClientUpdatesByRange.deserialize(range.content)
 
         const roots: string[] = []
         for (const update of updates) {
@@ -210,8 +208,8 @@ export class BeaconNetwork extends BaseNetwork {
           )
         }
         this.bootstrapFinder.set(nodeId, roots)
-        const votes = Array.from(this.bootstrapFinder.entries()).filter(
-          (el) => el[1] instanceof Array,
+        const votes = Array.from(this.bootstrapFinder.entries()).filter((el) =>
+          Array.isArray(el[1]),
         )
         this.logger.extend('BOOTSTRAP')(
           `currently have ${votes.length} votes for bootstrap candidates`,
@@ -249,20 +247,19 @@ export class BeaconNetwork extends BaseNetwork {
               if (res !== undefined && 'content' in res) {
                 try {
                   const fork = this.beaconConfig.forkDigest2ForkName(
-                    (res.content as Uint8Array).slice(0, 4),
+                    res.content.slice(0, 4),
                   ) as LightClientForkName
                   // Verify bootstrap is valid
-                  ssz[fork].LightClientBootstrap.deserialize((res.content as Uint8Array).slice(4))
+                  ssz[fork].LightClientBootstrap.deserialize(res.content.slice(4))
                   this.logger.extend('BOOTSTRAP')(`found a valid bootstrap - ${results[x][0]}`)
-                  await this.store(bootstrapKey, res.content as Uint8Array)
+                  await this.store(bootstrapKey, res.content)
                   this.portal.removeListener('NodeAdded', this.getBootStrapVote)
-                  this.logger.extend('BOOTSTRAP')(`Terminating Light Client bootstrap process`)
+                  this.logger.extend('BOOTSTRAP')('Terminating Light Client bootstrap process')
                   await this.initializeLightClient(results[x][0])
                   return
                 } catch (err) {
                   this.logger.extend('BOOTSTRAP')('Something went wrong parsing bootstrap')
                   this.logger.extend('BOOTSTRAP')(err)
-                  continue
                 }
               }
             }
@@ -572,7 +569,7 @@ export class BeaconNetwork extends BaseNetwork {
 
   protected override handleFindContent = async (
     src: INodeAddress,
-    requestId: bigint,
+    requestId: Uint8Array,
     decodedContentMessage: FindContentMessage,
   ) => {
     this.portal.metrics?.contentMessagesSent.inc()
@@ -594,7 +591,7 @@ export class BeaconNetwork extends BaseNetwork {
           bytesToHex(decodedContentMessage.contentKey) +
           ' ' +
           bytesToHex(value.slice(0, 10)) +
-          `...`,
+          '...',
       )
       const payload = ContentMessageType.serialize({
         selector: 1,
@@ -686,7 +683,7 @@ export class BeaconNetwork extends BaseNetwork {
         // Retrieve Finality Update from lightclient to verify HistoricalSummaries proof is current
         const finalityUpdate = this.lightClient?.getFinalized()
         if (finalityUpdate === undefined) {
-          this.logger(`Unable to find finality update in order to verify Historical Summaries`)
+          this.logger('Unable to find finality update in order to verify Historical Summaries')
           // TODO: Decide whether it ever makes sense to accept a HistoricalSummaries object if we don't already have a finality update to verify against
           // return
         } else {
@@ -708,11 +705,11 @@ export class BeaconNetwork extends BaseNetwork {
             // The state root for the Historical Summaries proof should match the stateroot found in the most
             // recent LightClientFinalityUpdate or we can't trust it
             this.logger(
-              `Historical Summaries State Proof root does not match current Finality Update`,
+              'Historical Summaries State Proof root does not match current Finality Update',
             )
             return
           } else {
-            this.logger(`Historical Summaries State Proof root matches current Finality Update`)
+            this.logger('Historical Summaries State Proof root matches current Finality Update')
           }
         }
         // We store the HistoricalSummaries object by content type since we should only ever have one (most up to date)
@@ -834,7 +831,7 @@ export class BeaconNetwork extends BaseNetwork {
         selector: MessageCodes.OFFER,
         value: offerMsg,
       })
-      this.logger.extend(`OFFER`)(
+      this.logger.extend('OFFER')(
         `Sent to ${shortId(enr.nodeId)} with ${contentKeys.length} pieces of content`,
       )
       const res = await this.sendMessage(enr, payload, this.networkId)
@@ -859,7 +856,7 @@ export class BeaconNetwork extends BaseNetwork {
               this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr.nodeId)}`)
               return msg.contentKeys
             }
-            this.logger.extend(`ACCEPT`)(`ACCEPT message received with uTP id: ${id}`)
+            this.logger.extend('ACCEPT')(`ACCEPT message received with uTP id: ${id}`)
 
             const requestedData: Uint8Array[] = []
             if (contents) {
@@ -873,7 +870,7 @@ export class BeaconNetwork extends BaseNetwork {
                 }
               }
             } else {
-              for await (const key of requestedKeys) {
+              for (const key of requestedKeys) {
                 let value = Uint8Array.from([])
                 try {
                   // We use `findContentLocally` instead of `get` so the content keys for
@@ -913,7 +910,7 @@ export class BeaconNetwork extends BaseNetwork {
    * @param requestId request ID passed in OFFER message
    * @param msg OFFER message containing a list of offered content keys
    */
-  override handleOffer = async (src: INodeAddress, requestId: bigint, msg: OfferMessage) => {
+  override handleOffer = async (src: INodeAddress, requestId: Uint8Array, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
       `Received from ${shortId(src.nodeId, this.routingTable)} with ${
         msg.contentKeys.length
@@ -1006,21 +1003,21 @@ export class BeaconNetwork extends BaseNetwork {
           }
         }
         if (offerAccepted) {
-          this.logger.extend('OFFER')(`Accepting an OFFER`)
+          this.logger.extend('OFFER')('Accepting an OFFER')
           const desiredKeys = msg.contentKeys.filter((k, i) => contentIds[i] === true)
           this.logger(bytesToHex(msg.contentKeys[0]))
           await this.sendAccept(src, requestId, contentIds, desiredKeys)
         } else {
-          this.logger.extend('OFFER')(`Declining an OFFER since no interesting content`)
+          this.logger.extend('OFFER')('Declining an OFFER since no interesting content')
           await this.sendAccept(src, requestId, contentIds, [])
         }
       } else {
-        this.logger(`Offer Message Has No Content`)
+        this.logger('Offer Message Has No Content')
         // Send empty response if something goes wrong parsing content keys
         await this.sendResponse(src, requestId, new Uint8Array())
       }
     } catch {
-      this.logger(`Error Processing OFFER msg`)
+      this.logger('Error Processing OFFER msg')
     }
   }
 }

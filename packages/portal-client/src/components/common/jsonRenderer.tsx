@@ -23,7 +23,7 @@ const jsonRenderer = (value: any): ReactNode => {
       <div className="pl-4 border-l border-gray-600 mt-1">
         <div className="text-gray-400">[</div>
         {value.map((item, index) => (
-          <div key={index} className="ml-4 flex items-start">
+          <div key={index} className="ml-4 flex items-start text-left">
             <span className="text-gray-500 mr-2">{index}:</span>
             {jsonRenderer(item)}
           </div>
@@ -41,7 +41,7 @@ const jsonRenderer = (value: any): ReactNode => {
       <div className="pl-4 border-l border-gray-600 mt-1">
         <div className="text-gray-400">{'{'}</div>
         {entries.map(([key, val]) => (
-          <div key={key} className="ml-4 flex items-start">
+          <div key={key} className="ml-4 flex items-start text-left">
             <span className="text-purple-400 mr-2">{key}:</span>
             {jsonRenderer(val)}
           </div>

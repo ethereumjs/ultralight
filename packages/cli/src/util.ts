@@ -1,8 +1,7 @@
-
+import fs from 'fs'
+import path from 'path'
 import type { BaseNetwork, NetworkId } from 'portalnetwork'
 import type { Enr } from './rpc/schema/types.js'
-import path from 'path'
-import fs from 'fs'
 export const hasValidEnrPrefix = (enr: Enr) => {
   return enr.startsWith('enr:')
 }
@@ -46,8 +45,8 @@ export const isValidEnr = (enr: Enr) => {
  */
 export const addBootNode = async (networkId: NetworkId, baseNetwork: BaseNetwork, enr: Enr) => {
   try {
-    await baseNetwork!.addBootNode(enr)
-    baseNetwork!.logger(`Added bootnode ${enr} to ${networkId}`)
+    await baseNetwork.addBootNode(enr)
+    baseNetwork.logger(`Added bootnode ${enr} to ${networkId}`)
   } catch (error: any) {
     throw new Error(`Error adding bootnode ${enr} to network \
       ${networkId}: ${error.message ?? error}`)
@@ -59,9 +58,6 @@ const MEGABYTE = 1000 * 1000
 export const dirSize = async (directory: string) => {
   const files = fs.readdirSync(directory)
   const stats = files.map((file) => fs.statSync(path.join(directory, file)))
-  const bytesSize = stats.reduce(
-    (accumulator, { size }) => accumulator + size,
-    0,
-  )
+  const bytesSize = stats.reduce((accumulator, { size }) => accumulator + size, 0)
   return bytesSize / MEGABYTE
 }

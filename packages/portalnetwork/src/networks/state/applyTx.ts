@@ -1,5 +1,5 @@
-import { RLP } from '@ethereumjs/rlp'
 import { MerklePatriciaTrie as Trie } from '@ethereumjs/mpt'
+import { RLP } from '@ethereumjs/rlp'
 import { KECCAK256_RLP } from '@ethereumjs/util'
 import { Bloom, encodeReceipt, runTx } from '@ethereumjs/vm'
 

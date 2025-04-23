@@ -4,26 +4,44 @@ import {
   useState,
   ReactNode,
   FC,
+  useRef,
 } from 'react'
 import { createPortalClient } from '@/services/portalNetwork/client'
 import { usePersistedState } from '@/hooks/usePersistedState'
 
+import { 
+  NetworkId,
+  type HistoryNetwork, 
+  type PortalNetwork, 
+  type StateNetwork,
+ } from 'portalnetwork'
+
 type PortalNetworkContextType = {
-  client: any | null
+  client: PortalNetwork | undefined
+  historyNetwork: HistoryNetwork | undefined
+  stateNetwork: StateNetwork | undefined
   isLoading: boolean
   setIsLoading: (loading: boolean) => void
   initialize: (customPort: number) => Promise<void>
   isNetworkReady: boolean
   cleanup: () => Promise<void>
+  abortController: AbortController | null
+  createAbortController: () => AbortController
+  cancelRequest: () => void
 }
 
 const PortalNetworkContext = createContext<PortalNetworkContextType>({
-  client: null,
+  client: undefined,
+  historyNetwork: undefined,
+  stateNetwork: undefined,
   isLoading: true,
   setIsLoading: () => {},
   isNetworkReady: false,
   initialize: async () => {},
   cleanup: async () => {},
+  abortController: null,
+  createAbortController: () => new AbortController(),
+  cancelRequest: () => {},
 })
 
 type PortalNetworkProviderProps = {
@@ -34,7 +52,10 @@ type PortalNetworkProviderProps = {
 export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
   children,
 }) => {
-  const [client, setClient] = useState<any | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const [client, setClient] = useState<PortalNetwork | undefined>(undefined)
+  const [historyNetwork, setHistoryNetwork] = useState<HistoryNetwork | undefined>(undefined)
+  const [stateNetwork, setStateNetwork] = useState<StateNetwork | undefined>(undefined)
   const [isLoading, setIsLoading] = useState(false)
   const [isNetworkReady, setIsNetworkReady] = usePersistedState<boolean>(
     'portal-network-ready',
@@ -49,6 +70,8 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     try {
       const portalClient = await createPortalClient(port)
       setClient(portalClient)
+      setHistoryNetwork(portalClient.network()[NetworkId.HistoryNetwork])
+      setStateNetwork(portalClient.network()[NetworkId.StateNetwork])
       setIsLoading(false)
       setIsNetworkReady(true)
     } catch (err) {
@@ -63,7 +86,9 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     if (client) {
       try {
         await client.stop()
-        setClient(null)
+        setClient(undefined)
+        setHistoryNetwork(undefined)
+        setStateNetwork(undefined)
         setIsNetworkReady(false)
         localStorage.removeItem('portal-network-ready')
       } catch (err) {
@@ -73,13 +98,35 @@ export const PortalNetworkProvider: FC<PortalNetworkProviderProps> = ({
     }
   }
 
+   const createAbortController = () => {
+     if (abortControllerRef.current) {
+       abortControllerRef.current.abort()
+     }
+
+     const controller = new AbortController()
+     abortControllerRef.current = controller
+     return controller
+   }
+
+   const cancelRequest = () => {
+     if (abortControllerRef.current) {
+       abortControllerRef.current.abort('Request cancelled by user')
+       abortControllerRef.current = null
+     }
+   }
+
   const contextValue: PortalNetworkContextType = {
     client,
+    historyNetwork,
+    stateNetwork,
     isLoading,
     setIsLoading,
     isNetworkReady,
     initialize,
     cleanup,
+    abortController: abortControllerRef.current,
+    createAbortController,
+    cancelRequest,
   }
 
   return (

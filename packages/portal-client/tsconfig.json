@@ -29,13 +29,9 @@
       "portalnetwork": ["../portalnetwork/dist/index"],
       "portalnetwork/*": ["../portalnetwork/dist/*"]
     },
-    "types": [
-      "node",
-      "vitest/globals", 
-      "@testing-library/jest-dom"
-    ]
+    "types": ["node", "vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["./src", "./src/tests/vitest.setup.ts"],
+  "include": ["./src", "./src/tests/vitest.setup.ts", "src/pages/.tsx"],
   "exclude": ["./dist"],
-  "references": [{ "path": "../portalnetwork/tsconfig.json" }],
+  "references": [{ "path": "../portalnetwork/tsconfig.json" }]
 }

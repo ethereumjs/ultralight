@@ -1,10 +1,11 @@
-import { EventEmitter } from 'eventemitter3'
 import { Discv5 } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import { fromNodeAddress } from '@multiformats/multiaddr'
 import debug from 'debug'
+import { EventEmitter } from 'eventemitter3'
+import packageJson from '../../package.json' with { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import { BeaconNetwork, NetworkId, StateNetwork, SyncStrategy } from '../networks/index.js'
@@ -18,20 +19,17 @@ import type { IDiscv5CreateOptions } from '@chainsafe/discv5'
 import type { ITalkReqMessage, ITalkRespMessage } from '@chainsafe/discv5/message'
 import type { Debugger } from 'debug'
 import type { BaseNetwork } from '../networks/network.js'
+import type { RateLimiter } from '../transports/rateLimiter.js'
+import type { IClientInfo } from '../wire/payloadExtensions.js'
+import type { Version } from '../wire/types.js'
+import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
+import { ENRCache } from './enrCache.js'
 import type {
   INodeAddress,
   PortalNetworkEvents,
   PortalNetworkMetrics,
   PortalNetworkOpts,
 } from './types.js'
-import type { Version } from '../wire/types.js'
-import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
-import { type IClientInfo } from '../wire/payloadExtensions.js'
-import type { RateLimiter } from '../transports/rateLimiter.js'
-import { ENRCache } from './enrCache.js'
-
-const CURRENT_ULTRALIGHT_VERSION = '0.0.2-rc3'
-const CURRENT_TYPESCRIPT_VERSION = '^5.8.2'
 
 export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   clientInfo: IClientInfo
@@ -46,7 +44,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   logger: Debugger
   ETH: ETH
   enrCache: ENRCache
-  shouldRefresh: boolean = true
+  shouldRefresh = true
 
   /**
    *
@@ -54,13 +52,12 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    * @param opts a dictionary of `PortalNetworkOpts`
    */
   constructor(opts: PortalNetworkOpts) {
-    // eslint-disable-next-line constructor-super
     super()
     this.clientInfo = {
       clientName: 'ultralight',
-      clientVersionAndShortCommit: `${CURRENT_ULTRALIGHT_VERSION}-${opts.shortCommit ?? ''}`,
+      clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
       operatingSystemAndCpuArchitecture: opts.operatingSystemAndCpuArchitecture ?? '',
-      programmingLanguageAndVersion: `typescript_${CURRENT_TYPESCRIPT_VERSION}`,
+      programmingLanguageAndVersion: `typescript_${packageJson.devDependencies.typescript}`,
     }
     this.eventLog = opts.eventLog ?? false
     this.discv5 = Discv5.create(opts.config as IDiscv5CreateOptions)
@@ -78,7 +75,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
       this.logger,
       async () => opts.dbSize(opts.dataDir ?? './'),
       opts.db,
-    ) as DBManager
+    )
     opts.supportedNetworks = opts.supportedNetworks ?? []
     for (const network of opts.supportedNetworks) {
       switch (network.networkId) {
@@ -245,7 +242,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    * @param namespaces comma separated list of logging namespaces
    * defaults to "*Portal*,*uTP*"
    */
-  public enableLog = (namespaces: string = '*Portal*,*uTP*,*discv5*') => {
+  public enableLog = (namespaces = '*Portal*,*uTP*,*discv5*') => {
     debug.enable(namespaces)
   }
 
@@ -269,12 +266,12 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
         {
           type: 'put',
           key: 'privateKey',
-          value: bytesToHex(this.discv5.enr.privateKey!),
+          value: bytesToHex(this.discv5.enr.privateKey),
         },
         {
           type: 'put',
           key: 'publicKey',
-          value: bytesToHex(this.discv5.enr.publicKey!),
+          value: bytesToHex(this.discv5.enr.publicKey),
         },
         {
           type: 'put',
@@ -377,11 +374,11 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
 
   public sendPortalNetworkResponse = async (
     src: INodeAddress,
-    requestId: bigint,
+    requestId: Uint8Array,
     payload: Uint8Array,
   ) => {
     this.eventLog &&
-      this.emit('SendTalkResp', src.nodeId, requestId.toString(16), bytesToHex(payload))
+      this.emit('SendTalkResp', src.nodeId, bytesToHex(requestId), bytesToHex(payload))
     try {
       await this.discv5.sendTalkResp(src, requestId, payload)
     } catch (err: any) {
@@ -392,7 +389,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public addToBlackList = (ma: Multiaddr) => {
-    // eslint-disable-next-line no-extra-semi
     ;(<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).addToBlackList(
       ma.nodeAddress().address,
     )
@@ -405,7 +401,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   }
 
   public removeFromBlackList = (ma: Multiaddr) => {
-    // eslint-disable-next-line no-extra-semi
     ;(<RateLimiter>(<any>this.discv5.sessionService.transport)['rateLimiter']).removeFromBlackList(
       ma.nodeAddress().address,
     )
