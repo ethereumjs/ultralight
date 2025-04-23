@@ -21,7 +21,7 @@
     "vitest": "^3.0.2"
   },
   "dependencies": {
-    "@chainsafe/discv5": "^11.0.1",
+    "@chainsafe/discv5": "^11.0.2",
     "@chainsafe/enr": "^5.0.1",
     "@chainsafe/persistent-merkle-tree": "^0.8.0",
     "@chainsafe/ssz": "^0.17.1",
