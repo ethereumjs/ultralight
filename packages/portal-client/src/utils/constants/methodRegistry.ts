@@ -5,5 +5,6 @@ export const APPROVED_METHODS = [
   'eth_getBalance',
   'portal_historyPing',
   'portal_historyFindContent',
+  'portal_historyFindNodes',
 ] as const
 

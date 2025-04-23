@@ -40,4 +40,5 @@ export interface MethodParamConfig {
   showIncludeFullTx?: boolean
   showBlockHeight?: boolean
   showDistances?: boolean
+  showEnr?: boolean
 }

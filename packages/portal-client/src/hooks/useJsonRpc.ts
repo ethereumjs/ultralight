@@ -86,6 +86,21 @@ export const useJsonRpc = () => {
             responseType = 'generic';
             break;
           }
+          case 'portal_historyFindNodes': {
+            const res = await historyNetwork?.sendFindNodes(params[0], params[1]);
+            
+            if (!res) {
+              throw new Error('No nodes found');
+            }
+          
+            result = {
+              ...res,
+              enrs: res.enrs.map(enr => ENR.decode(enr).encodeTxt()),
+              type: 'enrs' as const,
+            }
+            responseType = 'generic'
+            break;
+          }
           default:
             throw new Error(`Unsupported method: ${method}`)
         }

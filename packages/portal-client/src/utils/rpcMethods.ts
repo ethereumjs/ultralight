@@ -87,5 +87,16 @@ export const methodRegistry: Record<MethodType, MethodConfig> = {
       return sendRequestHandle('portal_historyFindContent', [enr, contentKey])
     },
   },
+  portal_historyFindNodes: {
+    name: "Find Node",
+    paramPlaceholder: "Enter enr",
+    handler: (input: string, sendRequestHandle: (method: string, params?: any[]) => Promise<any>) => {
+      let parts = input.split(',')
+      const nodeId = parts[0]
+      const enr = ENR.decodeTxt(nodeId)
+      const distances = parts.slice(1)
+      return sendRequestHandle('portal_historyFindNodes', [enr, distances])
+    },
+  },
 
 }

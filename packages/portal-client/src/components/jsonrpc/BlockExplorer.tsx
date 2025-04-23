@@ -16,6 +16,7 @@ const BlockExplorer = () => {
   const [includeFullTx, setIncludeFullTx] = useState(false)
   const [blockHeight, setBlockHeight] = useState('')
   const [contentKey, setContentKey] = useState('')
+  const [distances, setDistances] = useState('')
 
   const { result, setResult, sendRequestHandle } = useJsonRpc()
   const { setIsLoading, cancelRequest, client } = usePortalNetwork()
@@ -45,8 +46,11 @@ const BlockExplorer = () => {
           formattedInput = `${inputValue},${includeFullTx}`
         } else if (methodParamMap[selectedMethod]?.showBlockHeight) {        
           formattedInput = `${inputValue},${blockHeight}`
-        } else if (methodParamMap[selectedMethod]?.showDistances) {     
+        } else if (methodParamMap[selectedMethod]?.showEnr) {     
           formattedInput = `${inputValue},${contentKey}`
+        } else if (methodParamMap[selectedMethod]?.showDistances) {     
+          const distanceArray = distances.split(',').map(d => Number(d.trim()))    
+          formattedInput = `${inputValue},${distanceArray}`
         }
         await methodRegistry[selectedMethod].handler(formattedInput, sendRequestHandle)
       } catch (err) {
@@ -78,6 +82,7 @@ const BlockExplorer = () => {
     setInputValue('')
     setBlockHeight('')
     setContentKey('')
+    setDistances('')
     setIncludeFullTx(false)
     setResult(null)
     setIsLoading(false)
@@ -90,16 +95,16 @@ const BlockExplorer = () => {
       
       if (method.includes('BlockBy')) {
         config.showIncludeFullTx = true
-      } 
-      
+      }      
       if (method === 'eth_getTransactionCount' || method === 'eth_getBalance') {
         config.showBlockHeight = true
-      }
-      
+      }     
       if (method.includes('portal_historyFindContent')) {
+        config.showEnr = true
+      }
+      if (method.includes('portal_historyFindNodes')) {
         config.showDistances = true
       }
-
       map[method] = config
     })
   
@@ -138,12 +143,15 @@ const BlockExplorer = () => {
               includeFullTx={includeFullTx}
               onIncludeFullTxChange={setIncludeFullTx}
               onBlockHeightChange={setBlockHeight}
+              onDistancesChange={setDistances}
               onContentKeyChange={setContentKey}
               showIncludeFullTx={currentMethodConfig.showIncludeFullTx}
               showBlockHeight={currentMethodConfig.showBlockHeight}
               showDistances={currentMethodConfig.showDistances}
+              showEnr={currentMethodConfig.showEnr}
               blockHeight={blockHeight}
               contentKey={contentKey}
+              distances={distances}
             />
           </div>
         )}
