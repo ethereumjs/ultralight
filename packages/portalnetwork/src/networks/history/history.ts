@@ -187,7 +187,7 @@ export class HistoryNetwork extends BaseNetwork {
     }
     const proof = headerProof.proof
 
-    if (header.number < MERGE_BLOCK) {
+    if (header.number <= MERGE_BLOCK) {
       let deserializedProof: Uint8Array[]
       try {
         deserializedProof = AccumulatorProofType.deserialize(proof)
