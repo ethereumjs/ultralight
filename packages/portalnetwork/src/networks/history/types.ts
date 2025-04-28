@@ -191,21 +191,29 @@ export const BlockNumberKey = new ContainerType({
 export const SlotType = new UintBigintType(8)
 export const BeaconBlockProofHistoricalRoots = new VectorCompositeType(Bytes32Type, 14)
 export const PostMergeExecutionBlockProof = new VectorCompositeType(Bytes32Type, 11)
-
+export const PostDenebExecutionBlockProof = new VectorCompositeType(Bytes32Type, 12)
 export const HistoricalRootsBlockProof = new ContainerType({
-  historicalRootsProof: BeaconBlockProofHistoricalRoots,
+  beaconBlockProof: BeaconBlockProofHistoricalRoots,
   beaconBlockRoot: Bytes32Type,
-  beaconBlockProof: PostMergeExecutionBlockProof,
+  executionBlockProof: PostMergeExecutionBlockProof,
   slot: SlotType,
 })
 
 /** Post-Capella block header proof types */
-export const PostCapellaExecutionBlockProof = new ListCompositeType(Bytes32Type, 12)
+export const PostCapellaExecutionBlockProof = PostMergeExecutionBlockProof
 export const BeaconBlockProofHistoricalSummaries = new VectorCompositeType(Bytes32Type, 13)
+
 export const HistoricalSummariesBlockProof = new ContainerType({
-  historicalSummariesProof: BeaconBlockProofHistoricalSummaries,
+  beaconBlockProof: BeaconBlockProofHistoricalSummaries,
   beaconBlockRoot: Bytes32Type,
-  beaconBlockProof: PostCapellaExecutionBlockProof,
+  executionBlockProof: PostCapellaExecutionBlockProof,
+  slot: SlotType,
+})
+
+export const HistoricalSummariesBlockProofDeneb = new ContainerType({
+  beaconBlockProof: BeaconBlockProofHistoricalSummaries,
+  beaconBlockRoot: Bytes32Type,
+  executionBlockProof: PostDenebExecutionBlockProof,
   slot: SlotType,
 })
 

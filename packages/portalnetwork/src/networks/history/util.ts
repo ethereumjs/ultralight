@@ -326,7 +326,7 @@ export const verifyPreCapellaHeaderProof = (
   proof: ValueOfFields<{
     beaconBlockProof: VectorCompositeType<ByteVectorType>
     beaconBlockRoot: ByteVectorType
-    historicalRootsProof: VectorCompositeType<ByteVectorType>
+    executionBlockProof: VectorCompositeType<ByteVectorType>
     slot: UintBigintType
   }>,
   elBlockHash: Uint8Array,
@@ -337,7 +337,7 @@ export const verifyPreCapellaHeaderProof = (
     Number(batchIndex),
   ])
   const reconstructedBatch = ssz.phase0.HistoricalBatch.createFromProof({
-    witnesses: proof.historicalRootsProof,
+    witnesses: proof.beaconBlockProof,
     type: ProofType.single,
     gindex: historicalRootsPath.gindex,
     leaf: proof.beaconBlockRoot, // This should be the leaf value this proof is verifying
@@ -370,7 +370,7 @@ export const verifyPostCapellaHeaderProof = (
   proof: ValueOfFields<{
     beaconBlockProof: ListCompositeType<ByteVectorType>
     beaconBlockRoot: ByteVectorType
-    historicalSummariesProof: VectorCompositeType<ByteVectorType>
+    executionBlockProof: VectorCompositeType<ByteVectorType>
     slot: UintBigintType
   }>,
   elBlockHash: Uint8Array,
@@ -383,7 +383,7 @@ export const verifyPostCapellaHeaderProof = (
     Number(eraIndex),
   ])
   const reconstructedBatch = ssz[forkName].BeaconState.fields.blockRoots.createFromProof({
-    witnesses: proof.historicalSummariesProof,
+    witnesses: proof.beaconBlockProof,
     type: ProofType.single,
     gindex: historicalSummariesPath.gindex,
     leaf: proof.beaconBlockRoot, // This should be the leaf value this proof is verifying
