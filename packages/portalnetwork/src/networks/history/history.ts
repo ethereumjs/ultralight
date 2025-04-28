@@ -3,11 +3,13 @@ import { Block, createBlockHeaderFromRLP } from '@ethereumjs/block'
 import { bytesToHex, bytesToInt, concatBytes, equalsBytes, hexToBytes } from '@ethereumjs/util'
 import debug from 'debug'
 
-import type {
+import {
   BaseNetworkConfig,
   ContentLookupResponse,
   EphemeralHeaderKeyValues,
   FindContentMessage,
+  HistoricalSummariesBlockProofCapella,
+  HistoricalSummariesBlockProofDeneb,
   INodeAddress,
 } from '../../index.js'
 import {
@@ -16,7 +18,6 @@ import {
   ClientInfoAndCapabilities,
   ContentMessageType,
   FoundContent,
-  HistoricalSummariesBlockProof,
   HistoryRadius,
   MAX_UDP_PACKET_SIZE,
   MessageCodes,
@@ -39,6 +40,7 @@ import {
   AccumulatorProofType,
   BlockHeaderWithProof,
   BlockNumberKey,
+  CANCUN_BLOCK,
   EphemeralHeaderPayload,
   HistoricalRootsBlockProof,
   HistoryNetworkContentType,
@@ -235,10 +237,13 @@ export class HistoryNetwork extends BaseNetwork {
       }
     } else {
       // TODO: Check proof slot to ensure header is from previous sync period and handle ephemeral headers separately
-
-      let deserializedProof: ReturnType<typeof HistoricalSummariesBlockProof.deserialize>
+      let deserializedProof: ReturnType<typeof HistoricalSummariesBlockProofCapella.deserialize | typeof HistoricalSummariesBlockProofDeneb.deserialize>
       try {
-        deserializedProof = HistoricalSummariesBlockProof.deserialize(proof)
+        if (header.number < CANCUN_BLOCK) {
+          deserializedProof = HistoricalSummariesBlockProofCapella.deserialize(proof)
+        } else {
+          deserializedProof = HistoricalSummariesBlockProofDeneb.deserialize(proof)
+        }
       } catch (err: any) {
         this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
         throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)

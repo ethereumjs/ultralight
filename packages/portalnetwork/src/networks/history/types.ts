@@ -27,6 +27,7 @@ export const MAX_ENCODED_UNCLES_LENGTH = 131072 // MAX_HEADER_LENGTH * 2 ** 4
 export const MAX_HEADER_PROOF_LENGTH = 1024
 export const MERGE_BLOCK = 15537393n
 export const SHANGHAI_BLOCK = 17034871n
+export const CANCUN_BLOCK = 19426587n
 
 export const CAPELLA_ERA = 758 // The era/period in which the Capella fork happened on CL
 
@@ -190,26 +191,26 @@ export const BlockNumberKey = new ContainerType({
 /** Post-merge pre-Capella block header proof types */
 export const SlotType = new UintBigintType(8)
 export const BeaconBlockProofHistoricalRoots = new VectorCompositeType(Bytes32Type, 14)
-export const PostMergeExecutionBlockProof = new VectorCompositeType(Bytes32Type, 11)
-export const PostDenebExecutionBlockProof = new VectorCompositeType(Bytes32Type, 12)
+export const ExecutionBlockProofBellatrix = new VectorCompositeType(Bytes32Type, 11)
 export const HistoricalRootsBlockProof = new ContainerType({
   beaconBlockProof: BeaconBlockProofHistoricalRoots,
   beaconBlockRoot: Bytes32Type,
-  executionBlockProof: PostMergeExecutionBlockProof,
+  executionBlockProof: ExecutionBlockProofBellatrix,
   slot: SlotType,
 })
 
 /** Post-Capella block header proof types */
-export const PostCapellaExecutionBlockProof = PostMergeExecutionBlockProof
 export const BeaconBlockProofHistoricalSummaries = new VectorCompositeType(Bytes32Type, 13)
 
-export const HistoricalSummariesBlockProof = new ContainerType({
+export const HistoricalSummariesBlockProofCapella = new ContainerType({
   beaconBlockProof: BeaconBlockProofHistoricalSummaries,
   beaconBlockRoot: Bytes32Type,
-  executionBlockProof: PostCapellaExecutionBlockProof,
+  executionBlockProof: ExecutionBlockProofBellatrix,
   slot: SlotType,
 })
 
+/** Post-Deneb block header proof types */
+export const PostDenebExecutionBlockProof = new VectorCompositeType(Bytes32Type, 12)
 export const HistoricalSummariesBlockProofDeneb = new ContainerType({
   beaconBlockProof: BeaconBlockProofHistoricalSummaries,
   beaconBlockRoot: Bytes32Type,

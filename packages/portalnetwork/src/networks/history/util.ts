@@ -368,7 +368,7 @@ export const verifyPreCapellaHeaderProof = (
 
 export const verifyPostCapellaHeaderProof = (
   proof: ValueOfFields<{
-    beaconBlockProof: ListCompositeType<ByteVectorType>
+    beaconBlockProof: VectorCompositeType<ByteVectorType>
     beaconBlockRoot: ByteVectorType
     executionBlockProof: VectorCompositeType<ByteVectorType>
     slot: UintBigintType
