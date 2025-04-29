@@ -326,7 +326,7 @@ export const verifyPreMergeHeaderProof = (
   }
 }
 
-export const verifyPreCapellaHeaderProof = (
+export const verifyHistoricalRootsHeaderProof = (
   proof: ValueOfFields<{
     beaconBlockProof: VectorCompositeType<ByteVectorType>
     beaconBlockRoot: ByteVectorType
@@ -370,7 +370,7 @@ export const verifyPreCapellaHeaderProof = (
   return true
 }
 
-export const verifyPostCapellaHeaderProof = (
+export const verifyHistoricalSummariesHeaderProof = (
   proof: ValueOfFields<
     typeof HistoricalSummariesBlockProof.fields | typeof HistoricalSummariesBlockProofDeneb.fields
   >,

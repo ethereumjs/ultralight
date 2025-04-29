@@ -50,8 +50,8 @@ import {
 import {
   getContentKey,
   getEphemeralHeaderDbKey,
-  verifyPostCapellaHeaderProof,
-  verifyPreCapellaHeaderProof,
+  verifyHistoricalRootsHeaderProof,
+  verifyHistoricalSummariesHeaderProof,
   verifyPreMergeHeaderProof,
 } from './util.js'
 
@@ -225,7 +225,7 @@ export class HistoryNetwork extends BaseNetwork {
       }
       let validated = false
       try {
-        validated = verifyPreCapellaHeaderProof(deserializedProof, header.hash())
+        validated = verifyHistoricalRootsHeaderProof(deserializedProof, header.hash())
       } catch (err: any) {
         const msg = `Unable to validate proof for post-merge header: ${err.message}`
         this.logger(msg)
@@ -254,7 +254,7 @@ export class HistoryNetwork extends BaseNetwork {
       const beacon = this.portal.network()['0x500c']
       if (beacon !== undefined && beacon.lightClient?.status === RunStatusCode.started) {
         try {
-          verifyPostCapellaHeaderProof(
+          verifyHistoricalSummariesHeaderProof(
             deserializedProof,
             header.hash(),
             beacon.historicalSummaries,

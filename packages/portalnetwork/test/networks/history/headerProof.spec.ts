@@ -19,8 +19,8 @@ import {
   blockNumberToLeafIndex,
   slotToHistoricalBatch,
   slotToHistoricalBatchIndex,
-  verifyPostCapellaHeaderProof,
-  verifyPreCapellaHeaderProof,
+  verifyHistoricalRootsHeaderProof,
+  verifyHistoricalSummariesHeaderProof,
 } from '../../../src/index.js'
 import { historicalRoots } from '../../../src/networks/history/data/historicalRoots.js'
 
@@ -210,12 +210,12 @@ describe('Bellatrix - Capella header proof tests', () => {
       executionBlockHeader: testVector.execution_block_header,
     })
     assert.ok(
-      verifyPreCapellaHeaderProof(fluffyProof, hexToBytes(testVector.execution_block_header)),
+      verifyHistoricalRootsHeaderProof(fluffyProof, hexToBytes(testVector.execution_block_header)),
     )
   })
 })
 
-describe('it should verify a post-Capella header proof', () => {
+describe.only('it should verify a post-Capella header proof', () => {
   const forkConfig = createChainForkConfig({})
   let proof: any
   beforeAll(async () => {
@@ -234,7 +234,7 @@ describe('it should verify a post-Capella header proof', () => {
 
     const headerProof = HistoricalSummariesBlockProofDeneb.fromJson(proof)
     assert.isTrue(
-      verifyPostCapellaHeaderProof(
+      verifyHistoricalSummariesHeaderProof(
         headerProof,
         hexToBytes('0xb2044cada59c3479ed264454466610e84fa852547138ccc12a874e921779a983'),
         historicalSummaries,
