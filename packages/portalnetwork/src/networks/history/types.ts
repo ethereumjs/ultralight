@@ -25,7 +25,7 @@ export const MAX_RECEIPT_LENGTH = 134217728 // 2 ** 27
 export const MAX_HEADER_LENGTH = 8192 // 2 ** 13
 export const MAX_ENCODED_UNCLES_LENGTH = 131072 // MAX_HEADER_LENGTH * 2 ** 4
 export const MAX_HEADER_PROOF_LENGTH = 1024
-export const MERGE_BLOCK = 15537393n
+export const MERGE_BLOCK = 15537394n
 export const SHANGHAI_BLOCK = 17034871n
 
 export const CAPELLA_ERA = 758 // The era/period in which the Capella fork happened on CL
