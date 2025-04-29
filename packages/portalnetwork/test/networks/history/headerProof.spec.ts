@@ -14,7 +14,7 @@ import {
   HeaderRecordType,
   HistoricalEpochsType,
   HistoricalRootsBlockProof,
-  HistoricalSummariesBlockProof,
+  HistoricalSummariesBlockProofCapella,
   blockNumberToGindex,
   blockNumberToLeafIndex,
   slotToHistoricalBatch,
@@ -163,7 +163,7 @@ describe('Bellatrix - Capella header proof tests', () => {
       Number(batchIndex),
     ])
     const reconstructedBatch = ssz.phase0.HistoricalBatch.createFromProof({
-      witnesses: postMergeProof.historicalRootsProof,
+      witnesses: postMergeProof.beaconBlockProof,
       type: ProofType.single,
       gindex: historicalRootsPath.gindex,
       leaf: postMergeProof.beaconBlockRoot, // This should be the leaf value this proof is verifying
@@ -203,8 +203,8 @@ describe('Bellatrix - Capella header proof tests', () => {
       slot: string
     } = yaml.load(testString) as any
     const fluffyProof = HistoricalRootsBlockProof.fromJson({
-      beaconBlockProof: testVector.beacon_block_proof,
-      historicalRootsProof: testVector.historical_roots_proof,
+      executionBlockProof: testVector.beacon_block_proof,
+      beaconBlockProof: testVector.historical_roots_proof,
       slot: testVector.slot,
       beaconBlockRoot: testVector.beacon_block_root,
       executionBlockHeader: testVector.execution_block_header,
@@ -222,7 +222,7 @@ describe('it should verify a post-Capella header proof', () => {
     proof = await import('./testData/slot9682944Proof.json')
   })
   it('should instantiate a proof from json', () => {
-    const headerProof = HistoricalSummariesBlockProof.fromJson(proof)
+    const headerProof = HistoricalSummariesBlockProofCapella.fromJson(proof)
     assert.equal(headerProof.slot, proof.slot)
   })
   it('should verify a post-capella header proof', async () => {
@@ -232,7 +232,7 @@ describe('it should verify a post-Capella header proof', () => {
       historicalSummariesJson.default,
     )
 
-    const headerProof = HistoricalSummariesBlockProof.fromJson(proof)
+    const headerProof = HistoricalSummariesBlockProofCapella.fromJson(proof)
     assert.ok(
       verifyPostCapellaHeaderProof(
         headerProof,
