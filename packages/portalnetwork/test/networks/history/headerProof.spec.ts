@@ -1,12 +1,12 @@
-import { readFileSync } from 'fs'
-import { createRequire } from 'module'
-import { resolve } from 'path'
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { createBlockHeaderFromRLP } from '@ethereumjs/block'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { createChainForkConfig } from '@lodestar/config'
 import { ssz } from '@lodestar/types'
+import { readFileSync } from 'fs'
 import yaml from 'js-yaml'
+import { createRequire } from 'module'
+import { resolve } from 'path'
 import { assert, beforeAll, describe, it } from 'vitest'
 
 import {
@@ -17,12 +17,9 @@ import {
   HistoricalSummariesBlockProofDeneb,
   blockNumberToGindex,
   blockNumberToLeafIndex,
-  slotToHistoricalBatch,
-  slotToHistoricalBatchIndex,
   verifyPostCapellaHeaderProof,
   verifyPreCapellaHeaderProof,
 } from '../../../src/index.js'
-import { historicalRoots } from '../../../src/networks/history/data/historicalRoots.js'
 
 import type { SingleProof } from '@chainsafe/persistent-merkle-tree'
 import type { ByteVectorType, ContainerType, UintBigintType } from '@chainsafe/ssz'
