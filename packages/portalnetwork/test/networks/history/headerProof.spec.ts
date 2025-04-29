@@ -1,12 +1,12 @@
-import { readFileSync } from 'fs'
-import { createRequire } from 'module'
-import { resolve } from 'path'
 import { ProofType, createProof } from '@chainsafe/persistent-merkle-tree'
 import { createBlockHeaderFromRLP } from '@ethereumjs/block'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { createChainForkConfig } from '@lodestar/config'
 import { ssz } from '@lodestar/types'
+import { readFileSync } from 'fs'
 import yaml from 'js-yaml'
+import { createRequire } from 'module'
+import { resolve } from 'path'
 import { assert, beforeAll, describe, it } from 'vitest'
 
 import {
@@ -14,7 +14,7 @@ import {
   HeaderRecordType,
   HistoricalEpochsType,
   HistoricalRootsBlockProof,
-  HistoricalSummariesBlockProof,
+  HistoricalSummariesBlockProofDeneb,
   blockNumberToGindex,
   blockNumberToLeafIndex,
   slotToHistoricalBatch,
@@ -222,7 +222,7 @@ describe('it should verify a post-Capella header proof', () => {
     proof = await import('./testData/slot9682944Proof.json')
   })
   it('should instantiate a proof from json', () => {
-    const headerProof = HistoricalSummariesBlockProof.fromJson(proof)
+    const headerProof = HistoricalSummariesBlockProofDeneb.fromJson(proof)
     assert.equal(headerProof.slot, proof.slot)
   })
   it('should verify a post-capella header proof', async () => {
@@ -232,8 +232,8 @@ describe('it should verify a post-Capella header proof', () => {
       historicalSummariesJson.default,
     )
 
-    const headerProof = HistoricalSummariesBlockProof.fromJson(proof)
-    assert.ok(
+    const headerProof = HistoricalSummariesBlockProofDeneb.fromJson(proof)
+    assert.isTrue(
       verifyPostCapellaHeaderProof(
         headerProof,
         hexToBytes('0xb2044cada59c3479ed264454466610e84fa852547138ccc12a874e921779a983'),

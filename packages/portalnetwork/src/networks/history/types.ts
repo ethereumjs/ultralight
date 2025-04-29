@@ -201,7 +201,7 @@ export const HistoricalRootsBlockProof = new ContainerType({
 })
 
 /** Post-Capella block header proof types */
-export const PostCapellaExecutionBlockProof = new ListCompositeType(Bytes32Type, 12)
+export const PostCapellaExecutionBlockProof = new VectorCompositeType(Bytes32Type, 12)
 export const BeaconBlockProofHistoricalSummaries = new VectorCompositeType(Bytes32Type, 13)
 export const HistoricalSummariesBlockProof = new ContainerType({
   beaconBlockProof: BeaconBlockProofHistoricalSummaries,
