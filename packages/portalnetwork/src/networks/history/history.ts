@@ -4,21 +4,19 @@ import { bytesToHex, bytesToInt, concatBytes, equalsBytes, hexToBytes } from '@e
 import debug from 'debug'
 
 import {
-  BaseNetworkConfig,
-  ContentLookupResponse,
-  EphemeralHeaderKeyValues,
-  FindContentMessage,
-  HistoricalSummariesBlockProofCapella,
-  HistoricalSummariesBlockProofDeneb,
-  INodeAddress,
-} from '../../index.js'
-import {
+  type BaseNetworkConfig,
   BasicRadius,
   BiMap,
   ClientInfoAndCapabilities,
+  type ContentLookupResponse,
   ContentMessageType,
+  type EphemeralHeaderKeyValues,
+  type FindContentMessage,
   FoundContent,
+  HistoricalSummariesBlockProofCapella,
+  HistoricalSummariesBlockProofDeneb,
   HistoryRadius,
+  type INodeAddress,
   MAX_UDP_PACKET_SIZE,
   MessageCodes,
   PortalWireMessageType,
@@ -237,7 +235,10 @@ export class HistoryNetwork extends BaseNetwork {
       }
     } else {
       // TODO: Check proof slot to ensure header is from previous sync period and handle ephemeral headers separately
-      let deserializedProof: ReturnType<typeof HistoricalSummariesBlockProofCapella.deserialize | typeof HistoricalSummariesBlockProofDeneb.deserialize>
+      let deserializedProof: ReturnType<
+        | typeof HistoricalSummariesBlockProofCapella.deserialize
+        | typeof HistoricalSummariesBlockProofDeneb.deserialize
+      >
       try {
         if (header.number < CANCUN_BLOCK) {
           deserializedProof = HistoricalSummariesBlockProofCapella.deserialize(proof)

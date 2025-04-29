@@ -14,7 +14,7 @@ import {
   HeaderRecordType,
   HistoricalEpochsType,
   HistoricalRootsBlockProof,
-  HistoricalSummariesBlockProofCapella,
+  HistoricalSummariesBlockProofDeneb,
   blockNumberToGindex,
   blockNumberToLeafIndex,
   slotToHistoricalBatch,
@@ -156,39 +156,13 @@ describe('Bellatrix - Capella header proof tests', () => {
   it('should deserialize proof', () => {
     const postMergeProof = HistoricalRootsBlockProof.fromJson(postMergeProofJson)
     assert.equal(postMergeProof.slot, 4700013n)
-    const batchIndex = slotToHistoricalBatchIndex(postMergeProof.slot)
-    // The index of the merge block blockRoot in the historical batch for historical batch/era 574 (where the merge occurred)
-    const historicalRootsPath = ssz.phase0.HistoricalBatch.getPathInfo([
-      'blockRoots',
-      Number(batchIndex),
-    ])
-    const reconstructedBatch = ssz.phase0.HistoricalBatch.createFromProof({
-      witnesses: postMergeProof.beaconBlockProof,
-      type: ProofType.single,
-      gindex: historicalRootsPath.gindex,
-      leaf: postMergeProof.beaconBlockRoot, // This should be the leaf value this proof is verifying
-    })
-    assert.deepEqual(
-      reconstructedBatch.hashTreeRoot(),
-      hexToBytes(historicalRoots[Number(slotToHistoricalBatch(postMergeProof.slot))]),
-    )
 
-    const elBlockHashPath = ssz.bellatrix.BeaconBlock.getPathInfo([
-      'body',
-      'executionPayload',
-      'blockHash',
-    ])
-    const mergeBlockElBlockHash = hexToBytes(
-      '0x56a9bb0302da44b8c0b3df540781424684c3af04d0b7a38d72842b762076a664',
+    assert.isTrue(
+      verifyPreCapellaHeaderProof(
+        postMergeProof,
+        hexToBytes('0x56a9bb0302da44b8c0b3df540781424684c3af04d0b7a38d72842b762076a664'), // Merge Block EL Blockhash
+      ),
     )
-    const reconstructedBlock = ssz.bellatrix.BeaconBlock.createFromProof({
-      witnesses: postMergeProof.beaconBlockProof,
-      type: ProofType.single,
-      gindex: elBlockHashPath.gindex,
-      leaf: mergeBlockElBlockHash,
-    })
-
-    assert.deepEqual(reconstructedBlock.hashTreeRoot(), postMergeProof.beaconBlockRoot)
   })
 
   it('should verify a fluffy proof', () => {
@@ -209,7 +183,7 @@ describe('Bellatrix - Capella header proof tests', () => {
       beaconBlockRoot: testVector.beacon_block_root,
       executionBlockHeader: testVector.execution_block_header,
     })
-    assert.ok(
+    assert.isTrue(
       verifyPreCapellaHeaderProof(fluffyProof, hexToBytes(testVector.execution_block_header)),
     )
   })
@@ -222,7 +196,7 @@ describe('it should verify a post-Capella header proof', () => {
     proof = await import('./testData/slot9682944Proof.json')
   })
   it('should instantiate a proof from json', () => {
-    const headerProof = HistoricalSummariesBlockProofCapella.fromJson(proof)
+    const headerProof = HistoricalSummariesBlockProofDeneb.fromJson(proof)
     assert.equal(headerProof.slot, proof.slot)
   })
   it('should verify a post-capella header proof', async () => {
@@ -232,8 +206,8 @@ describe('it should verify a post-Capella header proof', () => {
       historicalSummariesJson.default,
     )
 
-    const headerProof = HistoricalSummariesBlockProofCapella.fromJson(proof)
-    assert.ok(
+    const headerProof = HistoricalSummariesBlockProofDeneb.fromJson(proof)
+    assert.isTrue(
       verifyPostCapellaHeaderProof(
         headerProof,
         hexToBytes('0xb2044cada59c3479ed264454466610e84fa852547138ccc12a874e921779a983'),

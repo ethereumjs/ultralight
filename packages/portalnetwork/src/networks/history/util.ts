@@ -19,6 +19,7 @@ import {
   CAPELLA_ERA,
   EphemeralHeaderKey,
   EpochAccumulator,
+  HistoricalRootsBlockProof,
   HistoryNetworkContentType,
   MERGE_BLOCK,
   PostShanghaiBlockBody,
@@ -322,13 +323,9 @@ export const verifyPreMergeHeaderProof = (
   }
 }
 
+HistoricalRootsBlockProof.fields
 export const verifyPreCapellaHeaderProof = (
-  proof: ValueOfFields<{
-    beaconBlockProof: VectorCompositeType<ByteVectorType>
-    beaconBlockRoot: ByteVectorType
-    executionBlockProof: VectorCompositeType<ByteVectorType>
-    slot: UintBigintType
-  }>,
+  proof: ValueOfFields<typeof HistoricalRootsBlockProof.fields>,
   elBlockHash: Uint8Array,
 ) => {
   const batchIndex = slotToHistoricalBatchIndex(proof.slot)
@@ -347,8 +344,9 @@ export const verifyPreCapellaHeaderProof = (
       reconstructedBatch.hashTreeRoot(),
       hexToBytes(historicalRoots[Number(slotToHistoricalBatch(proof.slot))]),
     ) === false
-  )
+  ) {
     return false
+  }
 
   const elBlockHashPath = ssz.bellatrix.BeaconBlock.getPathInfo([
     'body',
@@ -362,15 +360,17 @@ export const verifyPreCapellaHeaderProof = (
     leaf: elBlockHash,
   })
 
-  if (equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot) === false) return false
+  if (equalsBytes(reconstructedBlock.hashTreeRoot(), proof.beaconBlockRoot) === false) {
+    return false
+  }
   return true
 }
 
 export const verifyPostCapellaHeaderProof = (
   proof: ValueOfFields<{
-    beaconBlockProof: VectorCompositeType<ByteVectorType>
+    executionBlockProof: ListCompositeType<ByteVectorType>
     beaconBlockRoot: ByteVectorType
-    executionBlockProof: VectorCompositeType<ByteVectorType>
+    beaconBlockProof: VectorCompositeType<ByteVectorType>
     slot: UintBigintType
   }>,
   elBlockHash: Uint8Array,
