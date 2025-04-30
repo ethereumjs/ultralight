@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs'
 import { SignableENR } from '@chainsafe/enr'
-import { concatBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { createBeaconConfig } from '@lodestar/config'
 import { mainnetChainConfig } from '@lodestar/config/configs'
@@ -11,6 +11,8 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, it, vi } from 'vitest'
 import {
   BeaconNetworkContentType,
+  BlockHeaderWithProof,
+  HistoricalSummariesBlockProof,
   HistoricalSummariesKey,
   HistoricalSummariesWithProof,
   HistoryNetworkContentType,
