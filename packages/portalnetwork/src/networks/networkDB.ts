@@ -141,7 +141,7 @@ export class NetworkDB {
       for await (const [key, value] of this.db.iterator()) {
         try {
           size += hexToBytes(`0x${padToEven(key.slice(2))}`).length
-          size += hexToBytes(`0x${value}`).length
+          size += hexToBytes(value as PrefixedHexString).length
         } catch {
           // ignore
         }
