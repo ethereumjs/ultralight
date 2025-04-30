@@ -3,9 +3,8 @@
 	"type": "module",
 	"private": true,
 	"workspaces": [
-		"./",
-		"./packages/portalnetwork",
-		"./packages/cli"
+		"packages/portalnetwork",
+		"packages/cli"
 	],
 	"engines": {
 		"npm": "^10",
