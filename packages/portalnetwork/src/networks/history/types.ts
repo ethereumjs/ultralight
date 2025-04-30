@@ -26,7 +26,7 @@ export const MAX_HEADER_LENGTH = 8192 // 2 ** 13
 export const MAX_ENCODED_UNCLES_LENGTH = 131072 // MAX_HEADER_LENGTH * 2 ** 4
 export const MAX_HEADER_PROOF_LENGTH = 1024
 export const MERGE_BLOCK = 15537394n
-export const SHANGHAI_BLOCK = 17034871n
+export const SHANGHAI_BLOCK = 17034870n
 export const CANCUN_BLOCK = 19426587n
 
 export const CAPELLA_ERA = 758 // The era/period in which the Capella fork happened on CL
@@ -201,12 +201,11 @@ export const HistoricalRootsBlockProof = new ContainerType({
 })
 
 /** Post-Capella block header proof types */
-export const PostCapellaExecutionBlockProof = new VectorCompositeType(Bytes32Type, 12)
 export const BeaconBlockProofHistoricalSummaries = new VectorCompositeType(Bytes32Type, 13)
 export const HistoricalSummariesBlockProof = new ContainerType({
   beaconBlockProof: BeaconBlockProofHistoricalSummaries,
   beaconBlockRoot: Bytes32Type,
-  executionBlockProof: PostCapellaExecutionBlockProof,
+  executionBlockProof: PostMergeExecutionBlockProof,
   slot: SlotType,
 })
 
