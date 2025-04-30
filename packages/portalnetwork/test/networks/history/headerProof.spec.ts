@@ -215,13 +215,13 @@ describe('Bellatrix - Capella header proof tests', () => {
   })
 })
 
-describe.only('it should verify a post-Capella header proof', () => {
+describe('it should verify a post-Capella header proof', () => {
   const forkConfig = createChainForkConfig({})
   let proof: any
   beforeAll(async () => {
     proof = await import('./testData/slot9682944Proof.json')
   })
-  it('should instantiate a proof from json', () => {
+  it('should instantiate a proof from json', async () => {
     const headerProof = HistoricalSummariesBlockProofDeneb.fromJson(proof)
     assert.equal(headerProof.slot, proof.slot)
   })

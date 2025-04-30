@@ -406,7 +406,7 @@ export const verifyHistoricalSummariesHeaderProof = (
     'blockHash',
   ])
   const reconstructedBlock = ssz[forkName].BeaconBlock.createFromProof({
-    witnesses: proof.beaconBlockProof,
+    witnesses: proof.executionBlockProof,
     type: ProofType.single,
     gindex: elBlockHashPath.gindex,
     leaf: elBlockHash,
