@@ -11,7 +11,7 @@ import {
 import { OriginalStorageCache } from './originalStorageCache/cache.js'
 
 import type { Proof, StateManagerInterface, StorageDump, StorageRange } from '@ethereumjs/common'
-import type { Address } from '@ethereumjs/util'
+import type { Address, PrefixedHexString } from '@ethereumjs/util'
 import type { StateNetwork } from './state.js'
 
 export class UltralightStateManager implements StateManagerInterface {
@@ -95,7 +95,8 @@ export class UltralightStateManager implements StateManagerInterface {
     let account: Account | undefined
     const accountRLP = await this.state.manager.getAccount(
       address.toBytes(),
-      hexToBytes(this.stateRoot),
+      hexToBytes(this.stateRoot as PrefixedHexString
+      ),
     )
     if (accountRLP !== undefined) {
       account = createAccountFromRLP(accountRLP)
@@ -134,7 +135,7 @@ export class UltralightStateManager implements StateManagerInterface {
   getContractCode = async (address: Address): Promise<Uint8Array> => {
     let code = this._contractCache.get(address.toString())
     if (code !== undefined) return code
-    code = await this.state.manager.getCode(address.toBytes(), hexToBytes(this.stateRoot))
+    code = await this.state.manager.getCode(address.toBytes(), hexToBytes(this.stateRoot as PrefixedHexString))
     if (code !== undefined) {
       this._contractCache.set(address.toString(), code)
     }
@@ -154,7 +155,7 @@ export class UltralightStateManager implements StateManagerInterface {
     value = await this.state.manager.getStorageAt(
       address.toBytes(),
       key,
-      hexToBytes(this.stateRoot),
+      hexToBytes(this.stateRoot as PrefixedHexString),
     )
     if (value !== undefined) {
       this._storageCache.put(address, key, value ?? new Uint8Array())

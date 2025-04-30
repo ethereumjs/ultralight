@@ -103,7 +103,7 @@ export class StateNetworkContentId {
 
 export function wrapDBContent(contentKey: Uint8Array, dbContent: string) {
   const keytype = keyType(contentKey)
-  const dbBytes = hexToBytes('0x' + dbContent)
+  const dbBytes = hexToBytes(`0x${dbContent}`)
   const wrapped =
     keytype === StateNetworkContentType.AccountTrieNode
       ? AccountTrieNodeRetrieval.serialize({

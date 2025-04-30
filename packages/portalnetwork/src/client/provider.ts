@@ -1,6 +1,6 @@
 import type { PortalNetwork } from './client.js'
 
-import { hexToBytes } from '@ethereumjs/util'
+import { hexToBytes, PrefixedHexString } from '@ethereumjs/util'
 import type { PortalNetworkOpts } from './types'
 
 import { DEFAULT_OPTS } from '../util/config.js'
@@ -52,7 +52,7 @@ export class UltralightProvider {
               'Invalid params for eth_getBlockByHash',
             )
           const [blockHash, fullTx] = params
-          return await this.getBlockByHash(hexToBytes(blockHash as string), fullTx as boolean)
+          return await this.getBlockByHash(hexToBytes(blockHash as PrefixedHexString), fullTx as boolean)
         }
 
         case 'eth_getBlockByNumber': {
@@ -170,24 +170,24 @@ export class UltralightProvider {
   }
 
   private async getTransactionCount(address: string, block: string) {
-    const txCount = await this.portal.ETH.getTransactionCount(hexToBytes(address), block)
+    const txCount = await this.portal.ETH.getTransactionCount(hexToBytes(address as PrefixedHexString), block)
     return formatResponse('0x' + (txCount !== undefined ? txCount.toString(16) : ''))
   }
 
   private async getCode(codeAddress: string, codeBlock: string) {
-    const code = await this.portal.ETH.getCode(hexToBytes(codeAddress), codeBlock)
+    const code = await this.portal.ETH.getCode(hexToBytes(codeAddress as PrefixedHexString), codeBlock)
     return formatResponse('0x' + (code !== undefined ? code.toString() : ''))
   }
 
   private async getBalance(balanceAddress: string, balanceBlock: bigint) {
-    const balance = await this.portal.ETH.getBalance(hexToBytes(balanceAddress), balanceBlock)
+    const balance = await this.portal.ETH.getBalance(hexToBytes(balanceAddress as PrefixedHexString), balanceBlock)
     return formatResponse('0x' + (balance !== undefined ? balance.toString(16) : ''))
   }
 
   private async getStorageAt(storageAddress: string, position: string, storageBlock: string) {
     const storage = await this.portal.ETH.getStorageAt(
-      hexToBytes(storageAddress),
-      hexToBytes(position),
+      hexToBytes(storageAddress as PrefixedHexString),
+      hexToBytes(position as PrefixedHexString),
       storageBlock,
     )
     return formatResponse('0x' + (storage !== undefined ? storage.toString() : ''))

@@ -15,7 +15,7 @@ import { Bloom, reassembleBlock } from '../index.js'
 
 import type { Block } from '@ethereumjs/block'
 import type { TypedTransaction } from '@ethereumjs/tx'
-import type { NestedUint8Array } from '@ethereumjs/util'
+import type { NestedUint8Array, PrefixedHexString } from '@ethereumjs/util'
 import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt, TxReceipt } from '@ethereumjs/vm'
 import type { Log, TxReceiptType, TxReceiptWithType } from '../index.js'
 
@@ -100,7 +100,7 @@ export async function getReceipts(
   includeTxType?: true,
 ): Promise<TxReceipt[] | TxReceiptWithType[]> {
   if (!encoded) return []
-  let receipts = decodeReceipts(hexToBytes(encoded))
+  let receipts = decodeReceipts(hexToBytes(encoded as PrefixedHexString))
   if (calcBloom !== undefined) {
     receipts = receipts.map((r) => {
       r.bitvector = logsBloom(r.logs).bitvector
@@ -108,7 +108,7 @@ export async function getReceipts(
     })
   }
   if (includeTxType && body !== undefined) {
-    const block = reassembleBlock(hexToBytes(encoded), hexToBytes(body))
+    const block = reassembleBlock(hexToBytes(encoded as PrefixedHexString), hexToBytes(body as PrefixedHexString))
     receipts = (receipts as TxReceiptWithType[]).map((r, i) => {
       r.txType = block.transactions[i].type
       return r

@@ -43,7 +43,7 @@ import type {
   TransactionsBytes,
   UncleHeadersBytes,
 } from '@ethereumjs/block'
-import type { WithdrawalBytes } from '@ethereumjs/util'
+import type { PrefixedHexString, WithdrawalBytes } from '@ethereumjs/util'
 import type { ForkConfig } from '@lodestar/config'
 import type {
   EphemeralHeaderKeyValues,
@@ -260,11 +260,11 @@ export const addRLPSerializedBlock = async (
   network: HistoryNetwork,
   proof: Uint8Array,
 ) => {
-  const block = createBlockFromRLP(hexToBytes(rlpHex), {
+  const block = createBlockFromRLP(hexToBytes(rlpHex as PrefixedHexString), {
     setHardfork: true,
   })
   const header = block.header
-  const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash))
+  const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash as PrefixedHexString))
   const headerProof = BlockHeaderWithProof.serialize({
     header: header.serialize(),
     proof,
@@ -289,7 +289,7 @@ export const blockNumberToLeafIndex = (blockNumber: bigint) => {
   return (Number(blockNumber) % 8192) * 2
 }
 export const epochRootByIndex = (index: number) => {
-  return historicalEpochs[index] ? hexToBytes(historicalEpochs[index]) : undefined
+  return historicalEpochs[index] ? hexToBytes(historicalEpochs[index] as PrefixedHexString) : undefined
 }
 export const epochRootByBlocknumber = (blockNumber: bigint) => {
   return epochRootByIndex(epochIndexByBlocknumber(blockNumber))
@@ -317,7 +317,7 @@ export const verifyPreMergeHeaderProof = (
       type: ProofType.single,
       gindex: blockNumberToGindex(blockNumber),
       witnesses,
-      leaf: hexToBytes(blockHash),
+      leaf: hexToBytes(blockHash as PrefixedHexString),
     }
     EpochAccumulator.createFromProof(proof, target)
     return true
@@ -349,7 +349,7 @@ export const verifyHistoricalRootsHeaderProof = (
   if (
     equalsBytes(
       reconstructedBatch.hashTreeRoot(),
-      hexToBytes(historicalRoots[Number(slotToHistoricalBatch(proof.slot))]),
+      hexToBytes(historicalRoots[Number(slotToHistoricalBatch(proof.slot))] as PrefixedHexString),
     ) === false
   )
     return false

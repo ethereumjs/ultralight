@@ -40,7 +40,7 @@ export interface IClientInfo {
 export const MAX_CLIENT_INFO_BYTE_LENGTH = 200
 
 export function clientInfoStringToBytes(clientInfo: string): Uint8Array {
-  return hexToBytes(fromAscii(clientInfo))
+  return hexToBytes(`0x${fromAscii(clientInfo)}`)
 }
 /**
  * Encode Client info as ASCII hex encoded string.

@@ -1,6 +1,6 @@
 import type { BlockHeader } from '@ethereumjs/block'
 import { Block, createBlockHeaderFromRLP } from '@ethereumjs/block'
-import { bytesToHex, bytesToInt, concatBytes, equalsBytes, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, bytesToInt, concatBytes, equalsBytes, hexToBytes, PrefixedHexString } from '@ethereumjs/util'
 import debug from 'debug'
 
 import type {
@@ -82,12 +82,12 @@ export class HistoryNetwork extends BaseNetwork {
   public blockNumberToHash(blockNumber: bigint): Uint8Array | undefined {
     const number = '0x' + blockNumber.toString(16)
     return this.blockHashIndex.has(number)
-      ? hexToBytes(this.blockHashIndex.get(number)!)
+      ? hexToBytes(this.blockHashIndex.get(number) as PrefixedHexString)
       : undefined
   }
 
   public blockHashToNumber(blockHash: Uint8Array): bigint | undefined {
-    const blockNumber = this.blockHashIndex.get(bytesToHex(blockHash))
+    const blockNumber = this.blockHashIndex.get(bytesToHex(blockHash) as PrefixedHexString)
     return blockNumber === undefined ? undefined : BigInt(blockNumber)
   }
 
@@ -106,11 +106,11 @@ export class HistoryNetwork extends BaseNetwork {
       }
       const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
       const value = await this.retrieve(hashKey)
-      return value !== undefined ? hexToBytes(value) : undefined
+      return value !== undefined ? hexToBytes(value as PrefixedHexString) : undefined
     }
 
     const value = await this.retrieve(contentKey)
-    return value !== undefined ? hexToBytes(value) : undefined
+    return value !== undefined ? hexToBytes(value as PrefixedHexString) : undefined
   }
 
   public indexBlockHash = async (number: bigint, blockHash: string) => {
@@ -144,7 +144,7 @@ export class HistoryNetwork extends BaseNetwork {
   public getBlockBodyBytes = async (blockHash: Uint8Array): Promise<Uint8Array | undefined> => {
     const contentKey = getContentKey(HistoryNetworkContentType.BlockBody, blockHash)
     const value = await this.retrieve(contentKey)
-    return value !== undefined ? hexToBytes(value) : undefined
+    return value !== undefined ? hexToBytes(value as PrefixedHexString) : undefined
   }
 
   /**
@@ -448,7 +448,7 @@ export class HistoryNetwork extends BaseNetwork {
           if (ancestorHash === undefined)
             break // Stop looking for more ancestors if we don't have the current one in the index
           else {
-            const ancestorKey = getEphemeralHeaderDbKey(hexToBytes(ancestorHash))
+            const ancestorKey = getEphemeralHeaderDbKey(hexToBytes(ancestorHash as PrefixedHexString))
             const ancestorHeader = await this.findContentLocally(ancestorKey)
             if (ancestorHeader === undefined) {
               // This would only happen if our index gets out of sync with the DB

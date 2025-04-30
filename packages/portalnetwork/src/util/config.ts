@@ -1,5 +1,5 @@
 import { SignableENR } from '@chainsafe/enr'
-import { hexToBytes } from '@ethereumjs/util'
+import { hexToBytes, PrefixedHexString } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 import { Level } from 'level'
@@ -44,7 +44,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
     if (args.pk === undefined) {
       privateKey = await keys.generateKeyPair('secp256k1')
     } else {
-      privateKey = keys.privateKeyFromRaw(hexToBytes(args.pk).slice(-32))
+      privateKey = keys.privateKeyFromRaw(hexToBytes(args.pk as PrefixedHexString).slice(-32))
     }
   } catch (err: any) {
     throw new Error(`Error using pk: ${args.pk}\n${err.message}`)
