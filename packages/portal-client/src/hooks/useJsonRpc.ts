@@ -52,7 +52,7 @@ export const useJsonRpc = () => {
             break
           case 'portal_historyPing': {
             const res = await historyNetwork?.sendPing(params[0])
-            if (!res) {
+            if (res === undefined) {
               throw new Error('Pong not received')
             }
             const { customPayload, ...rest } = res
@@ -65,41 +65,41 @@ export const useJsonRpc = () => {
             break
           }
           case 'portal_historyFindContent': {
-            const res = await historyNetwork?.sendFindContent(params[0], params[1]);
-            
-            if (!res) {
-              throw new Error('Content not received');
+            const res = await historyNetwork?.sendFindContent(params[0], params[1])
+
+            if (res === undefined) {
+              throw new Error('Content not received')
             }
             if ('enrs' in res) {
               result = {
                 ...res,
-                enrs: res.enrs.map(enr => ENR.decode(enr).encodeTxt()),
-                type: 'enrs' as const
-              };
+                enrs: res.enrs.map((enr: Uint8Array) => ENR.decode(enr).encodeTxt()),
+                type: 'enrs' as const,
+              }
             } else {
               result = {
                 ...res,
-                type: 'content' as const
-              };
+                type: 'content' as const,
+              }
             }
-          
-            responseType = 'generic';
-            break;
+
+            responseType = 'generic'
+            break
           }
           case 'portal_historyFindNodes': {
-            const res = await historyNetwork?.sendFindNodes(params[0], params[1]);
-            
-            if (!res) {
-              throw new Error('No nodes found');
+            const res = await historyNetwork?.sendFindNodes(params[0], params[1])
+
+            if (res === undefined) {
+              throw new Error('No nodes found')
             }
-          
+
             result = {
               ...res,
-              enrs: res.enrs.map(enr => ENR.decode(enr).encodeTxt()),
+              enrs: res.enrs.map((enr: Uint8Array) => ENR.decode(enr).encodeTxt()),
               type: 'enrs' as const,
             }
             responseType = 'generic'
-            break;
+            break
           }
           default:
             throw new Error(`Unsupported method: ${method}`)

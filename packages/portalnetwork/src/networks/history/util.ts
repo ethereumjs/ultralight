@@ -45,7 +45,11 @@ import type {
 } from '@ethereumjs/block'
 import type { WithdrawalBytes } from '@ethereumjs/util'
 import type { ForkConfig } from '@lodestar/config'
-import type { EphemeralHeaderKeyValues } from '../history/types.js'
+import type {
+  EphemeralHeaderKeyValues,
+  HistoricalSummariesBlockProof,
+  HistoricalSummariesBlockProofDeneb,
+} from '../history/types.js'
 import type { HistoryNetwork } from './history.js'
 import type { BlockBodyContent, Witnesses } from './types.js'
 
@@ -322,7 +326,7 @@ export const verifyPreMergeHeaderProof = (
   }
 }
 
-export const verifyPreCapellaHeaderProof = (
+export const verifyHistoricalRootsHeaderProof = (
   proof: ValueOfFields<{
     beaconBlockProof: VectorCompositeType<ByteVectorType>
     beaconBlockRoot: ByteVectorType
@@ -366,13 +370,10 @@ export const verifyPreCapellaHeaderProof = (
   return true
 }
 
-export const verifyPostCapellaHeaderProof = (
-  proof: ValueOfFields<{
-    beaconBlockProof: ListCompositeType<ByteVectorType>
-    beaconBlockRoot: ByteVectorType
-    historicalSummariesProof: VectorCompositeType<ByteVectorType>
-    slot: UintBigintType
-  }>,
+export const verifyHistoricalSummariesHeaderProof = (
+  proof: ValueOfFields<
+    typeof HistoricalSummariesBlockProof.fields | typeof HistoricalSummariesBlockProofDeneb.fields
+  >,
   elBlockHash: Uint8Array,
   historicalSummaries: { blockSummaryRoot: Uint8Array; stateSummaryRoot: Uint8Array }[],
   chainConfig: ForkConfig,
@@ -383,7 +384,7 @@ export const verifyPostCapellaHeaderProof = (
     Number(eraIndex),
   ])
   const reconstructedBatch = ssz[forkName].BeaconState.fields.blockRoots.createFromProof({
-    witnesses: proof.historicalSummariesProof,
+    witnesses: proof.beaconBlockProof,
     type: ProofType.single,
     gindex: historicalSummariesPath.gindex,
     leaf: proof.beaconBlockRoot, // This should be the leaf value this proof is verifying
@@ -405,7 +406,7 @@ export const verifyPostCapellaHeaderProof = (
     'blockHash',
   ])
   const reconstructedBlock = ssz[forkName].BeaconBlock.createFromProof({
-    witnesses: proof.beaconBlockProof,
+    witnesses: proof.executionBlockProof,
     type: ProofType.single,
     gindex: elBlockHashPath.gindex,
     leaf: elBlockHash,

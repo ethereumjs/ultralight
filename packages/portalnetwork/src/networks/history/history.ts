@@ -11,12 +11,12 @@ import type {
   INodeAddress,
 } from '../../index.js'
 import {
-  BasicRadius,
   BiMap,
   ClientInfoAndCapabilities,
   ContentMessageType,
   FoundContent,
   HistoricalSummariesBlockProof,
+  HistoricalSummariesBlockProofDeneb,
   HistoryRadius,
   MAX_UDP_PACKET_SIZE,
   MessageCodes,
@@ -32,13 +32,14 @@ import {
   saveReceipts,
   shortId,
 } from '../../index.js'
-import { PingPongPayloadExtensions } from '../../wire/payloadExtensions.js'
+import { BasicRadius, PingPongPayloadExtensions } from '../../wire/payloadExtensions.js'
 import { BaseNetwork } from '../network.js'
 import { NetworkId } from '../types.js'
 import {
   AccumulatorProofType,
   BlockHeaderWithProof,
   BlockNumberKey,
+  CANCUN_BLOCK,
   EphemeralHeaderPayload,
   HistoricalRootsBlockProof,
   HistoryNetworkContentType,
@@ -49,8 +50,8 @@ import {
 import {
   getContentKey,
   getEphemeralHeaderDbKey,
-  verifyPostCapellaHeaderProof,
-  verifyPreCapellaHeaderProof,
+  verifyHistoricalRootsHeaderProof,
+  verifyHistoricalSummariesHeaderProof,
   verifyPreMergeHeaderProof,
 } from './util.js'
 
@@ -224,7 +225,7 @@ export class HistoryNetwork extends BaseNetwork {
       }
       let validated = false
       try {
-        validated = verifyPreCapellaHeaderProof(deserializedProof, header.hash())
+        validated = verifyHistoricalRootsHeaderProof(deserializedProof, header.hash())
       } catch (err: any) {
         const msg = `Unable to validate proof for post-merge header: ${err.message}`
         this.logger(msg)
@@ -236,9 +237,16 @@ export class HistoryNetwork extends BaseNetwork {
     } else {
       // TODO: Check proof slot to ensure header is from previous sync period and handle ephemeral headers separately
 
-      let deserializedProof: ReturnType<typeof HistoricalSummariesBlockProof.deserialize>
+      let deserializedProof: ReturnType<
+        | typeof HistoricalSummariesBlockProof.deserialize
+        | typeof HistoricalSummariesBlockProofDeneb.deserialize
+      >
       try {
-        deserializedProof = HistoricalSummariesBlockProof.deserialize(proof)
+        if (header.number < CANCUN_BLOCK) {
+          deserializedProof = HistoricalSummariesBlockProof.deserialize(proof)
+        } else {
+          deserializedProof = HistoricalSummariesBlockProofDeneb.deserialize(proof)
+        }
       } catch (err: any) {
         this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
         throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)
@@ -246,7 +254,7 @@ export class HistoryNetwork extends BaseNetwork {
       const beacon = this.portal.network()['0x500c']
       if (beacon !== undefined && beacon.lightClient?.status === RunStatusCode.started) {
         try {
-          verifyPostCapellaHeaderProof(
+          verifyHistoricalSummariesHeaderProof(
             deserializedProof,
             header.hash(),
             beacon.historicalSummaries,
