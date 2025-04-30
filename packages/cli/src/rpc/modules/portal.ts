@@ -1,6 +1,6 @@
 import { EntryStatus, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
-import { bigIntToHex, bytesToHex, hexToBytes, short } from '@ethereumjs/util'
+import { bigIntToHex, bytesToHex, hexToBytes, PrefixedHexString, short } from '@ethereumjs/util'
 import {
   ContentLookup,
   FoundContent,
@@ -735,7 +735,7 @@ export class portal {
     const [contentKey] = params
     this.logger(`Received historyLocalContent request for ${contentKey}`)
 
-    const res = await this._history.findContentLocally(hexToBytes(contentKey))
+    const res = await this._history.findContentLocally(hexToBytes(contentKey as PrefixedHexString))
     this.logger.extend('historyLocalContent')(
       `request returned ${res !== undefined ? res.length : 'null'} bytes`,
     )
@@ -754,7 +754,7 @@ export class portal {
     const [contentKey] = params
     this.logger(`Received stateLocalContent request for ${contentKey}`)
 
-    const res = await this._state.findContentLocally(hexToBytes(contentKey))
+    const res = await this._state.findContentLocally(hexToBytes(contentKey as PrefixedHexString))
     this.logger.extend('stateLocalContent')(`request returned ${res?.length} bytes`)
     this.logger.extend('stateLocalContent')(
       `${res !== undefined ? bytesToHex(res) : 'content not found'}`,
@@ -771,7 +771,7 @@ export class portal {
     const [contentKey] = params
     this.logger.extend('beaconLocalContent')(`Received request for ${contentKey}`)
 
-    const content = await this._beacon.findContentLocally(hexToBytes(contentKey))
+    const content = await this._beacon.findContentLocally(hexToBytes(contentKey as PrefixedHexString))
     this.logger.extend('beaconLocalContent')(
       `request returned ${content !== undefined ? content.length : 'null'} bytes`,
     )
@@ -787,7 +787,7 @@ export class portal {
 
   // portal_*Store
   async historyStore(params: [string, string]) {
-    const [contentKey, content] = params.map((param) => hexToBytes(param))
+    const [contentKey, content] = params.map((param) => hexToBytes(param as PrefixedHexString))
     try {
       await this._history.store(contentKey, content)
       return true
@@ -798,8 +798,8 @@ export class portal {
   async stateStore(params: [string, string]) {
     const [contentKey, content] = params
     try {
-      const contentKeyBytes = hexToBytes(contentKey)
-      await this._state.store(contentKeyBytes, hexToBytes(content))
+      const contentKeyBytes = hexToBytes(contentKey as PrefixedHexString)
+      await this._state.store(contentKeyBytes, hexToBytes(content as PrefixedHexString))
       this.logger(`stored ${contentKey} in state network db`)
       return true
     } catch {
@@ -808,7 +808,7 @@ export class portal {
     }
   }
   async beaconStore(params: [string, string]) {
-    const [contentKey, content] = params.map((param) => hexToBytes(param))
+    const [contentKey, content] = params.map((param) => hexToBytes(param as PrefixedHexString))
     try {
       await this._beacon.store(contentKey, content)
       return true
@@ -819,7 +819,7 @@ export class portal {
   }
   // portal_*PutContent
   async historyPutContent(params: [string, string]) {
-    const [contentKey, content] = params.map((param) => hexToBytes(param))
+    const [contentKey, content] = params.map((param) => hexToBytes(param as PrefixedHexString))
     const contentId = this._history.contentKeyToId(contentKey)
     const d = distance(contentId, this._client.discv5.enr.nodeId)
     let storedLocally = false
@@ -841,7 +841,7 @@ export class portal {
     }
   }
   async statePutContent(params: [string, string]) {
-    const [contentKey, content] = params.map((param) => hexToBytes(param))
+    const [contentKey, content] = params.map((param) => hexToBytes(param as PrefixedHexString))
     const contentId = this._state.contentKeyToId(contentKey)
     const d = distance(contentId, this._client.discv5.enr.nodeId)
     let storedLocally = false
@@ -863,7 +863,7 @@ export class portal {
     }
   }
   async beaconPutContent(params: [string, string]) {
-    const [contentKey, content] = params.map((param) => hexToBytes(param))
+    const [contentKey, content] = params.map((param) => hexToBytes(param as PrefixedHexString))
     const contentId = this._beacon.contentKeyToId(contentKey)
     const d = distance(contentId, this._client.discv5.enr.nodeId)
     let storedLocally = false
@@ -892,7 +892,7 @@ export class portal {
     this.logger.extend('findContent')(
       `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
     )
-    const res = await this._history.sendFindContent(ENR.decodeTxt(enr), hexToBytes(contentKey))
+    const res = await this._history.sendFindContent(ENR.decodeTxt(enr), hexToBytes(contentKey as PrefixedHexString))
     if (res === undefined) {
       this.logger.extend('findContent')('request returned undefined')
       return undefined
@@ -924,7 +924,7 @@ export class portal {
     this.logger.extend('findContent')(
       `received request to send request to ${shortId(nodeId)} for contentKey ${contentKey}`,
     )
-    const res = await this._state.sendFindContent(ENR.decodeTxt(enr), hexToBytes(contentKey))
+    const res = await this._state.sendFindContent(ENR.decodeTxt(enr), hexToBytes(contentKey as PrefixedHexString))
     if (res === undefined) {
       this.logger.extend('findContent')('request returned type: ENRS')
       return { enrs: [] }
@@ -957,7 +957,7 @@ export class portal {
       }
     }
 
-    const res = await this._beacon.sendFindContent(ENR.decodeTxt(enr), hexToBytes(contentKey))
+    const res = await this._beacon.sendFindContent(ENR.decodeTxt(enr), hexToBytes(contentKey as PrefixedHexString))
 
     if (res === undefined) {
       this.logger.extend('findContent')('request returned type: ENRS')
@@ -983,7 +983,7 @@ export class portal {
   async historyGetContent(params: [string]) {
     const [contentKey] = params
     this.logger.extend('historyGetContent')(`request received for ${contentKey}`)
-    const lookup = new ContentLookup(this._history, hexToBytes(contentKey))
+    const lookup = new ContentLookup(this._history, hexToBytes(contentKey as PrefixedHexString))
     const res = await lookup.startLookup()
     if (res === undefined) {
       this.logger.extend('historyGetContent')('request returned { enrs: [] }')
@@ -1010,7 +1010,7 @@ export class portal {
   async stateGetContent(params: [string]) {
     const [contentKey] = params
     this.logger.extend('stateGetContent')(`request received for ${contentKey}`)
-    const lookup = new ContentLookup(this._state, hexToBytes(contentKey))
+    const lookup = new ContentLookup(this._state, hexToBytes(contentKey as PrefixedHexString))
     const res = await lookup.startLookup()
     if (!res) {
       this.logger.extend('stateGetContent')('request returned { enrs: [] }')
@@ -1037,7 +1037,7 @@ export class portal {
   async beaconGetContent(params: [string]) {
     const [contentKey] = params
     this.logger.extend('beaconGetContent')(`request received for ${contentKey}`)
-    const lookup = new ContentLookup(this._beacon, hexToBytes(contentKey))
+    const lookup = new ContentLookup(this._beacon, hexToBytes(contentKey as PrefixedHexString))
     const res = await lookup.startLookup()
     this.logger.extend('beaconGetContent')(`request returned ${JSON.stringify(res)}`)
     if (!res) {
@@ -1067,7 +1067,7 @@ export class portal {
   async historyTraceGetContent(params: [string]) {
     const [contentKey] = params
     this.logger.extend('historyTraceGetContent')(`request received for ${contentKey}`)
-    const lookup = new ContentLookup(this._history, hexToBytes(contentKey), true)
+    const lookup = new ContentLookup(this._history, hexToBytes(contentKey as PrefixedHexString), true)
     const res = await lookup.startLookup()
     this.logger.extend('historyTraceGetContent')(`request returned ${JSON.stringify(res)}`)
     if (!res) {
@@ -1096,7 +1096,7 @@ export class portal {
   async beaconTraceGetContent(params: [string]) {
     const [contentKey] = params
     this.logger.extend('beaconTraceGetContent')(`request received for ${contentKey}`)
-    const lookup = new ContentLookup(this._history, hexToBytes(contentKey), true)
+    const lookup = new ContentLookup(this._history, hexToBytes(contentKey as PrefixedHexString), true)
     const res = await lookup.startLookup()
     this.logger.extend('beaconTraceGetContent')(`request returned ${JSON.stringify(res)}`)
     if (!res) {
@@ -1125,7 +1125,7 @@ export class portal {
   async stateTraceGetContent(params: [string]) {
     const [contentKey] = params
     this.logger.extend('stateTraceGetContent')(`request received for ${contentKey}`)
-    const lookup = new ContentLookup(this._history, hexToBytes(contentKey), true)
+    const lookup = new ContentLookup(this._history, hexToBytes(contentKey as PrefixedHexString), true)
     const res = await lookup.startLookup()
     this.logger.extend('stateTraceGetContent')(`request returned ${JSON.stringify(res)}`)
     if (!res) {
@@ -1157,8 +1157,8 @@ export class portal {
     params: [string, [string, string][]],
   ): Promise<string | ReturnType<typeof this._history.sendOffer>> {
     const [enrHex, contentItems] = params
-    const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
-    const contentValues = contentItems.map((item) => hexToBytes(item[1]))
+    const contentKeys = contentItems.map((item) => hexToBytes(item[0] as PrefixedHexString))
+    const contentValues = contentItems.map((item) => hexToBytes(item[1] as PrefixedHexString))
     const enr = ENR.decodeTxt(enrHex)
     const res = await this._history.sendOffer(enr, contentKeys, contentValues)
     if (res === undefined) {
@@ -1170,8 +1170,8 @@ export class portal {
     params: [string, [string, string][]],
   ): Promise<string | ReturnType<typeof this._state.sendOffer>> {
     const [enrHex, contentItems] = params
-    const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
-    const contentValues = contentItems.map((item) => hexToBytes(item[1]))
+    const contentKeys = contentItems.map((item) => hexToBytes(item[0] as PrefixedHexString))
+    const contentValues = contentItems.map((item) => hexToBytes(item[1] as PrefixedHexString))
     const enr = ENR.decodeTxt(enrHex)
     const res = await this._state.sendOffer(enr, contentKeys, contentValues)
     if (res === undefined) {
@@ -1183,8 +1183,8 @@ export class portal {
     params: [string, [string, string][]],
   ): Promise<string | ReturnType<typeof this._beacon.sendOffer>> {
     const [enrHex, contentItems] = params
-    const contentKeys = contentItems.map((item) => hexToBytes(item[0]))
-    const contentValues = contentItems.map((item) => hexToBytes(item[1]))
+    const contentKeys = contentItems.map((item) => hexToBytes(item[0] as PrefixedHexString))
+    const contentValues = contentItems.map((item) => hexToBytes(item[1] as PrefixedHexString))
     const enr = ENR.decodeTxt(enrHex)
     const res = await this._beacon.sendOffer(enr, contentKeys, contentValues)
     if (res === undefined) {
@@ -1197,13 +1197,13 @@ export class portal {
   async historyGossip(params: [string, string]) {
     const [contentKey, content] = params
     this.logger(`historyGossip request received for ${contentKey}`)
-    const res = await this._history.gossipContent(hexToBytes(contentKey), hexToBytes(content))
+    const res = await this._history.gossipContent(hexToBytes(contentKey as PrefixedHexString), hexToBytes(content as PrefixedHexString))
     return res
   }
   async stateGossip(params: [string, string]) {
     const [contentKey, content] = params
     this.logger(`stateGossip request received for ${contentKey}`)
-    const res = await this._state.gossipContent(hexToBytes(contentKey), hexToBytes(content))
+    const res = await this._state.gossipContent(hexToBytes(contentKey as PrefixedHexString), hexToBytes(content as PrefixedHexString))
     return res
   }
 

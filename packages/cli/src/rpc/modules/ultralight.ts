@@ -1,4 +1,4 @@
-import { bytesToHex, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes, PrefixedHexString } from '@ethereumjs/util'
 import { HistoryNetworkContentType, NetworkId } from 'portalnetwork'
 
 import { INTERNAL_ERROR } from '../error-code.js'
@@ -77,7 +77,7 @@ export class ultralight {
       `ultralight_addContentToDB request received for ${HistoryNetworkContentType[type]} ${contentKey}`,
     )
     try {
-      await this._history!.store(hexToBytes(contentKey), hexToBytes(value))
+      await this._history!.store(hexToBytes(contentKey as PrefixedHexString), hexToBytes(value as PrefixedHexString))
       this.logger(`${type} value for ${contentKey} added to content DB`)
       return `${type} value for ${contentKey} added to content DB`
     } catch (err: any) {

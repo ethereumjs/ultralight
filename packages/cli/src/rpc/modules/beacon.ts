@@ -1,4 +1,4 @@
-import { hexToBytes } from '@ethereumjs/util'
+import { hexToBytes, PrefixedHexString } from '@ethereumjs/util'
 import { RunStatusCode } from '@lodestar/light-client'
 import { ssz } from '@lodestar/types'
 import {
@@ -90,12 +90,12 @@ export class beacon {
     const period = Number(BigInt(params[0]))
     const rangeKey = getBeaconContentKey(
       BeaconNetworkContentType.LightClientUpdate,
-      hexToBytes(computeLightClientKeyFromPeriod(period)),
+      hexToBytes(computeLightClientKeyFromPeriod(period) as PrefixedHexString),
     )
     const update = await this._beacon.retrieve(rangeKey)
     if (update !== undefined) {
       return ssz.capella.LightClientUpdate.toJson(
-        ssz.capella.LightClientUpdate.deserialize(hexToBytes(update)),
+        ssz.capella.LightClientUpdate.deserialize(hexToBytes(update as PrefixedHexString)),
       )
     }
     const lookup = new ContentLookup(
