@@ -2,7 +2,7 @@ import type { PrefixedHexString } from '@ethereumjs/util'
 import { bigIntToHex, hexToBytes, intToHex, toBytes } from '@ethereumjs/util'
 import { GET_LOGS_BLOCK_RANGE_LIMIT, NetworkId, getLogs } from 'portalnetwork'
 
-import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
+import { CONTENT_NOT_FOUND, INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
 import { jsonRpcLog } from '../types.js'
 import { callWithStackTrace } from '../util.js'
 import { middleware, validators } from '../validators.js'
@@ -11,7 +11,6 @@ import type { Block } from '@ethereumjs/block'
 import type { Debugger } from 'debug'
 import type { HistoryNetwork, PortalNetwork, RpcTx } from 'portalnetwork'
 import type { GetLogsParams } from '../types.js'
-
 /**
  * eth_* RPC module
  * @memberof module:rpc/modules
@@ -108,6 +107,9 @@ export class eth {
     }
   }
 
+  chainid() {
+    return '0x01'
+  }
   async call(params: [RpcTx, string]) {
     const [tx, blockTag] = params
     try {
@@ -155,45 +157,33 @@ export class eth {
    */
   async getBlockByNumber(params: [string, boolean]): Promise<Block> {
     const [blockNumber, includeTransactions] = params
+    let block: Block | undefined
     this.logger(
       `eth_getBlockByNumber request received.  blockNumber: ${blockNumber} includeTransactions: ${includeTransactions}`,
     )
-    try {
-      const block = await this._client.ETH.getBlockByNumber(
-        Number.parseInt(blockNumber),
-        includeTransactions,
-      )
-      if (block === undefined) throw new Error('block not found')
-      // @ts-ignore Typescript inexplicably tries to import from the CJS build of
-      // @ethereumjs/block instead of the ESM build here
-      return block
-    } catch (err: any) {
-      throw new Error(err.message)
-    }
-  }
-
-  /**
-   * Get block by option
-   */
-  getBlockByOption = async (blockOpt: string) => {
-    if (blockOpt === 'pending') {
+    if (blockNumber === 'pending') {
       throw {
         code: INVALID_PARAMS,
-        message: `"pending" is not yet supported`,
+        message: `"pending" is not supported`,
+      }
+    } else {
+      try {
+        // @ts-expect-error ethjsBlock has typing issues
+        block = await this._client.ETH.getBlockByNumber(blockNumber, includeTransactions)
+      } catch (error: any) {
+        throw {
+          code: INTERNAL_ERROR,
+          message: error.message,
+        }
       }
     }
-
-    let block: Block
-
-    if (blockOpt === 'latest') {
-      throw new Error(`History Network does not support "latest" block`)
-    } else if (blockOpt === 'earliest') {
-      block = await this.getBlockByNumber(['0', true])
-    } else {
-      block = await this.getBlockByNumber([blockOpt, true])
-
-      return block
+    if (block === undefined) {
+      throw {
+        code: CONTENT_NOT_FOUND,
+        message: `block not found`,
+      }
     }
+    return block
   }
 
   /**

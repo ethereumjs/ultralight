@@ -4,6 +4,7 @@ import {
   TypeOutput,
   bigIntToHex,
   bytesToHex,
+  hexToBytes,
   intToHex,
   setLengthLeft,
   toBytes,
@@ -13,13 +14,13 @@ import { createVM, runTx } from '@ethereumjs/vm'
 import debug from 'debug'
 import { ethers } from 'ethers'
 
-import type { Block, BlockOptions, JSONRPCBlock, Block as ethJsBlock } from '@ethereumjs/block'
-import {
-  type EIP2930CompatibleTx,
-  type TypedTransaction,
-  type TypedTxData,
-  accessListBytesToJSON,
-  createTx,
+import type { BlockOptions, HeaderData, JsonRpcBlock, Block as ethJsBlock } from '@ethereumjs/block'
+import type {
+  AccessListEIP2930Transaction,
+  FeeMarketEIP1559Transaction,
+  LegacyTransaction,
+  TypedTransaction,
+  TypedTxData,
 } from '@ethereumjs/tx'
 import type { PostByzantiumTxReceipt, PreByzantiumTxReceipt } from '@ethereumjs/vm'
 import type { Log, TxReceiptType } from '../networks/index.js'
@@ -252,9 +253,9 @@ export function formatBlockResponse(block: Block, includeTransactions: boolean) 
   const withdrawalsAttr =
     header.withdrawalsRoot !== undefined
       ? {
-          withdrawalsRoot: header.withdrawalsRoot!,
-          withdrawals: parsedBlock.withdrawals,
-        }
+        withdrawalsRoot: header.withdrawalsRoot!,
+        withdrawals: parsedBlock.withdrawals,
+      }
       : {}
 
   const transactions = block.transactions.map((tx, txIndex) =>
@@ -328,4 +329,39 @@ export function formatResponse(result: string) {
     jsonrpc: '2.0',
     result,
   }
+}
+
+export function executionPayloadHeaderToHeaderData(executionPayloadJson: any): HeaderData {
+  return {
+    parentHash: hexToBytes(executionPayloadJson.parent_hash),
+    uncleHash: '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', // Keccak-256 hash of empty uncle list (PoS blocks have no uncles)
+    coinbase: hexToBytes(executionPayloadJson.fee_recipient), // feeRecipient in ExecutionPayload is coinbase in HeaderData
+    stateRoot: hexToBytes(executionPayloadJson.state_root),
+    transactionsTrie: hexToBytes(executionPayloadJson.transactions_root), // transactionsRoot in ExecutionPayload is transactionsTrie in HeaderData
+    receiptTrie: hexToBytes(executionPayloadJson.receipts_root), // receiptsRoot in ExecutionPayload is receiptTrie in HeaderData
+    logsBloom: hexToBytes(executionPayloadJson.logs_bloom),
+    difficulty: BigInt(0), // In PoS, difficulty is always 0
+    number: BigInt(executionPayloadJson.block_number),
+    gasLimit: BigInt(executionPayloadJson.gas_limit),
+    gasUsed: BigInt(executionPayloadJson.gas_used),
+    timestamp: BigInt(executionPayloadJson.timestamp),
+    extraData: hexToBytes(executionPayloadJson.extra_data),
+    mixHash: hexToBytes(executionPayloadJson.prev_randao), // prevRandao in ExecutionPayload is mixHash in HeaderData
+    nonce: '0x0000000000000000', // In PoS, nonce is always 0
+    baseFeePerGas: BigInt(executionPayloadJson.base_fee_per_gas),
+    withdrawalsRoot: hexToBytes(executionPayloadJson.withdrawals_root),
+    blobGasUsed: BigInt(executionPayloadJson.blob_gas_used ?? 0),
+    excessBlobGas: BigInt(executionPayloadJson.excess_blob_gas ?? 0),
+  }
+}
+
+/**
+ * Creates a BlockHeader from an execution payload JSON
+ * @param executionPayloadJson - JSON object from ssz.deneb.ExecutionPayloadHeader.toJson()
+ * @param options - Optional parameters including common
+ * @returns BlockHeader instance
+ */
+export function blockHeaderFromExecutionPayload(executionPayloadJson: any): BlockHeader {
+  const headerData = executionPayloadHeaderToHeaderData(executionPayloadJson)
+  return BlockHeader.fromHeaderData(headerData, { setHardfork: true })
 }

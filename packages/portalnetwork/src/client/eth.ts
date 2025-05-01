@@ -2,7 +2,6 @@ import { Common, Mainnet } from '@ethereumjs/common'
 import { createEVM } from '@ethereumjs/evm'
 import { bytesToHex, createAddressFromString, hexToBytes } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
-
 import {
   BlockHeaderByNumberKey,
   BlockHeaderWithProof,
@@ -14,8 +13,8 @@ import {
   reassembleBlock,
 } from '../networks/index.js'
 
-import type { Block } from '@ethereumjs/block'
-import type { capella } from '@lodestar/types'
+import { type Block, BlockHeader } from '@ethereumjs/block'
+import { type deneb, ssz } from '@lodestar/types'
 import type { Debugger } from 'debug'
 import type {
   BeaconNetwork,
@@ -23,6 +22,7 @@ import type {
   HistoryNetwork,
   StateNetwork,
 } from '../networks/index.js'
+import { executionPayloadHeaderToHeaderData } from '../util/index.js'
 import type { PortalNetwork } from './client.js'
 import type { RpcTx } from './types.js'
 
@@ -108,12 +108,21 @@ export class ETH {
     let clHeader
     switch (blockTag) {
       case 'latest': {
-        clHeader = this.beacon!.lightClient?.getHead() as capella.LightClientHeader
+        clHeader = this.beacon!.lightClient?.getHead() as deneb.LightClientHeader
         if (clHeader === undefined) throw new Error('light client is not tracking head')
+
+        if (includeTransactions === false) {
+          const json = ssz.deneb.ExecutionPayloadHeader.toJson(clHeader.execution)
+          const betterJson = executionPayloadHeaderToHeaderData(json)
+
+          const header = BlockHeader.fromHeaderData(betterJson, { setHardfork: true })
+          console.log(header)
+          return reassembleBlock(header.serialize())
+        }
         return this.getBlockByHash(clHeader.execution.blockHash, includeTransactions)
       }
       case 'finalized': {
-        clHeader = this.beacon!.lightClient?.getFinalized() as capella.LightClientHeader
+        clHeader = this.beacon!.lightClient?.getFinalized() as deneb.LightClientHeader
         if (clHeader === undefined) throw new Error('no finalized head available')
         return this.getBlockByHash(clHeader.execution.blockHash, includeTransactions)
       }
