@@ -11,6 +11,7 @@ import {
   bytesToUnprefixedHex,
   equalsBytes,
   hexToBytes,
+  PrefixedHexString,
 } from '@ethereumjs/util'
 import debug from 'debug'
 
@@ -152,7 +153,7 @@ export class StateNetwork extends BaseNetwork {
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
     try {
       const value = await this.db.get(contentKey)
-      return value !== undefined ? hexToBytes(value) : undefined
+      return value !== undefined ? hexToBytes(value as PrefixedHexString) : undefined
     } catch {
       return undefined
     }

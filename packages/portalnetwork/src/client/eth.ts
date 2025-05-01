@@ -1,6 +1,6 @@
 import { Common, Mainnet } from '@ethereumjs/common'
 import { createEVM } from '@ethereumjs/evm'
-import { bytesToHex, createAddressFromString, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, createAddressFromString, hexToBytes, PrefixedHexString } from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 import {
@@ -200,7 +200,7 @@ export class ETH {
       gasLimit: gasLimit !== undefined ? BigInt(gasLimit) : undefined,
       gasPrice: gasPrice !== undefined ? BigInt(gasPrice) : undefined,
       value: value !== undefined ? BigInt(value) : undefined,
-      data: data !== undefined ? hexToBytes(data) : undefined,
+      data: data !== undefined ? hexToBytes(data as PrefixedHexString) : undefined,
     }
     const res = (await evm.runCall(runCallOpts)).execResult.returnValue
     return bytesToHex(res)

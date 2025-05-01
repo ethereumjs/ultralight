@@ -1,5 +1,5 @@
 import { SignableENR } from '@chainsafe/enr'
-import { hexToBytes } from '@ethereumjs/util'
+import { hexToBytes, PrefixedHexString } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { assert, describe, expect, it } from 'vitest'
 import { HistoryNetwork, NetworkId, createPortalNetwork } from '../../../src/index.js'
@@ -23,7 +23,7 @@ describe('NetworkDB', async () => {
     networkId: NetworkId.HistoryNetwork,
   })
   for (const [k, v] of content) {
-    await history.store(hexToBytes(k), hexToBytes(v))
+    await history.store(hexToBytes(k as PrefixedHexString), hexToBytes(v as PrefixedHexString))
   }
   const size = await history.db.size()
   it('should have the correct size', () => {

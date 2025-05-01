@@ -3,13 +3,12 @@
 	"type": "module",
 	"private": true,
 	"workspaces": [
-		"./",
-		"./packages/portalnetwork",
-		"./packages/cli"
+		"packages/portalnetwork",
+		"packages/cli"
 	],
 	"engines": {
-    "npm": "^11",
-    "node": "^22"
+		"npm": "^10",
+		"node": "^22"
 	},
 	"scripts": {
 		"biome": "npx @biomejs/biome check --write --config-path ./config/biome.json",

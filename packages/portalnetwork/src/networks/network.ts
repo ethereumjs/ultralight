@@ -9,6 +9,7 @@ import {
   concatBytes,
   fromAscii,
   hexToBytes,
+  PrefixedHexString,
   randomBytes,
 } from '@ethereumjs/util'
 import { EventEmitter } from 'eventemitter3'
@@ -215,7 +216,7 @@ export abstract class BaseNetwork extends EventEmitter {
       }
       for (const [key, val] of toDelete) {
         this.logger.extend('prune')(`Gossiping ${key}`)
-        void this.gossipContent(hexToBytes(key), hexToBytes(val))
+        void this.gossipContent(hexToBytes(key as PrefixedHexString), hexToBytes(val as PrefixedHexString))
       }
     } catch (err: any) {
       this.logger.extend('prune')(`Error pruning content: ${err.message}`)
@@ -458,7 +459,7 @@ export abstract class BaseNetwork extends EventEmitter {
             message: hexToBytes(
               fromAscii(
                 `${this.constructor.name} does not support PING extension type: ${pingMessage.payloadType}`,
-              ),
+              ) as PrefixedHexString,
             ),
           })
         }
@@ -469,7 +470,7 @@ export abstract class BaseNetwork extends EventEmitter {
         message: hexToBytes(
           fromAscii(
             `${this.constructor.name} does not support PING extension type: ${pingMessage.payloadType}`,
-          ),
+          ) as PrefixedHexString,
         ),
       })
       return this.sendPong(src, id, pongPayload, PingPongPayloadExtensions.ERROR_RESPONSE)
@@ -670,7 +671,7 @@ export abstract class BaseNetwork extends EventEmitter {
               for (const key of requestedKeys) {
                 let value = Uint8Array.from([])
                 try {
-                  value = hexToBytes(await this.get(key))
+                  value = hexToBytes(await this.get(key) as PrefixedHexString)
                   requestedData.push(value)
                 } catch (err: any) {
                   this.logger(`Error retrieving content -- ${err.toString()}`)

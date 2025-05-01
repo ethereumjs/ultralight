@@ -8,6 +8,7 @@ import {
   hexToBytes,
   intToHex,
   padToEven,
+  PrefixedHexString,
   short,
 } from '@ethereumjs/util'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
@@ -83,7 +84,7 @@ export class BeaconNetwork extends BaseNetwork {
   }: BeaconChainNetworkConfig) {
     super({ client, db, radius, maxStorage, networkId: NetworkId.BeaconChainNetwork })
     // This config is used to identify the Beacon Chain fork any given light client update is from
-    const genesisRoot = hexToBytes(genesisData.mainnet.genesisValidatorsRoot)
+    const genesisRoot = hexToBytes(genesisData.mainnet.genesisValidatorsRoot as PrefixedHexString)
     this.beaconConfig = createBeaconConfig(defaultChainConfig, genesisRoot)
 
     this.networkId = NetworkId.BeaconChainNetwork
@@ -139,7 +140,7 @@ export class BeaconNetwork extends BaseNetwork {
       enr,
       concatBytes(
         new Uint8Array([BeaconNetworkContentType.LightClientBootstrap]),
-        LightClientBootstrapKey.serialize({ blockHash: hexToBytes(this.trustedBlockRoot!) }),
+        LightClientBootstrapKey.serialize({ blockHash: hexToBytes(this.trustedBlockRoot as PrefixedHexString) }),
       ),
     )
     if (decoded !== undefined && 'content' in decoded) {
@@ -235,7 +236,7 @@ export class BeaconNetwork extends BaseNetwork {
             if (results[x][1] < Math.floor(MIN_BOOTSTRAP_VOTES / 2 + 1)) break
             const bootstrapKey = getBeaconContentKey(
               BeaconNetworkContentType.LightClientBootstrap,
-              LightClientBootstrapKey.serialize({ blockHash: hexToBytes(results[x][0]) }),
+              LightClientBootstrapKey.serialize({ blockHash: hexToBytes(results[x][0] as PrefixedHexString) }),
             )
             this.logger.extend('BOOTSTRAP')(
               `found a consensus bootstrap candidate ${results[x][0]}`,
@@ -299,7 +300,7 @@ export class BeaconNetwork extends BaseNetwork {
       config: this.beaconConfig,
       genesisData: genesisData.mainnet,
       transport: new UltralightTransport(this),
-      checkpointRoot: hexToBytes(blockRoot),
+      checkpointRoot: hexToBytes(blockRoot as PrefixedHexString),
       logger: {
         error: (msg, context, error) => {
           msg && lcLoggerError(msg)
@@ -391,7 +392,7 @@ export class BeaconNetwork extends BaseNetwork {
             hexToBytes(intToHex(BeaconNetworkContentType.LightClientFinalityUpdate)),
           )
           if (value !== undefined) {
-            const decoded = hexToBytes(value)
+            const decoded = hexToBytes(value as PrefixedHexString)
             const forkHash = decoded.slice(0, 4) as Uint8Array
             const forkName = this.beaconConfig.forkDigest2ForkName(forkHash) as LightClientForkName
             if (
@@ -428,7 +429,7 @@ export class BeaconNetwork extends BaseNetwork {
         value = await this.retrieve(contentKey)
     }
 
-    return value instanceof Uint8Array ? value : value !== undefined ? hexToBytes(value) : undefined
+    return value instanceof Uint8Array ? value : value !== undefined ? hexToBytes(value as PrefixedHexString) : undefined
   }
 
   public sendFindContent = async (
@@ -768,9 +769,7 @@ export class BeaconNetwork extends BaseNetwork {
       period = computeSyncPeriodAtSlot(deserializedUpdate.attestedHeader.beacon.slot)
     }
     return hexToBytes(
-      '0x' +
-        BeaconNetworkContentType.LightClientUpdate.toString(16) +
-        padToEven(period.toString(16)),
+      `0x${BeaconNetworkContentType.LightClientUpdate.toString(16)}${padToEven(period.toString(16))}`
     )
   }
 
@@ -797,7 +796,7 @@ export class BeaconNetwork extends BaseNetwork {
         // TODO: Decide what to do about updates not found in DB
         throw new Error('update not found in DB')
       }
-      range.push(hexToBytes(update))
+      range.push(hexToBytes(update as PrefixedHexString))
     }
     return LightClientUpdatesByRange.serialize(range)
   }

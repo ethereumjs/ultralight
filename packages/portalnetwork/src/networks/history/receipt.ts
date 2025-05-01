@@ -122,7 +122,7 @@ export class Receipt {
 export function encodeReceipt(receipt: TxReceipt, txType: number) {
   const encoded = RLP.encode([
     (receipt as PreByzantiumTxReceipt).stateRoot ??
-      ((receipt as PostByzantiumTxReceipt).status === 0 ? new Uint8Array() : hexToBytes('01')),
+      ((receipt as PostByzantiumTxReceipt).status === 0 ? new Uint8Array() : hexToBytes('0x01')),
     bigIntToBytes(receipt.cumulativeBlockGasUsed),
     receipt.bitvector,
     receipt.logs,

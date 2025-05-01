@@ -1,6 +1,6 @@
 import { distance } from '@chainsafe/discv5'
 import { ContainerType, UintBigintType } from '@chainsafe/ssz'
-import { bytesToHex, hexToBytes, padToEven } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes, padToEven, PrefixedHexString } from '@ethereumjs/util'
 import debug from 'debug'
 import { MemoryLevel } from 'memory-level'
 
@@ -77,7 +77,7 @@ export class NetworkDB {
       this.logger(`Error putting content in DB: ${err.toString()}`)
     }
     this.streaming.delete(key)
-    this.logger(`Put ${key} in DB.  Size=${hexToBytes(padToEven(val)).length} bytes`)
+    this.logger(`Put ${key} in DB.  Size=${hexToBytes(padToEven(val) as PrefixedHexString).length} bytes`)
     this.approximateSize += 2 * (val.length - 2)
     this.approximateSize += 2 * (key.length - 2)
   }
@@ -104,7 +104,7 @@ export class NetworkDB {
     this.logger(`Getting ${key} from DB`)
     const val = await this.db.get(key)
     this.logger(
-      `Got ${key} from DB with key: ${key}.  Size=${hexToBytes(padToEven(val)).length} bytes`,
+      `Got ${key} from DB with key: ${key}.  Size=${hexToBytes(padToEven(val) as PrefixedHexString).length} bytes`,
     )
     clearTimeout(timeout)
     return val
@@ -140,8 +140,8 @@ export class NetworkDB {
     } else {
       for await (const [key, value] of this.db.iterator()) {
         try {
-          size += hexToBytes('0x' + padToEven(key.slice(2))).length
-          size += hexToBytes(value).length
+          size += hexToBytes(`0x${padToEven(key.slice(2))}`).length
+          size += hexToBytes(value as PrefixedHexString).length
         } catch {
           // ignore
         }
@@ -177,7 +177,7 @@ export class NetworkDB {
         continue
       }
       // Calculate distance between node and content
-      const d = distance(this.nodeId, this.contentId(hexToBytes(key)))
+      const d = distance(this.nodeId, this.contentId(hexToBytes(key as PrefixedHexString)))
       // If content is out of radius -- delete content
       if (d > radius) {
         this.logger.extend('prune')(`Content ${key} is out of radius`)

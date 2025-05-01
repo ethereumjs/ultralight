@@ -1,6 +1,6 @@
 import { UDPTransportService } from '@chainsafe/discv5'
 import { SignableENR } from '@chainsafe/enr'
-import { hexToBytes } from '@ethereumjs/util'
+import { hexToBytes, PrefixedHexString } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 
@@ -40,7 +40,7 @@ export async function createPortalNetwork(
   if (opts.rebuildFromMemory === true && opts.db) {
     const prevEnrString = await opts.db.get('enr')
     const prevPrivateKey = await opts.db.get('privateKey')
-    config.enr = SignableENR.decodeTxt(prevEnrString, hexToBytes(prevPrivateKey))
+    config.enr = SignableENR.decodeTxt(prevEnrString, hexToBytes(prevPrivateKey as PrefixedHexString))
     const prev_peers = JSON.parse(await opts.db.get('peers')) as string[]
     bootnodes =
       opts.bootnodes && opts.bootnodes.length > 0 ? opts.bootnodes.concat(prev_peers) : prev_peers
