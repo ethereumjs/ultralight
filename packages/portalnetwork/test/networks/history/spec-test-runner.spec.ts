@@ -1,8 +1,9 @@
 import {
   createBlockFromExecutionPayload,
+  createBlockHeaderFromRLP,
   executionPayloadFromBeaconPayload,
 } from '@ethereumjs/block'
-import { bytesToHex, hexToBytes } from '@ethereumjs/util'
+import { bytesToHex, hexToBytes, type PrefixedHexString } from '@ethereumjs/util'
 import { createChainForkConfig } from '@lodestar/config'
 import type { ForkName } from '@lodestar/params'
 import type { BeaconBlock } from '@lodestar/types'
@@ -11,8 +12,9 @@ import { readFileSync, readdirSync, statSync } from 'fs'
 import yaml from 'js-yaml'
 import { join, resolve } from 'path'
 import { afterAll, beforeAll, describe, it } from 'vitest'
-import type { HistoryNetwork } from '../../../src/index.js'
+import type { EphemeralHeaderKeyValues, HistoryNetwork } from '../../../src/index.js'
 import {
+  EphemeralHeaderPayload,
   HistoricalRootsBlockProof,
   HistoricalSummariesBlockProof,
   HistoricalSummariesBlockProofDeneb,
@@ -20,6 +22,7 @@ import {
   createPortalNetwork,
   decodeHistoryNetworkContentKey,
   getContentKey,
+  getEphemeralHeaderDbKey,
   verifyHistoricalRootsHeaderProof,
   verifyHistoricalSummariesHeaderProof,
 } from '../../../src/index.js'
@@ -51,24 +54,30 @@ describe('should run all spec tests', () => {
       // Store the content.  `store` parses the content key, deserializes per the content type,
       // and then validates the content
       await history?.store(contentKey, contentValue)
-      if (contentKey[0] !== HistoryNetworkContentType.BlockHeaderByNumber) {
-        // BlockHeaderByNumber requires a conversion to blockhash since we store headers by blockhash in the db
-        const retrieved = await history?.get(contentKey)
-        if (retrieved === bytesToHex(contentValue)) {
-          return true
-        } else {
-          return false
+      let retrieved: string | undefined
+      switch (contentKey[0]) {
+        case HistoryNetworkContentType.BlockHeaderByNumber: {
+          // BlockHeaderByNumber requires a conversion to blockhash since we store headers by blockhash in the db
+          const blockNumber = decodeHistoryNetworkContentKey(contentKey)
+          const hash = history?.blockNumberToHash(blockNumber.keyOpt as bigint)
+          const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, hash!)
+          retrieved = await history?.get(hashKey)
+          break
         }
+        case HistoryNetworkContentType.EphemeralHeaderFindContent: {
+          const ephemeralHeader = decodeHistoryNetworkContentKey(contentKey) as { contentType: HistoryNetworkContentType.EphemeralHeaderFindContent, keyOpt: EphemeralHeaderKeyValues }
+          const headers = await history?.assembleEphemeralHeadersPayload(ephemeralHeader.keyOpt.blockHash, ephemeralHeader.keyOpt.ancestorCount)
+          retrieved = bytesToHex(headers)
+          break
+        }
+        default: {
+          retrieved = await history?.get(contentKey)
+        }
+      }
+      if (retrieved === bytesToHex(contentValue)) {
+        return true
       } else {
-        const blockNumber = decodeHistoryNetworkContentKey(contentKey)
-        const hash = history?.blockNumberToHash(blockNumber.keyOpt as bigint)
-        const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, hash!)
-        const retrieved = await history?.get(hashKey)
-        if (retrieved === bytesToHex(contentValue)) {
-          return true
-        } else {
-          return false
-        }
+        return false
       }
     } catch (e) {
       if ('message' in e) {
@@ -167,7 +176,6 @@ describe('should run all spec tests', () => {
         proofData.historicalRootsProof = proofData.beacon_block_proof
         proofData.beaconBlockRoot = proofData.beacon_block_root
         proofData.beaconBlockProof = proofData.execution_block_proof
-        console.log(proofData)
         const proof = HistoricalRootsBlockProof.fromJson(proofData)
 
         // 5. Verify the proof
@@ -181,7 +189,6 @@ describe('should run all spec tests', () => {
         return `Unknown proof type for ${fileName}`
       }
     } catch (error) {
-      console.log(error)
       return `Error processing ${fileName}: ${error.message}`
     }
   }
