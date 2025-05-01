@@ -1,25 +1,28 @@
-import { readFileSync, readdirSync, statSync } from 'fs'
-import { join, resolve } from 'path'
+import {
+  createBlockFromExecutionPayload,
+  executionPayloadFromBeaconPayload,
+} from '@ethereumjs/block'
 import { bytesToHex, hexToBytes } from '@ethereumjs/util'
+import { createChainForkConfig } from '@lodestar/config'
+import type { ForkName } from '@lodestar/params'
+import type { BeaconBlock } from '@lodestar/types'
+import { ssz } from '@lodestar/types'
+import { readFileSync, readdirSync, statSync } from 'fs'
 import yaml from 'js-yaml'
+import { join, resolve } from 'path'
 import { afterAll, beforeAll, describe, it } from 'vitest'
 import type { HistoryNetwork } from '../../../src/index.js'
 import {
   HistoricalRootsBlockProof,
+  HistoricalSummariesBlockProof,
   HistoricalSummariesBlockProofDeneb,
   HistoryNetworkContentType,
   createPortalNetwork,
   decodeHistoryNetworkContentKey,
   getContentKey,
+  verifyHistoricalRootsHeaderProof,
+  verifyHistoricalSummariesHeaderProof,
 } from '../../../src/index.js'
-import { createChainForkConfig } from '@lodestar/config'
-import type { BeaconBlock } from '@lodestar/types'
-import { ssz } from '@lodestar/types'
-import type { ForkName } from '@lodestar/params'
-import {
-  createBlockFromExecutionPayload,
-  executionPayloadFromBeaconPayload,
-} from '@ethereumjs/block'
 
 describe('should run all spec tests', () => {
   // This retrieves all the yaml files from the spec tests directory
@@ -142,7 +145,7 @@ describe('should run all spec tests', () => {
         proofData.beaconBlockProof = proofData.execution_block_proof
         const proof =
           hardfork === 'capella'
-            ? HistoricalSummariesBlockProofCapella.fromJson(proofData)
+            ? HistoricalSummariesBlockProof.fromJson(proofData)
             : HistoricalSummariesBlockProofDeneb.fromJson(proofData)
 
         // Load beacon state
@@ -153,7 +156,7 @@ describe('should run all spec tests', () => {
         // 5. Verify the proof
         const forkConfig = createChainForkConfig({})
 
-        if (verifyPostCapellaHeaderProof(proof, executionHeader, historicalSummaries, forkConfig)) {
+        if (verifyHistoricalSummariesHeaderProof(proof, executionHeader, historicalSummaries, forkConfig)) {
           return true
         } else {
           return `Failed to verify post-Capella proof for ${fileName}`
@@ -168,7 +171,7 @@ describe('should run all spec tests', () => {
         const proof = HistoricalRootsBlockProof.fromJson(proofData)
 
         // 5. Verify the proof
-        if (verifyPreCapellaHeaderProof(proof, executionHeader)) {
+        if (verifyHistoricalRootsHeaderProof(proof, executionHeader)) {
           return true
         } else {
           return `Failed to verify pre-Capella proof for ${fileName}`
