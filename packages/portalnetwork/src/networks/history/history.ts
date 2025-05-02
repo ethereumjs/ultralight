@@ -411,62 +411,37 @@ export class HistoryNetwork extends BaseNetwork {
       this.logger.extend('FOUNDCONTENT')(
         `Received ephemeral headers request for block ${bytesToHex(ck.keyOpt.blockHash)} with ancestorCount ${ck.keyOpt.ancestorCount}`,
       )
-      // TODO: Use assembleEphemeralHeadersPayload instead of findContentLocally
-      // Retrieve the starting header from the FINDCONTENT request
-      const headerKey = getEphemeralHeaderDbKey(ck.keyOpt.blockHash)
-      const firstHeader = await this.findContentLocally(headerKey)
-
-      if (firstHeader === undefined) {
-        // If we don't have the requested header, send an empty payload
-        // We never send an ENRs response for ephemeral headers
-        value = undefined
+      try {
+        const payload = await this.assembleEphemeralHeadersPayload(ck.keyOpt.blockHash, ck.keyOpt.ancestorCount)
+        this.logger.extend('FOUNDCONTENT')(
+          `Found ${payload.length} headers for ${bytesToHex(ck.keyOpt.blockHash)}, assembling ephemeral headers response to ${shortId(src.nodeId)}`,
+        )
+        value = payload
+      }
+      catch (err: any) {
+        if (err.message.includes('Header not found')) {
+          this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(
+            `Header not found for ${bytesToHex(ck.keyOpt.blockHash)}, sending empty ephemeral headers response to ${shortId(src.nodeId)}`,
+          )
+        } else {
+          this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(
+            `Error assembling ephemeral headers response to ${shortId(src.nodeId)}: ${err.message}`,
+          )
+        }
         const emptyHeaderPayload = EphemeralHeaderPayload.serialize([])
         const messagePayload = ContentMessageType.serialize({
           selector: FoundContent.CONTENT,
           value: emptyHeaderPayload,
         })
-        this.logger.extend('FOUNDCONTENT')(
-          `Header not found for ${bytesToHex(ck.keyOpt.blockHash)}, sending empty ephemeral headers response to ${shortId(src.nodeId)}`,
-        )
+
         await this.sendResponse(
           src,
           requestId,
           concatBytes(Uint8Array.from([MessageCodes.CONTENT]), messagePayload),
         )
         return
-      } else {
-        this.logger.extend('FOUNDCONTENT')(
-          `Header found for ${bytesToHex(ck.keyOpt.blockHash)}, assembling ephemeral headers response to ${shortId(src.nodeId)}`,
-        )
-        // We have the requested header so begin assembling the payload
-        const headersList = [firstHeader]
-        const firstHeaderNumber = this.ephemeralHeaderIndex.getByValue(
-          bytesToHex(ck.keyOpt.blockHash),
-        )
-        for (let x = 1; x <= ck.keyOpt.ancestorCount; x++) {
-          // Determine if we have the ancestor header at block number `firstHeaderNumber - x`
-          const ancestorNumber = firstHeaderNumber! - BigInt(x)
-          const ancestorHash = this.ephemeralHeaderIndex.getByKey(ancestorNumber)
-          if (ancestorHash === undefined)
-            break // Stop looking for more ancestors if we don't have the current one in the index
-          else {
-            const ancestorKey = getEphemeralHeaderDbKey(hexToBytes(ancestorHash as PrefixedHexString))
-            const ancestorHeader = await this.findContentLocally(ancestorKey)
-            if (ancestorHeader === undefined) {
-              // This would only happen if our index gets out of sync with the DB
-              // Stop looking for more ancestors if we don't have the current one in the DB
-              this.ephemeralHeaderIndex.delete(ancestorNumber)
-              break
-            } else {
-              headersList.push(ancestorHeader)
-            }
-          }
-        }
-        this.logger.extend('FOUNDCONTENT')(
-          `found ${headersList.length - 1} ancestor headers for ${bytesToHex(ck.keyOpt.blockHash)}`,
-        )
-        value = EphemeralHeaderPayload.serialize(headersList)
       }
+
     } else {
       value = await this.findContentLocally(decodedContentMessage.contentKey)
     }
@@ -637,7 +612,6 @@ export class HistoryNetwork extends BaseNetwork {
           }
           break
         } catch (err: any) {
-          console.log(err)
           this.logger(`Error validating ephemeral header: ${err.message}`)
           return
         }
@@ -742,6 +716,7 @@ export class HistoryNetwork extends BaseNetwork {
     if (header === undefined) {
       throw new Error('Header not found')
     }
+    this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(`Found requested header for ${bytesToHex(blockHash)}`)
     headers.push(hexToBytes(header as PrefixedHexString))
     if (ancestorCount === 0) {
       return EphemeralHeaderPayload.serialize(headers)
@@ -760,6 +735,7 @@ export class HistoryNetwork extends BaseNetwork {
       }
       headers.push(hexToBytes(ancestorHeader as PrefixedHexString))
     }
+    this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(`Found ${headers.length - 1} ancestor headers out of ${ancestorCount} requested for ${bytesToHex(blockHash)}`)
     return EphemeralHeaderPayload.serialize(headers)
   }
 }
