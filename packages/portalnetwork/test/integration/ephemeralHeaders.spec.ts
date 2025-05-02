@@ -36,7 +36,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
       }).header,
     )
     headerPayload = EphemeralHeaderPayload.serialize(headers.map((h) => h.serialize()))
-    contentKey = getContentKey(HistoryNetworkContentType.EphemeralHeader, {
+    contentKey = getContentKey(HistoryNetworkContentType.EphemeralHeaderFindContent, {
       blockHash: headers[0].hash(),
       ancestorCount: headers.length - 1,
     })
@@ -47,9 +47,9 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
       '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
     ]
 
-    const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
+    const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0] as `0x${string}`).slice(-36))
     const enr1 = SignableENR.createFromPrivateKey(pk1)
-    const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
+    const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1] as `0x${string}`).slice(-36))
     const enr2 = SignableENR.createFromPrivateKey(pk2)
     const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3198')
     enr1.setLocationMultiaddr(initMa)
@@ -100,7 +100,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     }
 
     // Verify that we get a single ancestor for a content key with an ancestor count of 1
-    const contentKeyForOneAncestor = getContentKey(HistoryNetworkContentType.EphemeralHeader, {
+    const contentKeyForOneAncestor = getContentKey(HistoryNetworkContentType.EphemeralHeaderFindContent, {
       blockHash: headers[0].hash(),
       ancestorCount: 1,
     })
@@ -117,7 +117,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     // Verify that we get an empty ephemeral headers payload for a random blockhash
     const res3 = await network2!.sendFindContent(
       node1.discv5.enr.toENR(),
-      getContentKey(HistoryNetworkContentType.EphemeralHeader, {
+      getContentKey(HistoryNetworkContentType.EphemeralHeaderFindContent, {
         blockHash: randomBytes(32),
         ancestorCount: 255,
       }),

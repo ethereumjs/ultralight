@@ -1,6 +1,6 @@
 import type { BlockHeader } from '@ethereumjs/block'
 import { Block, createBlockHeaderFromRLP } from '@ethereumjs/block'
-import { bytesToHex, bytesToInt, concatBytes, equalsBytes, hexToBytes, PrefixedHexString } from '@ethereumjs/util'
+import { bytesToHex, bytesToInt, concatBytes, equalsBytes, hexToBytes, type PrefixedHexString } from '@ethereumjs/util'
 import debug from 'debug'
 
 import type {
@@ -401,70 +401,47 @@ export class HistoryNetwork extends BaseNetwork {
 
     const contentKey = decodeHistoryNetworkContentKey(decodedContentMessage.contentKey)
     let value: Uint8Array | undefined
-    if (contentKey.contentType === HistoryNetworkContentType.EphemeralHeader) {
-      if (contentKey.keyOpt.ancestorCount < 0 || contentKey.keyOpt.ancestorCount > 255) {
-        const errorMessage = `received invalid ephemeral headers request with invalid ancestorCount: expected 0 <= 255, got ${contentKey.keyOpt.ancestorCount}`
+    if (contentKey.contentType === HistoryNetworkContentType.EphemeralHeaderFindContent) {
+      const ck = contentKey as { contentType: HistoryNetworkContentType.EphemeralHeaderFindContent, keyOpt: EphemeralHeaderKeyValues }
+      if (ck.keyOpt.ancestorCount < 0 || ck.keyOpt.ancestorCount > 255) {
+        const errorMessage = `received invalid ephemeral headers request with invalid ancestorCount: expected 0 <= 255, got ${ck.keyOpt.ancestorCount}`
         this.logger.extend('FOUNDCONTENT')(errorMessage)
         throw new Error(errorMessage)
       }
       this.logger.extend('FOUNDCONTENT')(
-        `Received ephemeral headers request for block ${bytesToHex(contentKey.keyOpt.blockHash)} with ancestorCount ${contentKey.keyOpt.ancestorCount}`,
+        `Received ephemeral headers request for block ${bytesToHex(ck.keyOpt.blockHash)} with ancestorCount ${ck.keyOpt.ancestorCount}`,
       )
-      // Retrieve the starting header from the FINDCONTENT request
-      const headerKey = getEphemeralHeaderDbKey(contentKey.keyOpt.blockHash)
-      const firstHeader = await this.findContentLocally(headerKey)
-
-      if (firstHeader === undefined) {
-        // If we don't have the requested header, send an empty payload
-        // We never send an ENRs response for ephemeral headers
-        value = undefined
+      try {
+        const payload = await this.assembleEphemeralHeadersPayload(ck.keyOpt.blockHash, ck.keyOpt.ancestorCount)
+        this.logger.extend('FOUNDCONTENT')(
+          `Found ${payload.length} headers for ${bytesToHex(ck.keyOpt.blockHash)}, assembling ephemeral headers response to ${shortId(src.nodeId)}`,
+        )
+        value = payload
+      }
+      catch (err: any) {
+        if (err.message.includes('Header not found')) {
+          this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(
+            `Header not found for ${bytesToHex(ck.keyOpt.blockHash)}, sending empty ephemeral headers response to ${shortId(src.nodeId)}`,
+          )
+        } else {
+          this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(
+            `Error assembling ephemeral headers response to ${shortId(src.nodeId)}: ${err.message}`,
+          )
+        }
         const emptyHeaderPayload = EphemeralHeaderPayload.serialize([])
         const messagePayload = ContentMessageType.serialize({
           selector: FoundContent.CONTENT,
           value: emptyHeaderPayload,
         })
-        this.logger.extend('FOUNDCONTENT')(
-          `Header not found for ${bytesToHex(contentKey.keyOpt.blockHash)}, sending empty ephemeral headers response to ${shortId(src.nodeId)}`,
-        )
+
         await this.sendResponse(
           src,
           requestId,
           concatBytes(Uint8Array.from([MessageCodes.CONTENT]), messagePayload),
         )
         return
-      } else {
-        this.logger.extend('FOUNDCONTENT')(
-          `Header found for ${bytesToHex(contentKey.keyOpt.blockHash)}, assembling ephemeral headers response to ${shortId(src.nodeId)}`,
-        )
-        // We have the requested header so begin assembling the payload
-        const headersList = [firstHeader]
-        const firstHeaderNumber = this.ephemeralHeaderIndex.getByValue(
-          bytesToHex(contentKey.keyOpt.blockHash),
-        )
-        for (let x = 1; x <= contentKey.keyOpt.ancestorCount; x++) {
-          // Determine if we have the ancestor header at block number `firstHeaderNumber - x`
-          const ancestorNumber = firstHeaderNumber! - BigInt(x)
-          const ancestorHash = this.ephemeralHeaderIndex.getByKey(ancestorNumber)
-          if (ancestorHash === undefined)
-            break // Stop looking for more ancestors if we don't have the current one in the index
-          else {
-            const ancestorKey = getEphemeralHeaderDbKey(hexToBytes(ancestorHash as PrefixedHexString))
-            const ancestorHeader = await this.findContentLocally(ancestorKey)
-            if (ancestorHeader === undefined) {
-              // This would only happen if our index gets out of sync with the DB
-              // Stop looking for more ancestors if we don't have the current one in the DB
-              this.ephemeralHeaderIndex.delete(ancestorNumber)
-              break
-            } else {
-              headersList.push(ancestorHeader)
-            }
-          }
-        }
-        this.logger.extend('FOUNDCONTENT')(
-          `found ${headersList.length - 1} ancestor headers for ${bytesToHex(contentKey.keyOpt.blockHash)}`,
-        )
-        value = EphemeralHeaderPayload.serialize(headersList)
       }
+
     } else {
       value = await this.findContentLocally(decodedContentMessage.contentKey)
     }
@@ -476,10 +453,10 @@ export class HistoryNetwork extends BaseNetwork {
     ) {
       this.logger.extend('FOUNDCONTENT')(
         'Found value for requested content ' +
-          bytesToHex(decodedContentMessage.contentKey) +
-          ' ' +
-          bytesToHex(value.slice(0, 10)) +
-          '...',
+        bytesToHex(decodedContentMessage.contentKey) +
+        ' ' +
+        bytesToHex(value.slice(0, 10)) +
+        '...',
       )
       const payload = ContentMessageType.serialize({
         selector: FoundContent.CONTENT,
@@ -591,7 +568,7 @@ export class HistoryNetwork extends BaseNetwork {
         break
       }
 
-      case HistoryNetworkContentType.EphemeralHeader: {
+      case HistoryNetworkContentType.EphemeralHeaderFindContent: {
         const payload = EphemeralHeaderPayload.deserialize(value)
         if (payload.length === 0) {
           this.logger.extend('STORE')('Received empty ephemeral header payload')
@@ -639,6 +616,23 @@ export class HistoryNetwork extends BaseNetwork {
           return
         }
       }
+      case HistoryNetworkContentType.EphemeralHeaderOffer: {
+        const payload = EphemeralHeaderPayload.deserialize(value)
+        if (payload.length === 0) {
+          this.logger.extend('STORE')('Received empty ephemeral header payload')
+          return
+        }
+        const header = createBlockHeaderFromRLP(payload[0], { setHardfork: true })
+        // Check if we already have this header
+        if (this.ephemeralHeaderIndex.getByValue(bytesToHex(header.hash())) !== undefined) {
+          this.logger.extend('STORE')(`Ephemeral header ${bytesToHex(header.hash())} already exists`)
+          return
+        }
+        const hashKey = getEphemeralHeaderDbKey(header.hash())
+        await this.put(hashKey, bytesToHex(payload[0]))
+        this.ephemeralHeaderIndex.set(header.number, bytesToHex(header.hash()))
+        break
+      }
     }
 
     this.emit('ContentAdded', contentKey, value)
@@ -649,8 +643,7 @@ export class HistoryNetwork extends BaseNetwork {
       }
     }
     this.logger(
-      `${HistoryNetworkContentType[contentType]} added for ${
-        keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
+      `${HistoryNetworkContentType[contentType]} added for ${keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
       }`,
     )
   }
@@ -709,5 +702,40 @@ export class HistoryNetwork extends BaseNetwork {
       return undefined
     }
     return block.header.stateRoot
+  }
+
+  /**
+   * Assembles an ephemeral header FINDCONTENT payload for a given block hash and ancestor count
+   * @param blockHash - The hash of the block to assemble the payload for
+   * @param ancestorCount - The number of ancestor headers to include in the payload
+   * @returns The assembled ephemeral header payload
+   */
+  public async assembleEphemeralHeadersPayload(blockHash: Uint8Array, ancestorCount: number): Promise<Uint8Array> {
+    const headers: Uint8Array[] = []
+    const header = await this.get(getEphemeralHeaderDbKey(blockHash))
+    if (header === undefined) {
+      throw new Error('Header not found')
+    }
+    this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(`Found requested header for ${bytesToHex(blockHash)}`)
+    headers.push(hexToBytes(header as PrefixedHexString))
+    if (ancestorCount === 0) {
+      return EphemeralHeaderPayload.serialize(headers)
+    }
+    let ancestorNumber = this.ephemeralHeaderIndex.getByValue(bytesToHex(blockHash))
+    for (let i = 0; i < ancestorCount; i++) {
+      if (ancestorNumber === undefined) {
+        break
+      }
+      ancestorNumber--
+      // TODO: Decide if this is safe or if we should retrieve each header from the DB and step back using the parent hash (which would be less efficient)
+      const ancestorHashKey = getEphemeralHeaderDbKey(hexToBytes(this.ephemeralHeaderIndex.getByKey(ancestorNumber)! as PrefixedHexString))
+      const ancestorHeader = await this.get(ancestorHashKey)
+      if (ancestorHeader === undefined) {
+        break
+      }
+      headers.push(hexToBytes(ancestorHeader as PrefixedHexString))
+    }
+    this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(`Found ${headers.length - 1} ancestor headers out of ${ancestorCount} requested for ${bytesToHex(blockHash)}`)
+    return EphemeralHeaderPayload.serialize(headers)
   }
 }

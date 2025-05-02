@@ -1,44 +1,36 @@
-import { readFileSync, readdirSync, statSync } from 'fs'
-import { join, resolve } from 'path'
-import { bytesToHex, hexToBytes } from '@ethereumjs/util'
-import yaml from 'js-yaml'
-import { afterAll, beforeAll, describe, it } from 'vitest'
-import type { HistoryNetwork } from '../../../src/index.js'
 import {
+  createBlockFromExecutionPayload,
+  createBlockHeaderFromRLP,
+  executionPayloadFromBeaconPayload,
+} from '@ethereumjs/block'
+import { bytesToHex, hexToBytes, type PrefixedHexString } from '@ethereumjs/util'
+import { createChainForkConfig } from '@lodestar/config'
+import type { ForkName } from '@lodestar/params'
+import type { BeaconBlock } from '@lodestar/types'
+import { ssz } from '@lodestar/types'
+import { readFileSync, readdirSync, statSync } from 'fs'
+import yaml from 'js-yaml'
+import { join, resolve } from 'path'
+import { afterAll, assert, beforeAll, describe, it } from 'vitest'
+import type { EphemeralHeaderKeyValues, HistoryNetwork } from '../../../src/index.js'
+import {
+  EphemeralHeaderOfferPayload,
+  EphemeralHeaderPayload,
   HistoricalRootsBlockProof,
+  HistoricalSummariesBlockProof,
   HistoricalSummariesBlockProofDeneb,
   HistoryNetworkContentType,
   createPortalNetwork,
   decodeHistoryNetworkContentKey,
   getContentKey,
+  getEphemeralHeaderDbKey,
+  verifyHistoricalRootsHeaderProof,
+  verifyHistoricalSummariesHeaderProof,
 } from '../../../src/index.js'
-import { createChainForkConfig } from '@lodestar/config'
-import type { BeaconBlock } from '@lodestar/types'
-import { ssz } from '@lodestar/types'
-import type { ForkName } from '@lodestar/params'
-import {
-  createBlockFromExecutionPayload,
-  executionPayloadFromBeaconPayload,
-} from '@ethereumjs/block'
 
 describe('should run all spec tests', () => {
-  // This retrieves all the yaml files from the spec tests directory
-  const getAllYamlFiles = (dir: string): string[] => {
-    const files: string[] = []
-    const items = readdirSync(dir)
-
-    for (const item of items) {
-      const fullPath = join(dir, item)
-      if (statSync(fullPath).isDirectory()) {
-        files.push(...getAllYamlFiles(fullPath))
-      } else if (item.endsWith('.yaml') || item.endsWith('.yml')) {
-        files.push(fullPath)
-      }
-    }
-
-    return files
-  }
-
+  // This test method takes encoded content keys and values, deserializes them, validates the content, and then confirms that the content 
+  // can be retrieved from a client db and transformed back to the ssz encoded form for final validation
   const runHistorySerializedTestVectorTest = async (
     history: HistoryNetwork,
     contentKey: Uint8Array,
@@ -48,24 +40,40 @@ describe('should run all spec tests', () => {
       // Store the content.  `store` parses the content key, deserializes per the content type,
       // and then validates the content
       await history?.store(contentKey, contentValue)
-      if (contentKey[0] !== HistoryNetworkContentType.BlockHeaderByNumber) {
-        // BlockHeaderByNumber requires a conversion to blockhash since we store headers by blockhash in the db
-        const retrieved = await history?.get(contentKey)
-        if (retrieved === bytesToHex(contentValue)) {
-          return true
-        } else {
-          return false
+      // Retrieve the content.  We have to do special handling for some content types since not all content is stored by the network spec content key
+      let retrieved: string | undefined
+      switch (contentKey[0]) {
+        case HistoryNetworkContentType.BlockHeaderByNumber: {
+          // BlockHeaderByNumber requires a conversion to blockhash since we store headers by blockhash in the db
+          const blockNumber = decodeHistoryNetworkContentKey(contentKey)
+          const hash = history?.blockNumberToHash(blockNumber.keyOpt as bigint)
+          const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, hash!)
+          retrieved = await history?.get(hashKey)
+          break
         }
+        case HistoryNetworkContentType.EphemeralHeaderFindContent: {
+          const headerKey = decodeHistoryNetworkContentKey(contentKey) as { contentType: HistoryNetworkContentType.EphemeralHeaderFindContent, keyOpt: EphemeralHeaderKeyValues }
+          const headers = await history?.assembleEphemeralHeadersPayload(headerKey.keyOpt.blockHash, headerKey.keyOpt.ancestorCount)
+          retrieved = bytesToHex(headers)
+          // Delete the header from the db so it doesn't interfere with the next test
+          await history.del(getEphemeralHeaderDbKey(headerKey.keyOpt.blockHash))
+          history.ephemeralHeaderIndex.delete(history.ephemeralHeaderIndex.getByValue(bytesToHex(headerKey.keyOpt.blockHash))!)
+          break
+        }
+        case HistoryNetworkContentType.EphemeralHeaderOffer: {
+          const headerKey = decodeHistoryNetworkContentKey(contentKey) as { contentType: HistoryNetworkContentType.EphemeralHeaderOffer, keyOpt: Uint8Array }
+          // Convert the retrieved content back to its SSZ encoded form for final validation
+          retrieved = bytesToHex(EphemeralHeaderOfferPayload.serialize({ header: hexToBytes((await history?.get(getEphemeralHeaderDbKey(headerKey.keyOpt))) as `0x${string}`) }))
+          break
+        }
+        default: {
+          retrieved = await history?.get(contentKey)
+        }
+      }
+      if (retrieved === bytesToHex(contentValue)) {
+        return true
       } else {
-        const blockNumber = decodeHistoryNetworkContentKey(contentKey)
-        const hash = history?.blockNumberToHash(blockNumber.keyOpt as bigint)
-        const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, hash!)
-        const retrieved = await history?.get(hashKey)
-        if (retrieved === bytesToHex(contentValue)) {
-          return true
-        } else {
-          return false
-        }
+        return false
       }
     } catch (e) {
       if ('message' in e) {
@@ -77,6 +85,7 @@ describe('should run all spec tests', () => {
     }
   }
 
+  // This test takes the JSON encoded test vector, converts it to the SSZ `view` format, and then tries to verify the proof
   const runHistoryJsonTestVectorTest = async (
     fileName: string,
     testVector: any,
@@ -142,7 +151,7 @@ describe('should run all spec tests', () => {
         proofData.beaconBlockProof = proofData.execution_block_proof
         const proof =
           hardfork === 'capella'
-            ? HistoricalSummariesBlockProofCapella.fromJson(proofData)
+            ? HistoricalSummariesBlockProof.fromJson(proofData)
             : HistoricalSummariesBlockProofDeneb.fromJson(proofData)
 
         // Load beacon state
@@ -153,7 +162,7 @@ describe('should run all spec tests', () => {
         // 5. Verify the proof
         const forkConfig = createChainForkConfig({})
 
-        if (verifyPostCapellaHeaderProof(proof, executionHeader, historicalSummaries, forkConfig)) {
+        if (verifyHistoricalSummariesHeaderProof(proof, executionHeader, historicalSummaries, forkConfig)) {
           return true
         } else {
           return `Failed to verify post-Capella proof for ${fileName}`
@@ -164,11 +173,10 @@ describe('should run all spec tests', () => {
         proofData.historicalRootsProof = proofData.beacon_block_proof
         proofData.beaconBlockRoot = proofData.beacon_block_root
         proofData.beaconBlockProof = proofData.execution_block_proof
-        console.log(proofData)
         const proof = HistoricalRootsBlockProof.fromJson(proofData)
 
         // 5. Verify the proof
-        if (verifyPreCapellaHeaderProof(proof, executionHeader)) {
+        if (verifyHistoricalRootsHeaderProof(proof, executionHeader)) {
           return true
         } else {
           return `Failed to verify pre-Capella proof for ${fileName}`
@@ -178,7 +186,6 @@ describe('should run all spec tests', () => {
         return `Unknown proof type for ${fileName}`
       }
     } catch (error) {
-      console.log(error)
       return `Error processing ${fileName}: ${error.message}`
     }
   }
@@ -208,6 +215,23 @@ describe('should run all spec tests', () => {
     },
   }
 
+  // This retrieves all the yaml files from the spec tests directory
+  const getAllYamlFiles = (dir: string): string[] => {
+    const files: string[] = []
+    const items = readdirSync(dir)
+
+    for (const item of items) {
+      const fullPath = join(dir, item)
+      if (statSync(fullPath).isDirectory()) {
+        files.push(...getAllYamlFiles(fullPath))
+      } else if (item.endsWith('.yaml') || item.endsWith('.yml')) {
+        files.push(fullPath)
+      }
+    }
+
+    return files
+  }
+
   let yamlFiles: string[] = []
   beforeAll(() => {
     // Parses all yaml files into JSON objects
@@ -230,6 +254,7 @@ describe('should run all spec tests', () => {
       }
     }
   })
+
   it('should run all serialized history spec tests', async () => {
     // This test inspects all the `history` test inputs and runs all the ones
     // with serialized content keys and values
@@ -261,18 +286,16 @@ describe('should run all spec tests', () => {
         'content_value' in testData[1]
       ) {
         // Some tests are stored as a tuple of [file name, test vector]
-        const key = hexToBytes(testData[1].content_key as string) // Content key is stored as a hex string
-        const value = hexToBytes(testData[1].content_value as string) // Content value is stored as a hex string
+        const key = hexToBytes(testData[1].content_key as `0x${string}`) // Content key is stored as a hex string
+        const value = hexToBytes(testData[1].content_value as `0x${string}`) // Content value is stored as a hex string
         const result = await runHistorySerializedTestVectorTest(history, key, value)
         if (result === true) {
           results.history.passed++
         } else {
           results.history.failed++
-          if (typeof result !== 'boolean') {
-            results.history.errors.push(
-              `Key: ${bytesToHex(key)} in file ${testData[0]} -- ${result}`,
-            )
-          }
+          results.history.errors.push(
+            `Key: ${bytesToHex(key)} in file ${testData[0]} -- Error: ${result ?? 'no error reported'}`,
+          )
         }
       } else if ('execution_block_header' in testData[1]) {
         // const result = await runHistoryJsonTestVectorTest(testData[0], testData[1])
@@ -286,6 +309,7 @@ describe('should run all spec tests', () => {
         results.history.unknown.push(testData[0])
       }
     }
+    assert.equal(results.history.failed, 0)
   })
   afterAll(() => {
     console.log('--------------------------------')

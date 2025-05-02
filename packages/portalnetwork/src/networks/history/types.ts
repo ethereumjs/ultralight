@@ -37,7 +37,9 @@ export enum HistoryNetworkContentType {
   BlockBody = 1,
   Receipt = 2,
   BlockHeaderByNumber = 3,
-  EphemeralHeader = 4,
+  EphemeralHeaderFindContent = 4,
+  EphemeralHeaderOffer = 5,
+  EphemeralHeader = 99,  // using an arbitrarily high number to avoid potential conflicts with future content types
 }
 export enum HistoryNetworkRetrievalMechanism {
   BlockHeaderByHash = 0,
@@ -224,7 +226,7 @@ export const HistoricalSummariesBlockProofDeneb = new ContainerType({
 })
 
 /** Ephemeral header types */
-export const EphemeralHeaderKey = new ContainerType({
+export const EphemeralHeaderFindContentKey = new ContainerType({
   blockHash: Bytes32Type,
   ancestorCount: new UintNumberType(1),
 })
@@ -239,3 +241,7 @@ export type EphemeralHeaderKeyValues = {
   blockHash: Uint8Array
   ancestorCount: number
 }
+
+export const EphemeralHeaderOfferKey = new ContainerType({ blockHash: Bytes32Type })
+
+export const EphemeralHeaderOfferPayload = new ContainerType({ header: BlockHeader })
