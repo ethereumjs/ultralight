@@ -14,6 +14,7 @@ import { join, resolve } from 'path'
 import { afterAll, beforeAll, describe, it } from 'vitest'
 import type { EphemeralHeaderKeyValues, HistoryNetwork } from '../../../src/index.js'
 import {
+  EphemeralHeaderOfferPayload,
   EphemeralHeaderPayload,
   HistoricalRootsBlockProof,
   HistoricalSummariesBlockProof,
@@ -65,9 +66,16 @@ describe('should run all spec tests', () => {
           break
         }
         case HistoryNetworkContentType.EphemeralHeaderFindContent: {
-          const ephemeralHeader = decodeHistoryNetworkContentKey(contentKey) as { contentType: HistoryNetworkContentType.EphemeralHeaderFindContent, keyOpt: EphemeralHeaderKeyValues }
-          const headers = await history?.assembleEphemeralHeadersPayload(ephemeralHeader.keyOpt.blockHash, ephemeralHeader.keyOpt.ancestorCount)
+          const headerKey = decodeHistoryNetworkContentKey(contentKey) as { contentType: HistoryNetworkContentType.EphemeralHeaderFindContent, keyOpt: EphemeralHeaderKeyValues }
+          const headers = await history?.assembleEphemeralHeadersPayload(headerKey.keyOpt.blockHash, headerKey.keyOpt.ancestorCount)
           retrieved = bytesToHex(headers)
+          await history.del(getEphemeralHeaderDbKey(headerKey.keyOpt.blockHash))
+          history.ephemeralHeaderIndex.delete(history.ephemeralHeaderIndex.getByValue(bytesToHex(headerKey.keyOpt.blockHash))!)
+          break
+        }
+        case HistoryNetworkContentType.EphemeralHeaderOffer: {
+          const headerKey = decodeHistoryNetworkContentKey(contentKey) as { contentType: HistoryNetworkContentType.EphemeralHeaderOffer, keyOpt: Uint8Array }
+          retrieved = bytesToHex(EphemeralHeaderOfferPayload.serialize({ header: hexToBytes((await history?.get(getEphemeralHeaderDbKey(headerKey.keyOpt))) as `0x${string}`) }))
           break
         }
         default: {
@@ -271,18 +279,16 @@ describe('should run all spec tests', () => {
         'content_value' in testData[1]
       ) {
         // Some tests are stored as a tuple of [file name, test vector]
-        const key = hexToBytes(testData[1].content_key as string) // Content key is stored as a hex string
-        const value = hexToBytes(testData[1].content_value as string) // Content value is stored as a hex string
+        const key = hexToBytes(testData[1].content_key as `0x${string}`) // Content key is stored as a hex string
+        const value = hexToBytes(testData[1].content_value as `0x${string}`) // Content value is stored as a hex string
         const result = await runHistorySerializedTestVectorTest(history, key, value)
         if (result === true) {
           results.history.passed++
         } else {
           results.history.failed++
-          if (typeof result !== 'boolean') {
-            results.history.errors.push(
-              `Key: ${bytesToHex(key)} in file ${testData[0]} -- ${result}`,
-            )
-          }
+          results.history.errors.push(
+            `Key: ${bytesToHex(key)} in file ${testData[0]} -- Error: ${result ?? 'no error reported'}`,
+          )
         }
       } else if ('execution_block_header' in testData[1]) {
         // const result = await runHistoryJsonTestVectorTest(testData[0], testData[1])
