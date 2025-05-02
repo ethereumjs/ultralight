@@ -11,7 +11,7 @@ import { ssz } from '@lodestar/types'
 import { readFileSync, readdirSync, statSync } from 'fs'
 import yaml from 'js-yaml'
 import { join, resolve } from 'path'
-import { afterAll, beforeAll, describe, it } from 'vitest'
+import { afterAll, assert, beforeAll, describe, it } from 'vitest'
 import type { EphemeralHeaderKeyValues, HistoryNetwork } from '../../../src/index.js'
 import {
   EphemeralHeaderOfferPayload,
@@ -29,23 +29,8 @@ import {
 } from '../../../src/index.js'
 
 describe('should run all spec tests', () => {
-  // This retrieves all the yaml files from the spec tests directory
-  const getAllYamlFiles = (dir: string): string[] => {
-    const files: string[] = []
-    const items = readdirSync(dir)
-
-    for (const item of items) {
-      const fullPath = join(dir, item)
-      if (statSync(fullPath).isDirectory()) {
-        files.push(...getAllYamlFiles(fullPath))
-      } else if (item.endsWith('.yaml') || item.endsWith('.yml')) {
-        files.push(fullPath)
-      }
-    }
-
-    return files
-  }
-
+  // This test method takes encoded content keys and values, deserializes them, validates the content, and then confirms that the content 
+  // can be retrieved from a client db and transformed back to the ssz encoded form for final validation
   const runHistorySerializedTestVectorTest = async (
     history: HistoryNetwork,
     contentKey: Uint8Array,
@@ -55,6 +40,7 @@ describe('should run all spec tests', () => {
       // Store the content.  `store` parses the content key, deserializes per the content type,
       // and then validates the content
       await history?.store(contentKey, contentValue)
+      // Retrieve the content.  We have to do special handling for some content types since not all content is stored by the network spec content key
       let retrieved: string | undefined
       switch (contentKey[0]) {
         case HistoryNetworkContentType.BlockHeaderByNumber: {
@@ -69,12 +55,14 @@ describe('should run all spec tests', () => {
           const headerKey = decodeHistoryNetworkContentKey(contentKey) as { contentType: HistoryNetworkContentType.EphemeralHeaderFindContent, keyOpt: EphemeralHeaderKeyValues }
           const headers = await history?.assembleEphemeralHeadersPayload(headerKey.keyOpt.blockHash, headerKey.keyOpt.ancestorCount)
           retrieved = bytesToHex(headers)
+          // Delete the header from the db so it doesn't interfere with the next test
           await history.del(getEphemeralHeaderDbKey(headerKey.keyOpt.blockHash))
           history.ephemeralHeaderIndex.delete(history.ephemeralHeaderIndex.getByValue(bytesToHex(headerKey.keyOpt.blockHash))!)
           break
         }
         case HistoryNetworkContentType.EphemeralHeaderOffer: {
           const headerKey = decodeHistoryNetworkContentKey(contentKey) as { contentType: HistoryNetworkContentType.EphemeralHeaderOffer, keyOpt: Uint8Array }
+          // Convert the retrieved content back to its SSZ encoded form for final validation
           retrieved = bytesToHex(EphemeralHeaderOfferPayload.serialize({ header: hexToBytes((await history?.get(getEphemeralHeaderDbKey(headerKey.keyOpt))) as `0x${string}`) }))
           break
         }
@@ -97,6 +85,7 @@ describe('should run all spec tests', () => {
     }
   }
 
+  // This test takes the JSON encoded test vector, converts it to the SSZ `view` format, and then tries to verify the proof
   const runHistoryJsonTestVectorTest = async (
     fileName: string,
     testVector: any,
@@ -226,6 +215,23 @@ describe('should run all spec tests', () => {
     },
   }
 
+  // This retrieves all the yaml files from the spec tests directory
+  const getAllYamlFiles = (dir: string): string[] => {
+    const files: string[] = []
+    const items = readdirSync(dir)
+
+    for (const item of items) {
+      const fullPath = join(dir, item)
+      if (statSync(fullPath).isDirectory()) {
+        files.push(...getAllYamlFiles(fullPath))
+      } else if (item.endsWith('.yaml') || item.endsWith('.yml')) {
+        files.push(fullPath)
+      }
+    }
+
+    return files
+  }
+
   let yamlFiles: string[] = []
   beforeAll(() => {
     // Parses all yaml files into JSON objects
@@ -248,6 +254,7 @@ describe('should run all spec tests', () => {
       }
     }
   })
+
   it('should run all serialized history spec tests', async () => {
     // This test inspects all the `history` test inputs and runs all the ones
     // with serialized content keys and values
@@ -302,6 +309,7 @@ describe('should run all spec tests', () => {
         results.history.unknown.push(testData[0])
       }
     }
+    assert.equal(results.history.failed, 0)
   })
   afterAll(() => {
     console.log('--------------------------------')
