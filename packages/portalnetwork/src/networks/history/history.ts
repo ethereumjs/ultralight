@@ -411,6 +411,7 @@ export class HistoryNetwork extends BaseNetwork {
       this.logger.extend('FOUNDCONTENT')(
         `Received ephemeral headers request for block ${bytesToHex(ck.keyOpt.blockHash)} with ancestorCount ${ck.keyOpt.ancestorCount}`,
       )
+      // TODO: Use assembleEphemeralHeadersPayload instead of findContentLocally
       // Retrieve the starting header from the FINDCONTENT request
       const headerKey = getEphemeralHeaderDbKey(ck.keyOpt.blockHash)
       const firstHeader = await this.findContentLocally(headerKey)
