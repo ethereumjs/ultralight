@@ -86,7 +86,8 @@ export class ContentLookup {
       if (this.lookupPeers.length > 0) {
         // Ask more peers (up to 5) for content
         const peerBatch: LookupPeer[] = []
-        while (this.lookupPeers.peek() && peerBatch.length < 5) {
+        const availableSlots = 5 - this.pending.size
+        while (this.lookupPeers.peek() && peerBatch.length < availableSlots) {
           const next = this.lookupPeers.pop()!
           peerBatch.push(next)
         }
