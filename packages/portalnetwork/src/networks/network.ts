@@ -698,12 +698,12 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
-  protected handleOffer = async (
+  protected async handleOffer(
     src: INodeAddress,
     requestId: Uint8Array,
     msg: OfferMessage,
     version: Version,
-  ) => {
+  ) {
     this.logger.extend('OFFER')(
       `Received from ${shortId(src.nodeId, this.routingTable)} with ${msg.contentKeys.length
       } pieces of content.`,

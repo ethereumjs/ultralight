@@ -5,12 +5,16 @@ import debug from 'debug'
 
 import type {
   BaseNetworkConfig,
+  BeaconNetwork,
   ContentLookupResponse,
   EphemeralHeaderKeyValues,
   FindContentMessage,
   INodeAddress,
+  OfferMessage,
+  Version,
 } from '../../index.js'
 import {
+  AcceptCode,
   BiMap,
   ClientInfoAndCapabilities,
   ContentMessageType,
@@ -59,6 +63,7 @@ import type { ENR } from '@chainsafe/enr'
 
 import { RunStatusCode } from '@lodestar/light-client'
 import type { Debugger } from 'debug'
+import type { LightClientHeader } from '@lodestar/types/lib/deneb/types.js'
 
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
@@ -737,5 +742,40 @@ export class HistoryNetwork extends BaseNetwork {
     }
     this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(`Found ${headers.length - 1} ancestor headers out of ${ancestorCount} requested for ${bytesToHex(blockHash)}`)
     return EphemeralHeaderPayload.serialize(headers)
+  }
+
+  protected async handleOffer(
+    src: INodeAddress,
+    requestId: Uint8Array,
+    msg: OfferMessage,
+    version: Version,
+  ) {
+    this.logger.extend('OFFER')(
+      `Received from ${shortId(src.nodeId, this.routingTable)} with ${msg.contentKeys.length
+      } pieces of content.`,
+    )
+    const contentKeys = msg.contentKeys.map(key => decodeHistoryNetworkContentKey(key))
+    // Check to see if the first content key is for ephemeral headers.  If so, we expect all
+    // content keys to be for ephemeral headers.
+    if (contentKeys[0].contentType === HistoryNetworkContentType.EphemeralHeaderOffer) {
+      const beacon = this.portal.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+      let contentIds: number[] = Array(msg.contentKeys.length).fill(AcceptCode.GENERIC_DECLINE)
+      if (beacon === undefined || (beacon.lightClient?.status !== RunStatusCode.started && beacon.lightClient?.status !== RunStatusCode.syncing)) {
+        // We can't validate ephemeral headers if our light client is not active and/or syncing
+        await this.sendAccept(src, requestId, contentIds, [], version)
+        return
+      }
+      // TODO: Make this fork safe (and not assume deneb)
+      const headHash = (beacon.lightClient.getHead() as LightClientHeader).execution.blockHash
+      const headHashIndex = contentKeys.findIndex((key) => equalsBytes(key.keyOpt as Uint8Array, headHash))
+      if (headHashIndex === -1) {
+        // If our known head hash isn't in the request, we can't validate other ephemeral headers so decline
+        await this.sendAccept(src, requestId, contentIds, [], version)
+        return
+      }
+      // TODO: Loop through headers and accept if we don't already have them in the ephemeral header index
+      for (const key of contentKeys) { }
+    } else
+      await super.handleOffer(src, requestId, msg, version)
   }
 }
