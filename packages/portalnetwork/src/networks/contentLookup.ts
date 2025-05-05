@@ -92,8 +92,15 @@ export class ContentLookup {
           peerBatch.push(next)
         }
         const promises = peerBatch.map((peer) => {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => {
+            controller.abort()
+          }, this.timeout)
+          
           return Promise.race([
-            this.processPeer(peer),
+            this.processPeer(peer, controller.signal).finally(() => {
+              clearTimeout(timeoutId)
+            }),
             new Promise((resolve) =>
               setTimeout(() => {
                 resolve(undefined)
@@ -156,7 +163,7 @@ export class ContentLookup {
     return this.content
   }
 
-  private processPeer = async (peer: LookupPeer): Promise<ContentLookupResponse | void> => {
+  private processPeer = async (peer: LookupPeer, signal?: AbortSignal): Promise<ContentLookupResponse | void> => {
     if (this.finished) return
     if (this.network.routingTable.isIgnored(peer.enr.nodeId)) {
       this.logger(`peer ${shortId(peer.enr.nodeId)} is ignored`)
@@ -166,7 +173,21 @@ export class ContentLookup {
     this.pending.add(peer.enr.encodeTxt())
     this.logger(`Requesting content from ${shortId(peer.enr.nodeId)}`)
     try {
-      const res = await this.network.sendFindContent!(peer.enr, this.contentKey)
+      // Create a promise that rejects when the signal is aborted
+      const abortPromise = new Promise((_, reject) => {
+        if (signal) {
+          signal.addEventListener('abort', () => {
+            reject(new Error('Request cancelled'))
+          })
+        }
+      })
+
+      // Race between the actual request and the abort signal
+      const res = await Promise.race([
+        this.network.sendFindContent!(peer.enr, this.contentKey),
+        abortPromise
+      ]) as ContentLookupResponse | undefined
+
       this.pending.delete(peer.enr.encodeTxt())
       if (this.finished) {
         this.logger(`Response from ${shortId(peer.enr.nodeId)} arrived after lookup finished`)
@@ -219,6 +240,9 @@ export class ContentLookup {
       }
     } catch (err) {
       this.pending.delete(peer.enr.encodeTxt())
+      if (signal?.aborted) {
+        this.logger(`Request to ${shortId(peer.enr.nodeId)} was cancelled`)
+      }
       throw err
     }
   }
