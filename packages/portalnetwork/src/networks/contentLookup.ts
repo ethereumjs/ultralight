@@ -49,6 +49,23 @@ export class ContentLookup {
       : undefined
   }
 
+  private addPeerToQueue = (enr: ENR) => {
+    if (this.queuedPeers.has(enr.nodeId) || this.network.portal.uTP.hasRequests(enr.nodeId)) {
+      return
+    }
+    
+    const dist = distance(enr.nodeId, this.contentId)
+    this.lookupPeers.push({ enr, distance: Number(dist) })
+    this.queuedPeers.add(enr.nodeId)
+    this.meta.set('0x' + enr.nodeId, {
+      enr: enr.encodeTxt(),
+      distance: bigIntToHex(dist),
+    })
+    this.logger(
+      `Adding ${shortId(enr.nodeId)} to lookup queue (${this.lookupPeers.size()})`,
+    )
+  }
+
   /**
    * Queries the 5 nearest nodes in the history network routing table and recursively
    * requests peers closer to the content until either the content is found or there are no more peers to query
@@ -75,13 +92,7 @@ export class ContentLookup {
     // Sort known peers by distance to the content
     const nearest = this.network.routingTable.values()
     for (const enr of nearest) {
-      // // Skip if the node has an active uTP request
-      if (this.network.portal.uTP.hasRequests(enr.nodeId) === true) {
-        continue
-      }
-      const dist = distance(enr.nodeId, this.contentId)
-      this.lookupPeers.push({ enr, distance: Number(dist) })
-      this.meta.set(enr.nodeId, { enr: enr.encodeTxt(), distance: bigIntToHex(dist) })
+      this.addPeerToQueue(enr)
     }
 
     while (!this.finished && (this.lookupPeers.length > 0 || this.pending.size > 0)) {
@@ -217,21 +228,7 @@ export class ContentLookup {
         this.logger(`received ${res.enrs.length} ENRs for closer nodes`)
         for (const enr of res.enrs) {
           const decodedEnr = ENR.decode(enr)
-          // // Skip if the node has an active uTP request
-          if (this.network.portal.uTP.hasRequests(decodedEnr.nodeId) === true) {
-            continue
-          }
-          if (!this.meta.has(decodedEnr.nodeId)) {
-            const dist = distance(decodedEnr.nodeId, this.contentId)
-            this.lookupPeers.push({ enr: decodedEnr, distance: Number(dist) })
-            this.meta.set('0x' + decodedEnr.nodeId, {
-              enr: decodedEnr.encodeTxt(),
-              distance: bigIntToHex(dist),
-            })
-            this.logger(
-              `Adding ${shortId(decodedEnr.nodeId)} to lookup queue (${this.lookupPeers.size()})`,
-            )
-          }
+          this.addPeerToQueue(decodedEnr)
         }
         this.completedRequests &&
           this.completedRequests.set(
