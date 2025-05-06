@@ -599,7 +599,7 @@ export abstract class BaseNetwork extends EventEmitter {
    * Offers content corresponding to `contentKeys` to peer corresponding to `dstId`
    * @param dstId node ID of a peer
    * @param contentKeys content keys being offered as specified by the subnetwork
-   * @param networkId network ID of subnetwork being used
+   * @param content content being offered
    */
   public sendOffer = async (enr: ENR, contentKeys: Uint8Array[], content?: Uint8Array[]) => {
     let version

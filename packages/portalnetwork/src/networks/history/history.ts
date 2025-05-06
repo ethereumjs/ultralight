@@ -642,7 +642,7 @@ export class HistoryNetwork extends BaseNetwork {
 
     this.emit('ContentAdded', contentKey, value)
     if (this.routingTable.values().length > 0) {
-      if (contentType !== HistoryNetworkContentType.EphemeralHeader) {
+      if (contentType !== HistoryNetworkContentType.EphemeralHeader && contentType !== HistoryNetworkContentType.EphemeralHeaderOffer && contentType !== HistoryNetworkContentType.EphemeralHeaderFindContent) {
         // Gossip new content to network except for ephemeral headers
         this.gossipManager.add(contentKey)
       }
@@ -758,8 +758,15 @@ export class HistoryNetwork extends BaseNetwork {
     // Check to see if the first content key is for ephemeral headers.  If so, we expect all
     // content keys to be for ephemeral headers.
     if (contentKeys[0].contentType === HistoryNetworkContentType.EphemeralHeaderOffer) {
+      const contentIds: number[] = Array(msg.contentKeys.length).fill(AcceptCode.GENERIC_DECLINE)
+      for (const key of contentKeys) {
+        if (key.contentType !== HistoryNetworkContentType.EphemeralHeaderOffer) {
+          // If we get an offer for ephemeral headers, all offered content keys should be for ephemeral headers
+          await this.sendAccept(src, requestId, contentIds, [], version)
+          // TODO: Ban/descore peers who send spec-noncompliant offers
+        }
+      }
       const beacon = this.portal.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
-      let contentIds: number[] = Array(msg.contentKeys.length).fill(AcceptCode.GENERIC_DECLINE)
       if (beacon === undefined || (beacon.lightClient?.status !== RunStatusCode.started && beacon.lightClient?.status !== RunStatusCode.syncing)) {
         // We can't validate ephemeral headers if our light client is not active and/or syncing
         await this.sendAccept(src, requestId, contentIds, [], version)
@@ -773,8 +780,45 @@ export class HistoryNetwork extends BaseNetwork {
         await this.sendAccept(src, requestId, contentIds, [], version)
         return
       }
-      // TODO: Loop through headers and accept if we don't already have them in the ephemeral header index
-      for (const key of contentKeys) { }
+      const desiredContentKeys: Uint8Array[] = []
+      for (let i = headHashIndex; i < contentKeys.length; i++) {
+        const key = contentKeys[i]
+        if (this.ephemeralHeaderIndex.getByValue(bytesToHex(key.keyOpt as Uint8Array)) === undefined) {
+          contentIds[i] = AcceptCode.ACCEPT
+          desiredContentKeys.push(key.keyOpt as Uint8Array)
+        }
+      }
+      await this.sendAccept(src, requestId, contentIds, desiredContentKeys, version)
+      await new Promise(resolve => {
+        const gossipEphemeralHeaders = async (contentKey: Uint8Array) => {
+          if (equalsBytes(desiredContentKeys[desiredContentKeys.length - 1], contentKey)) {
+            // Once we've received the last desired header, gossip all offered ephemeral headers from 
+            this.removeListener('ContentAdded', gossipEphemeralHeaders)
+            const content = []
+            for (const key of contentKeys.slice(headHashIndex)) {
+              const value = await this.get(getEphemeralHeaderDbKey(key.keyOpt as Uint8Array))
+              if (value === undefined) {
+                this.logger.extend('GOSSIP').extend('EPHEMERALHEADERS')(`Expected header ${bytesToHex(key.keyOpt as Uint8Array)} not found`)
+                return
+              }
+              content.push(hexToBytes(value as PrefixedHexString))
+            }
+            const gossipPromises = []
+            for (let i = 0; i < 5; i++) {
+              let enr: ENR | undefined = this.routingTable.random()
+              while (enr === undefined) {
+                enr = this.routingTable.random()
+              }
+              const offerKeys = msg.contentKeys.slice(headHashIndex)
+              gossipPromises.push(this.sendOffer(enr, offerKeys, content))
+            }
+
+            await Promise.allSettled(gossipPromises)
+            resolve(true)
+          }
+        }
+        this.addListener('ContentAdded', gossipEphemeralHeaders)
+      })
     } else
       await super.handleOffer(src, requestId, msg, version)
   }
