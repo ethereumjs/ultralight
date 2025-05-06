@@ -5,6 +5,7 @@ import {
   NetworkId,
   type BaseNetworkConfig,
 } from '../../index.js'
+import debug from 'debug'
 
 export class HeadStateNetwork extends BaseNetwork {
   networkName = 'HeadStateNetwork'
@@ -12,6 +13,8 @@ export class HeadStateNetwork extends BaseNetwork {
 
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, networkId: NetworkId.HeadStateNetwork, db, radius, maxStorage })
+    this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HeadStateNetwork')
+    this.routingTable.setLogger(this.logger)
   }
 
   store(contentKey: Uint8Array, value: Uint8Array): Promise<void> {
