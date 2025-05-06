@@ -25,6 +25,7 @@ export class ContentLookup {
   private finished: boolean
   private content: ContentLookupResponse
   private pending: Set<NodeId>
+  private queuedPeers: Set<NodeId>
   private completedRequests?: Map<NodeId, NodeId[]>
   private contentTrace?: ContentTrace
   constructor(network: BaseNetwork, contentKey: Uint8Array, trace = false) {
@@ -37,6 +38,7 @@ export class ContentLookup {
     this.finished = false
     this.meta = new Map()
     this.pending = new Set()
+    this.queuedPeers = new Set()
     this.completedRequests = trace ? new Map() : undefined
     this.contentTrace = trace
       ? {
