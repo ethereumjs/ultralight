@@ -61,3 +61,29 @@ export const TrieDiffType = new ContainerType({
   before: TrieNodeListType,
   after: TrieNodeListType,
 })
+
+export type HeadStateNetworkContent<T extends HeadStateNetworkContentType> =
+  T extends HeadStateNetworkContentType.AccountTrieDiff
+    ? AccountTrieDiff
+    : T extends HeadStateNetworkContentType.AccountTrieNode
+      ? AccountTrieNode
+      : T extends HeadStateNetworkContentType.ContractTrieDiff
+        ? ContractTrieDiff
+        : T extends HeadStateNetworkContentType.ContractTrieNode
+          ? ContractTrieNode
+          : never
+
+const sszSerialize: {
+  [T in HeadStateNetworkContentType]: {
+    serialize: (content: HeadStateNetworkContent<T>) => Uint8Array
+  }
+} = {
+  [HeadStateNetworkContentType.AccountTrieDiff]: AccountTrieDiffType,
+  [HeadStateNetworkContentType.AccountTrieNode]: AccountTrieNodeType,
+  [HeadStateNetworkContentType.ContractTrieDiff]: ContractTrieDiffType,
+  [HeadStateNetworkContentType.ContractTrieNode]: ContractTrieNodeType,
+}
+
+export function getContentKey<T extends HeadStateNetworkContentType>(type: T, content: HeadStateNetworkContent<T>) {
+  return Uint8Array.from([type, ...sszSerialize[type].serialize(content)])
+}
