@@ -100,10 +100,13 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     }
 
     // Verify that we get a single ancestor for a content key with an ancestor count of 1
-    const contentKeyForOneAncestor = getContentKey(HistoryNetworkContentType.EphemeralHeaderFindContent, {
-      blockHash: headers[0].hash(),
-      ancestorCount: 1,
-    })
+    const contentKeyForOneAncestor = getContentKey(
+      HistoryNetworkContentType.EphemeralHeaderFindContent,
+      {
+        blockHash: headers[0].hash(),
+        ancestorCount: 1,
+      },
+    )
 
     const res2 = await network2!.sendFindContent(node1.discv5.enr.toENR(), contentKeyForOneAncestor)
     assert.exists(res2)

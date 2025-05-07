@@ -1,4 +1,4 @@
-import { hexToBytes, PrefixedHexString } from '@ethereumjs/util'
+import { type PrefixedHexString, hexToBytes } from '@ethereumjs/util'
 import { RunStatusCode } from '@lodestar/light-client'
 import { ssz } from '@lodestar/types'
 import {

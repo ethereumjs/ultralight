@@ -91,7 +91,10 @@ export class eth {
   async getBalance(params: [string, string]) {
     const [address, blockTag] = params
     try {
-      const res = await this._client.ETH.getBalance(hexToBytes(address as PrefixedHexString), BigInt(blockTag))
+      const res = await this._client.ETH.getBalance(
+        hexToBytes(address as PrefixedHexString),
+        BigInt(blockTag),
+      )
       if (res === undefined) {
         throw {
           code: INTERNAL_ERROR,
@@ -141,7 +144,10 @@ export class eth {
     this._client.logger(
       `eth_getBlockByHash request received. blockHash: ${blockHash} includeTransactions: ${includeTransactions}`,
     )
-    const block = await this._client.ETH.getBlockByHash(hexToBytes(blockHash as PrefixedHexString), includeTransactions)
+    const block = await this._client.ETH.getBlockByHash(
+      hexToBytes(blockHash as PrefixedHexString),
+      includeTransactions,
+    )
     //@ts-ignore @ethereumjs/block has some weird typing discrepancy
     if (block !== undefined) return block
     throw new Error('Block not found')

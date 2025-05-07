@@ -135,25 +135,26 @@ export const decodeHistoryNetworkContentKey = (
   contentKey: Uint8Array,
 ):
   | {
-    contentType:
-    | HistoryNetworkContentType.BlockHeader
-    | HistoryNetworkContentType.BlockBody
-    | HistoryNetworkContentType.Receipt
-    | HistoryNetworkContentType.EphemeralHeaderOffer
-    keyOpt: Uint8Array
-  }
-  | {
-    contentType: HistoryNetworkContentType.BlockHeaderByNumber
-    keyOpt: bigint
-  }
-  | {
-    contentType: HistoryNetworkContentType.EphemeralHeaderFindContent
-    keyOpt: EphemeralHeaderKeyValues
-    | {
-      contentType: HistoryNetworkContentType.EphemeralHeaderOffer
+      contentType:
+        | HistoryNetworkContentType.BlockHeader
+        | HistoryNetworkContentType.BlockBody
+        | HistoryNetworkContentType.Receipt
+        | HistoryNetworkContentType.EphemeralHeaderOffer
       keyOpt: Uint8Array
     }
-  } => {
+  | {
+      contentType: HistoryNetworkContentType.BlockHeaderByNumber
+      keyOpt: bigint
+    }
+  | {
+      contentType: HistoryNetworkContentType.EphemeralHeaderFindContent
+      keyOpt:
+        | EphemeralHeaderKeyValues
+        | {
+            contentType: HistoryNetworkContentType.EphemeralHeaderOffer
+            keyOpt: Uint8Array
+          }
+    } => {
   const contentType: HistoryNetworkContentType = contentKey[0]
   switch (contentType) {
     case HistoryNetworkContentType.BlockHeaderByNumber: {
@@ -170,7 +171,8 @@ export const decodeHistoryNetworkContentKey = (
         keyOpt: key,
       }
     }
-    case HistoryNetworkContentType.EphemeralHeader: throw new Error('EphemeralHeader is only for internal use')
+    case HistoryNetworkContentType.EphemeralHeader:
+      throw new Error('EphemeralHeader is only for internal use')
     default: {
       const blockHash = contentKey.slice(1)
       return {
@@ -278,7 +280,10 @@ export const addRLPSerializedBlock = async (
     setHardfork: true,
   })
   const header = block.header
-  const headerKey = getContentKey(HistoryNetworkContentType.BlockHeader, hexToBytes(blockHash as PrefixedHexString))
+  const headerKey = getContentKey(
+    HistoryNetworkContentType.BlockHeader,
+    hexToBytes(blockHash as PrefixedHexString),
+  )
   const headerProof = BlockHeaderWithProof.serialize({
     header: header.serialize(),
     proof,
@@ -303,7 +308,9 @@ export const blockNumberToLeafIndex = (blockNumber: bigint) => {
   return (Number(blockNumber) % 8192) * 2
 }
 export const epochRootByIndex = (index: number) => {
-  return historicalEpochs[index] ? hexToBytes(historicalEpochs[index] as PrefixedHexString) : undefined
+  return historicalEpochs[index]
+    ? hexToBytes(historicalEpochs[index] as PrefixedHexString)
+    : undefined
 }
 export const epochRootByBlocknumber = (blockNumber: bigint) => {
   return epochRootByIndex(epochIndexByBlocknumber(blockNumber))

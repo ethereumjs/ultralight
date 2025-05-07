@@ -5,7 +5,13 @@ import {
   UintBigintType,
   UintNumberType,
 } from '@chainsafe/ssz'
-import { bytesToHex, fromAscii, hexToBytes, PrefixedHexString, toAscii } from '@ethereumjs/util'
+import {
+  type PrefixedHexString,
+  bytesToHex,
+  fromAscii,
+  hexToBytes,
+  toAscii,
+} from '@ethereumjs/util'
 import { PingPongPayloadType } from './types.js'
 
 /**

@@ -1,4 +1,4 @@
-import { bytesToHex, concatBytes, hexToBytes, PrefixedHexString } from '@ethereumjs/util'
+import { type PrefixedHexString, bytesToHex, concatBytes, hexToBytes } from '@ethereumjs/util'
 import { genesisData } from '@lodestar/config/networks'
 import { getCurrentSlot } from '@lodestar/light-client/utils'
 import { ssz } from '@lodestar/types'
@@ -204,7 +204,10 @@ export class UltralightTransport implements LightClientTransport {
     // Try to get bootstrap from Portal Network
     const lookup = new ContentLookup(
       this.network,
-      getBeaconContentKey(BeaconNetworkContentType.LightClientBootstrap, hexToBytes(blockRoot as PrefixedHexString)),
+      getBeaconContentKey(
+        BeaconNetworkContentType.LightClientBootstrap,
+        hexToBytes(blockRoot as PrefixedHexString),
+      ),
     )
     const res = await lookup.startLookup()
     if (res !== undefined && 'content' in res) {

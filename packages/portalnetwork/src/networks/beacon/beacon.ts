@@ -1,6 +1,7 @@
 import type { ENR, NodeId } from '@chainsafe/enr'
 import { ProofType } from '@chainsafe/persistent-merkle-tree'
 import {
+  type PrefixedHexString,
   bytesToHex,
   bytesToInt,
   concatBytes,
@@ -8,7 +9,6 @@ import {
   hexToBytes,
   intToHex,
   padToEven,
-  PrefixedHexString,
   short,
 } from '@ethereumjs/util'
 import { createBeaconConfig, defaultChainConfig } from '@lodestar/config'
@@ -140,7 +140,9 @@ export class BeaconNetwork extends BaseNetwork {
       enr,
       concatBytes(
         new Uint8Array([BeaconNetworkContentType.LightClientBootstrap]),
-        LightClientBootstrapKey.serialize({ blockHash: hexToBytes(this.trustedBlockRoot as PrefixedHexString) }),
+        LightClientBootstrapKey.serialize({
+          blockHash: hexToBytes(this.trustedBlockRoot as PrefixedHexString),
+        }),
       ),
     )
     if (decoded !== undefined && 'content' in decoded) {
@@ -236,7 +238,9 @@ export class BeaconNetwork extends BaseNetwork {
             if (results[x][1] < Math.floor(MIN_BOOTSTRAP_VOTES / 2 + 1)) break
             const bootstrapKey = getBeaconContentKey(
               BeaconNetworkContentType.LightClientBootstrap,
-              LightClientBootstrapKey.serialize({ blockHash: hexToBytes(results[x][0] as PrefixedHexString) }),
+              LightClientBootstrapKey.serialize({
+                blockHash: hexToBytes(results[x][0] as PrefixedHexString),
+              }),
             )
             this.logger.extend('BOOTSTRAP')(
               `found a consensus bootstrap candidate ${results[x][0]}`,
@@ -429,7 +433,11 @@ export class BeaconNetwork extends BaseNetwork {
         value = await this.retrieve(contentKey)
     }
 
-    return value instanceof Uint8Array ? value : value !== undefined ? hexToBytes(value as PrefixedHexString) : undefined
+    return value instanceof Uint8Array
+      ? value
+      : value !== undefined
+        ? hexToBytes(value as PrefixedHexString)
+        : undefined
   }
 
   public sendFindContent = async (
@@ -769,7 +777,7 @@ export class BeaconNetwork extends BaseNetwork {
       period = computeSyncPeriodAtSlot(deserializedUpdate.attestedHeader.beacon.slot)
     }
     return hexToBytes(
-      `0x${BeaconNetworkContentType.LightClientUpdate.toString(16)}${padToEven(period.toString(16))}`
+      `0x${BeaconNetworkContentType.LightClientUpdate.toString(16)}${padToEven(period.toString(16))}`,
     )
   }
 

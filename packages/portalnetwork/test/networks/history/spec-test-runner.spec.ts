@@ -1,17 +1,17 @@
+import { readFileSync, readdirSync, statSync } from 'fs'
+import { join, resolve } from 'path'
 import {
   createBlockFromExecutionPayload,
   createBlockHeaderFromRLP,
   executionPayloadFromBeaconPayload,
 } from '@ethereumjs/block'
-import { bytesToHex, hexToBytes, type PrefixedHexString } from '@ethereumjs/util'
+import { type PrefixedHexString, bytesToHex, hexToBytes } from '@ethereumjs/util'
 import { createChainForkConfig } from '@lodestar/config'
 import type { ForkName } from '@lodestar/params'
 import type { BeaconBlock } from '@lodestar/types'
 import { ssz } from '@lodestar/types'
-import { readFileSync, readdirSync, statSync } from 'fs'
 import yaml from 'js-yaml'
-import { join, resolve } from 'path'
-import { afterAll, assert, beforeAll, describe, it } from 'vitest'
+import { assert, afterAll, beforeAll, describe, it } from 'vitest'
 import type { EphemeralHeaderKeyValues, HistoryNetwork } from '../../../src/index.js'
 import {
   EphemeralHeaderOfferPayload,
@@ -29,7 +29,7 @@ import {
 } from '../../../src/index.js'
 
 describe('should run all spec tests', () => {
-  // This test method takes encoded content keys and values, deserializes them, validates the content, and then confirms that the content 
+  // This test method takes encoded content keys and values, deserializes them, validates the content, and then confirms that the content
   // can be retrieved from a client db and transformed back to the ssz encoded form for final validation
   const runHistorySerializedTestVectorTest = async (
     history: HistoryNetwork,
@@ -52,18 +52,35 @@ describe('should run all spec tests', () => {
           break
         }
         case HistoryNetworkContentType.EphemeralHeaderFindContent: {
-          const headerKey = decodeHistoryNetworkContentKey(contentKey) as { contentType: HistoryNetworkContentType.EphemeralHeaderFindContent, keyOpt: EphemeralHeaderKeyValues }
-          const headers = await history?.assembleEphemeralHeadersPayload(headerKey.keyOpt.blockHash, headerKey.keyOpt.ancestorCount)
+          const headerKey = decodeHistoryNetworkContentKey(contentKey) as {
+            contentType: HistoryNetworkContentType.EphemeralHeaderFindContent
+            keyOpt: EphemeralHeaderKeyValues
+          }
+          const headers = await history?.assembleEphemeralHeadersPayload(
+            headerKey.keyOpt.blockHash,
+            headerKey.keyOpt.ancestorCount,
+          )
           retrieved = bytesToHex(headers)
           // Delete the header from the db so it doesn't interfere with the next test
           await history.del(getEphemeralHeaderDbKey(headerKey.keyOpt.blockHash))
-          history.ephemeralHeaderIndex.delete(history.ephemeralHeaderIndex.getByValue(bytesToHex(headerKey.keyOpt.blockHash))!)
+          history.ephemeralHeaderIndex.delete(
+            history.ephemeralHeaderIndex.getByValue(bytesToHex(headerKey.keyOpt.blockHash))!,
+          )
           break
         }
         case HistoryNetworkContentType.EphemeralHeaderOffer: {
-          const headerKey = decodeHistoryNetworkContentKey(contentKey) as { contentType: HistoryNetworkContentType.EphemeralHeaderOffer, keyOpt: Uint8Array }
+          const headerKey = decodeHistoryNetworkContentKey(contentKey) as {
+            contentType: HistoryNetworkContentType.EphemeralHeaderOffer
+            keyOpt: Uint8Array
+          }
           // Convert the retrieved content back to its SSZ encoded form for final validation
-          retrieved = bytesToHex(EphemeralHeaderOfferPayload.serialize({ header: hexToBytes((await history?.get(getEphemeralHeaderDbKey(headerKey.keyOpt))) as `0x${string}`) }))
+          retrieved = bytesToHex(
+            EphemeralHeaderOfferPayload.serialize({
+              header: hexToBytes(
+                (await history?.get(getEphemeralHeaderDbKey(headerKey.keyOpt))) as `0x${string}`,
+              ),
+            }),
+          )
           break
         }
         default: {
@@ -162,7 +179,14 @@ describe('should run all spec tests', () => {
         // 5. Verify the proof
         const forkConfig = createChainForkConfig({})
 
-        if (verifyHistoricalSummariesHeaderProof(proof, executionHeader, historicalSummaries, forkConfig)) {
+        if (
+          verifyHistoricalSummariesHeaderProof(
+            proof,
+            executionHeader,
+            historicalSummaries,
+            forkConfig,
+          )
+        ) {
           return true
         } else {
           return `Failed to verify post-Capella proof for ${fileName}`

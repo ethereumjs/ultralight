@@ -108,7 +108,10 @@ export async function getReceipts(
     })
   }
   if (includeTxType && body !== undefined) {
-    const block = reassembleBlock(hexToBytes(encoded as PrefixedHexString), hexToBytes(body as PrefixedHexString))
+    const block = reassembleBlock(
+      hexToBytes(encoded as PrefixedHexString),
+      hexToBytes(body as PrefixedHexString),
+    )
     receipts = (receipts as TxReceiptWithType[]).map((r, i) => {
       r.txType = block.transactions[i].type
       return r

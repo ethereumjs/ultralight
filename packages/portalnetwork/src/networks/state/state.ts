@@ -6,12 +6,12 @@ import {
   decodeMPTNode,
 } from '@ethereumjs/mpt'
 import {
+  type PrefixedHexString,
   bytesToHex,
   bytesToInt,
   bytesToUnprefixedHex,
   equalsBytes,
   hexToBytes,
-  PrefixedHexString,
 } from '@ethereumjs/util'
 import debug from 'debug'
 

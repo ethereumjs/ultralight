@@ -1,8 +1,8 @@
-import type { ENR } from "@chainsafe/enr"
+import type { ENR } from '@chainsafe/enr'
 
 export type NodeId = string
 
-export const enum ConfigId {
+export enum ConfigId {
   UdpPort = 'udp-port',
   NodeBindPort = 'node-bind-port',
 }
@@ -25,10 +25,7 @@ export interface RPCResponse {
   responseType?: ResponseType
 }
 
-export type InputValue = 
-  | string 
-  | number 
-  | `0x${string}`
+export type InputValue = string | number | `0x${string}`
 
 export interface PeerItem {
   nodeId: NodeId
