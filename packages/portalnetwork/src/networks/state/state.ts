@@ -43,12 +43,14 @@ import {
 } from './types.js'
 import type { TNibbles } from './types.js'
 import {
-  AccountTrieNodeContentKey,
-  ContractCodeContentKey,
-  StateNetworkContentId,
-  StorageTrieNodeContentKey,
+  decodeAccountTrieNodeContentKey,
+  decodeContractCodeContentKey,
+  decodeStorageTrieNodeContentKey,
+  encodeAccountTrieNodeContentKey,
+  encodeStorageTrieNodeContentKey,
   extractAccountProof,
   nextOffer,
+  stateNetworkContentIdFromBytes,
 } from './util.js'
 
 export class StateNetwork extends BaseNetwork {
@@ -67,7 +69,7 @@ export class StateNetwork extends BaseNetwork {
   }
 
   public contentKeyToId = (contentKey: Uint8Array): string => {
-    return bytesToUnprefixedHex(StateNetworkContentId.fromBytes(contentKey))
+    return bytesToUnprefixedHex(stateNetworkContentIdFromBytes(contentKey))
   }
 
   /**
@@ -181,10 +183,10 @@ export class StateNetwork extends BaseNetwork {
         await this.gossipContent(contentKey, content)
       } else {
         if (contentType === StateNetworkContentType.AccountTrieNode) {
-          const { nodeHash } = AccountTrieNodeContentKey.decode(contentKey)
+          const { nodeHash } = decodeAccountTrieNodeContentKey(contentKey)
           this.manager.trie.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
         } else if (contentType === StateNetworkContentType.ContractTrieNode) {
-          const { nodeHash } = StorageTrieNodeContentKey.decode(contentKey)
+          const { nodeHash } = decodeStorageTrieNodeContentKey(contentKey)
           this.manager.trie.db.local.set(bytesToUnprefixedHex(nodeHash), bytesToHex(contentKey))
         }
         await this.db.put(contentKey, content)
@@ -202,7 +204,7 @@ export class StateNetwork extends BaseNetwork {
   ): Promise<{
     stored: number
   }> {
-    const { path } = AccountTrieNodeContentKey.decode(contentKey)
+    const { path } = decodeAccountTrieNodeContentKey(contentKey)
     const { proof, blockHash } = AccountTrieNodeOffer.deserialize(content)
     const interested = await this.storeInterestedAccountTrieNodes(path, proof)
     void this.forwardAccountTrieOffer(path, proof, blockHash)
@@ -235,11 +237,11 @@ export class StateNetwork extends BaseNetwork {
         `${i} Path: [${newpaths}] - ${curNode.constructor.name}: ${bytesToHex(nodeHash).slice(0, 8)}...`,
       )
       i++
-      const contentKey = AccountTrieNodeContentKey.encode({
+      const contentKey = encodeAccountTrieNodeContentKey({
         nodeHash,
         path: packNibbles(newpaths),
       })
-      const contentId = StateNetworkContentId.fromBytes(contentKey)
+      const contentId = stateNetworkContentIdFromBytes(contentKey)
       const in_radius = distance(bytesToUnprefixedHex(contentId), this.enr.nodeId) < this.nodeRadius
       if (in_radius) {
         const dbContent = AccountTrieNodeRetrieval.serialize({
@@ -264,7 +266,7 @@ export class StateNetwork extends BaseNetwork {
     const { nodes, newpaths } = nextOffer(path, proof)
     const content = AccountTrieNodeOffer.serialize({ blockHash, proof: [...nodes] })
     const nodeHash = new Trie({ useKeyHashing: true })['hash'](nodes[nodes.length - 1])
-    const contentKey = AccountTrieNodeContentKey.encode({
+    const contentKey = encodeAccountTrieNodeContentKey({
       nodeHash,
       path: packNibbles(newpaths),
     })
@@ -298,7 +300,7 @@ export class StateNetwork extends BaseNetwork {
   ): Promise<{
     stored: number
   }> {
-    const { addressHash, path } = StorageTrieNodeContentKey.decode(contentKey)
+    const { addressHash, path } = decodeStorageTrieNodeContentKey(contentKey)
     const { blockHash, accountProof, storageProof } = StorageTrieNodeOffer.deserialize(content)
     const interested = await this.storeInterestedStorageTrieNodes(path, storageProof, addressHash)
     await this.receiveAccountTrieNodeOffer(
@@ -339,12 +341,12 @@ export class StateNetwork extends BaseNetwork {
         `${i} Path: [${newpaths}] - ${curNode.constructor.name}: ${bytesToHex(nodeHash).slice(0, 8)}...`,
       )
       i++
-      const contentKey = StorageTrieNodeContentKey.encode({
+      const contentKey = encodeStorageTrieNodeContentKey({
         nodeHash,
         path: packNibbles(newpaths),
         addressHash,
       })
-      const contentId = StateNetworkContentId.fromBytes(contentKey)
+      const contentId = stateNetworkContentIdFromBytes(contentKey)
       const in_radius = distance(bytesToUnprefixedHex(contentId), this.enr.nodeId) < this.nodeRadius
       if (in_radius) {
         const dbContent = StorageTrieNodeRetrieval.serialize({
@@ -378,7 +380,7 @@ export class StateNetwork extends BaseNetwork {
       storageProof: [...nodes],
     })
     const nodeHash = new Trie({ useKeyHashing: true })['hash'](nodes[nodes.length - 1])
-    const contentKey = StorageTrieNodeContentKey.encode({
+    const contentKey = encodeStorageTrieNodeContentKey({
       nodeHash,
       path: packNibbles(newpaths),
       addressHash,
@@ -387,7 +389,7 @@ export class StateNetwork extends BaseNetwork {
     return { content, contentKey }
   }
   async receiveContractCodeOffer(contentKey: Uint8Array, content: Uint8Array) {
-    const { addressHash, codeHash } = ContractCodeContentKey.decode(contentKey)
+    const { addressHash, codeHash } = decodeContractCodeContentKey(contentKey)
     const { accountProof, blockHash, code } = ContractCodeOffer.deserialize(content)
     const codeContent = ContractRetrieval.serialize({ code })
     this.manager.trie.db.local.set(bytesToUnprefixedHex(codeHash), bytesToHex(contentKey))

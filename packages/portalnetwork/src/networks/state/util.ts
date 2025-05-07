@@ -39,66 +39,78 @@ export const keyType = (contentKey: Uint8Array): StateNetworkContentType => {
       throw new Error(`Invalid content key type: ${contentKey[0]}`)
   }
 }
-export class AccountTrieNodeContentKey {
-  static encode({ path, nodeHash }: TAccountTrieNodeKey): Uint8Array {
-    const key = AccountTrieNodeKey.serialize({ path: Uint8Array.from(path), nodeHash })
-    return Uint8Array.from([0x20, ...key])
-  }
-  static decode(key: Uint8Array): TAccountTrieNodeKey {
-    return AccountTrieNodeKey.deserialize(key.slice(1))
-  }
+
+export function encodeAccountTrieNodeContentKey({
+  path,
+  nodeHash,
+}: TAccountTrieNodeKey): Uint8Array {
+  const key = AccountTrieNodeKey.serialize({ path: Uint8Array.from(path), nodeHash })
+  return Uint8Array.from([0x20, ...key])
 }
 
-export class StorageTrieNodeContentKey {
-  static encode({ addressHash, path, nodeHash }: TStorageTrieNodeKey): Uint8Array {
-    const key = StorageTrieNodeKey.serialize({ addressHash, path, nodeHash })
-    return Uint8Array.from([0x21, ...key])
-  }
-  static decode(key: Uint8Array): TStorageTrieNodeKey {
-    return StorageTrieNodeKey.deserialize(key.slice(1))
-  }
+export function decodeAccountTrieNodeContentKey(key: Uint8Array): TAccountTrieNodeKey {
+  return AccountTrieNodeKey.deserialize(key.slice(1))
 }
 
-export class ContractCodeContentKey {
-  static encode({ addressHash, codeHash }: TContractCodeKey): Uint8Array {
-    const key = ContractCodeKey.serialize({ addressHash, codeHash })
-    return Uint8Array.from([0x22, ...key])
-  }
-  static decode(key: Uint8Array): TContractCodeKey {
-    return ContractCodeKey.deserialize(key.slice(1))
-  }
+export function encodeStorageTrieNodeContentKey({
+  addressHash,
+  path,
+  nodeHash,
+}: TStorageTrieNodeKey): Uint8Array {
+  const key = StorageTrieNodeKey.serialize({ addressHash, path, nodeHash })
+  return Uint8Array.from([0x21, ...key])
 }
+
+export function decodeStorageTrieNodeContentKey(key: Uint8Array): TStorageTrieNodeKey {
+  return StorageTrieNodeKey.deserialize(key.slice(1))
+}
+
+export function encodeContractCodeContentKey({
+  addressHash,
+  codeHash,
+}: TContractCodeKey): Uint8Array {
+  const key = ContractCodeKey.serialize({ addressHash, codeHash })
+  return Uint8Array.from([0x22, ...key])
+}
+
+export function decodeContractCodeContentKey(key: Uint8Array): TContractCodeKey {
+  return ContractCodeKey.deserialize(key.slice(1))
+}
+
 export type TStateNetworkContentKey = TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey
-export class StateNetworkContentKey {
-  static encode(opts: TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey): Uint8Array {
-    if ('codeHash' in opts) {
-      return ContractCodeContentKey.encode(opts)
-    } else if ('addressHash' in opts) {
-      return StorageTrieNodeContentKey.encode(opts)
-    } else {
-      return AccountTrieNodeContentKey.encode(opts)
-    }
-  }
-  static decode(key: Uint8Array): TStateNetworkContentKey {
-    const type = keyType(key)
-    if (type === StateNetworkContentType.ContractByteCode) {
-      return ContractCodeContentKey.decode(key)
-    } else if (type === StateNetworkContentType.ContractTrieNode) {
-      return StorageTrieNodeContentKey.decode(key)
-    } else {
-      return AccountTrieNodeContentKey.decode(key)
-    }
+
+export function encodeStateNetworkContentKey(
+  opts: TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey,
+): Uint8Array {
+  if ('codeHash' in opts) {
+    return encodeContractCodeContentKey(opts)
+  } else if ('addressHash' in opts) {
+    return encodeStorageTrieNodeContentKey(opts)
+  } else {
+    return encodeAccountTrieNodeContentKey(opts)
   }
 }
 
-export class StateNetworkContentId {
-  static fromKeyObj(key: TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey): Uint8Array {
-    const bytes = StateNetworkContentKey.encode(key)
-    return sha256(bytes)
+export function decodeStateNetworkContentKey(key: Uint8Array): TStateNetworkContentKey {
+  const type = keyType(key)
+  if (type === StateNetworkContentType.ContractByteCode) {
+    return decodeContractCodeContentKey(key)
+  } else if (type === StateNetworkContentType.ContractTrieNode) {
+    return decodeStorageTrieNodeContentKey(key)
+  } else {
+    return decodeAccountTrieNodeContentKey(key)
   }
-  static fromBytes(key: Uint8Array): Uint8Array {
-    return sha256(key)
-  }
+}
+
+export function fromKeyObjToStateNetworkContentId(
+  key: TAccountTrieNodeKey | TStorageTrieNodeKey | TContractCodeKey,
+): Uint8Array {
+  const bytes = encodeStateNetworkContentKey(key)
+  return sha256(bytes)
+}
+
+export function stateNetworkContentIdFromBytes(key: Uint8Array): Uint8Array {
+  return sha256(key)
 }
 
 export function wrapDBContent(contentKey: Uint8Array, dbContent: string) {
@@ -150,13 +162,13 @@ export function getDatabaseKey(contentKey: Uint8Array) {
   let dbKey = contentKey
   switch (type) {
     case StateNetworkContentType.AccountTrieNode:
-      dbKey = AccountTrieNodeContentKey.decode(contentKey).nodeHash
+      dbKey = decodeAccountTrieNodeContentKey(contentKey).nodeHash
       break
     case StateNetworkContentType.ContractTrieNode:
-      dbKey = StorageTrieNodeContentKey.decode(contentKey).nodeHash
+      dbKey = decodeStorageTrieNodeContentKey(contentKey).nodeHash
       break
     case StateNetworkContentType.ContractByteCode:
-      dbKey = ContractCodeContentKey.decode(contentKey).codeHash
+      dbKey = decodeContractCodeContentKey(contentKey).codeHash
       break
     default:
       break
@@ -225,7 +237,7 @@ export function extractAccountProof(
     blockHash,
     proof: accountProof,
   })
-  const accountTrieOfferKey = AccountTrieNodeContentKey.encode({
+  const accountTrieOfferKey = encodeAccountTrieNodeContentKey({
     nodeHash,
     path: packNibbles(nodePath),
   })

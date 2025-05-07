@@ -7,7 +7,12 @@ import { ContentLookup } from '../contentLookup.js'
 import { addressToNibbles, packNibbles, unpackNibbles } from './nibbleEncoding.js'
 import { PortalTrieDB } from './portalTrieDB.js'
 import { AccountTrieNodeRetrieval, StorageTrieNodeRetrieval } from './types.js'
-import { AccountTrieNodeContentKey, StorageTrieNodeContentKey } from './util.js'
+import {
+  decodeAccountTrieNodeContentKey,
+  decodeStorageTrieNodeContentKey,
+  encodeAccountTrieNodeContentKey,
+  encodeStorageTrieNodeContentKey,
+} from './util.js'
 
 import type { Path } from '@ethereumjs/mpt'
 import type { Debugger } from 'debug'
@@ -26,7 +31,7 @@ export class PortalTrie {
   async lookupAccountTrieNode(key: Uint8Array) {
     const lookup = new ContentLookup(this.state, key)
     const request = await lookup.startLookup()
-    const keyobj = AccountTrieNodeContentKey.decode(key)
+    const keyobj = decodeAccountTrieNodeContentKey(key)
     if (request === undefined || !('content' in request)) {
       throw new Error(
         `network doesn't have node [${unpackNibbles(keyobj.path)}]${bytesToHex(keyobj.nodeHash)}`,
@@ -38,7 +43,7 @@ export class PortalTrie {
   async lookupStorageTrieNode(key: Uint8Array) {
     const lookup = new ContentLookup(this.state, key)
     const request = await lookup.startLookup()
-    const keyobj = StorageTrieNodeContentKey.decode(key)
+    const keyobj = decodeStorageTrieNodeContentKey(key)
     if (request === undefined || !('content' in request)) {
       throw new Error(
         `network doesn't have node [${unpackNibbles(keyobj.path)}]${bytesToHex(keyobj.nodeHash)}`,
@@ -56,7 +61,7 @@ export class PortalTrie {
     const addressPath = addressToNibbles(address)
 
     // Find RootNode
-    const rootNodeKey = AccountTrieNodeContentKey.encode({
+    const rootNodeKey = encodeAccountTrieNodeContentKey({
       path: packNibbles([]),
       nodeHash: stateroot,
     })
@@ -115,7 +120,7 @@ export class PortalTrie {
       return { ...accountPath }
     }
     this.logger.extend('findPath')(`Looking for node: [${bytesToHex(nextNodeHash as Uint8Array)}]`)
-    const nextContentKey = AccountTrieNodeContentKey.encode({
+    const nextContentKey = encodeAccountTrieNodeContentKey({
       path: packNibbles(nodePath),
       nodeHash: nextNodeHash as Uint8Array,
     })
@@ -137,7 +142,7 @@ export class PortalTrie {
     const addressPath = addressToNibbles(slot)
 
     // Find RootNode
-    const rootNodeKey = StorageTrieNodeContentKey.encode({
+    const rootNodeKey = encodeStorageTrieNodeContentKey({
       path: packNibbles([]),
       nodeHash: storageRoot,
       addressHash: new Trie({ useKeyHashing: true })['hash'](address),
@@ -198,7 +203,7 @@ export class PortalTrie {
       return { ...contractPath }
     }
     this.logger.extend('findPath')(`Looking for node: [${bytesToHex(nextNodeHash as Uint8Array)}]`)
-    const nextContentKey = StorageTrieNodeContentKey.encode({
+    const nextContentKey = encodeStorageTrieNodeContentKey({
       path: packNibbles(nodePath),
       nodeHash: nextNodeHash as Uint8Array,
       addressHash: new Trie({ useKeyHashing: true })['hash'](address),

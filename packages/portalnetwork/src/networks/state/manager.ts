@@ -6,7 +6,7 @@ import { ContentLookup } from '../contentLookup.js'
 
 import { PortalTrie } from './portalTrie.js'
 import { ContractRetrieval } from './types.js'
-import { ContractCodeContentKey } from './util.js'
+import { encodeContractCodeContentKey } from './util.js'
 
 import type { StateNetwork } from './state.js'
 
@@ -55,7 +55,7 @@ export class StateManager {
       return undefined
     }
     const addressHash = new Trie({ useKeyHashing: true })['hash'](address)
-    const contentKey = ContractCodeContentKey.encode({ codeHash, addressHash })
+    const contentKey = encodeContractCodeContentKey({ codeHash, addressHash })
     const codeLookup = new ContentLookup(this.state, contentKey)
     const response = await codeLookup.startLookup()
     if (response && 'content' in response) {
