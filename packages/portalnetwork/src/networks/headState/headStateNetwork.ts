@@ -6,6 +6,8 @@ import {
   type BaseNetworkConfig,
 } from '../../index.js'
 import debug from 'debug'
+import { bytesToUnprefixedHex } from '@ethereumjs/util'
+import { distance } from '@chainsafe/discv5'
 
 export class HeadStateNetwork extends BaseNetwork {
   networkName = 'HeadStateNetwork'
@@ -15,6 +17,13 @@ export class HeadStateNetwork extends BaseNetwork {
     super({ client, networkId: NetworkId.HeadStateNetwork, db, radius, maxStorage })
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HeadStateNetwork')
     this.routingTable.setLogger(this.logger)
+  }
+
+  public interested = (contentId: Uint8Array) => {
+    const bits = contentId.length
+    const compareId = this.enr.nodeId.slice(0, bits)
+    const d = distance(compareId, bytesToUnprefixedHex(contentId))
+    return d <= this.nodeRadius
   }
 
   store(contentKey: Uint8Array, value: Uint8Array): Promise<void> {
