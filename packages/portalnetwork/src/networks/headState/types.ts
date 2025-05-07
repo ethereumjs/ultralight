@@ -2,6 +2,7 @@ import { ByteVectorType, ContainerType, ListCompositeType } from '@chainsafe/ssz
 import { Bytes32Type } from '../types.js'
 import { Nibbles, TrieNode, TrieProof, type AddressHash, type TNibbles, type TTrieProof } from '../state/types.js'
 
+// Network content type definitions
 export enum HeadStateNetworkContentType {
   AccountTrieDiff = 0x30,
   AccountTrieNode = 0x31,
@@ -9,89 +10,57 @@ export enum HeadStateNetworkContentType {
   ContractTrieNode = 0x33,
 }
 
+// Common type aliases
 type BlockHash = Uint8Array
+type Path = Uint8Array
 
-export type AccountTrieNode = {
-  path: TNibbles
-  blockHash: BlockHash
-}
-
+// Trie node and diff base types
 export const TrieNodeListType = new ListCompositeType(TrieNode, 65536)
 export const TrieDiffType = new ContainerType({
   before: TrieNodeListType,
   after: TrieNodeListType,
 })
 
-export const AccountTrieNodeType = new ContainerType({
-  path: Nibbles,
-  blockHash: Bytes32Type,
-})
-
-export type TAccountTrieNodeValue = {
-  proof: TTrieProof
+// Account Trie types
+export type AccountTrieNode = {
+  path: TNibbles
+  blockHash: BlockHash
 }
 
-export const AccountTrieNodeValue = new ContainerType({
-  proof: TrieProof,
-})
-
-type Path = Uint8Array
-const PathType = new ByteVectorType(1)
+export type AccountTrieNodeValue = {
+  proof: TTrieProof
+}
 
 export type AccountTrieDiff = {
   path: Path
   blockHash: BlockHash
 }
 
-const AccountTrieDiffType = new ContainerType({
-  path: PathType,
-  blockHash: Bytes32Type,
-})
-
-export type TAccountTrieDiffValue = {
+export type AccountTrieDiffValue = {
   subtrieDiff: {
     before: TTrieProof
     after: TTrieProof
   }
 }
 
-const AccountTrieDiffValue = new ContainerType({
-  subtrieDiff: TrieDiffType,
-})
-
+// Contract Trie types
 export type ContractTrieNode = {
   path: TNibbles
   addressHash: AddressHash
   blockHash: BlockHash
 }
 
-export const ContractTrieNodeType = new ContainerType({
-  path: Nibbles,
-  addressHash: Bytes32Type,
-  blockHash: Bytes32Type,
-})
-
-export type TContractTrieNodeValue = {
+export type ContractTrieNodeValue = {
   storageProof: TTrieProof
   accountProof: TTrieProof
 }
-
-export const ContractTrieNodeValue = new ContainerType({
-  storageProof: TrieProof,
-  accountProof: TrieProof,
-})
 
 export type ContractTrieDiff = {
   path: Path
   blockHash: BlockHash
 }
 
-export const ContractTrieDiffType = new ContainerType({
-  path: PathType,
-  blockHash: Bytes32Type,
-})
-
-export type TContractTrieDiffValue = {
+export type ContractTrieDiffValue = {
   subtrieDiff: {
     before: TTrieProof
     after: TTrieProof
@@ -99,11 +68,49 @@ export type TContractTrieDiffValue = {
   accountProof: TTrieProof
 }
 
-const ContractTrieDiffValue = new ContainerType({
+// SSZ serialization types
+const PathType = new ByteVectorType(1)
+
+export const AccountTrieNodeSszType = new ContainerType({
+  path: Nibbles,
+  blockHash: Bytes32Type,
+})
+
+export const AccountTrieNodeValueSszType = new ContainerType({
+  proof: TrieProof,
+})
+
+export const AccountTrieDiffSszType = new ContainerType({
+  path: PathType,
+  blockHash: Bytes32Type,
+})
+
+export const AccountTrieDiffValueSszType = new ContainerType({
+  subtrieDiff: TrieDiffType,
+})
+
+export const ContractTrieNodeSszType = new ContainerType({
+  path: Nibbles,
+  addressHash: Bytes32Type,
+  blockHash: Bytes32Type,
+})
+
+export const ContractTrieNodeValueSszType = new ContainerType({
+  storageProof: TrieProof,
+  accountProof: TrieProof,
+})
+
+export const ContractTrieDiffSszType = new ContainerType({
+  path: PathType,
+  blockHash: Bytes32Type,
+})
+
+export const ContractTrieDiffValueSszType = new ContainerType({
   subtrieDiff: TrieDiffType,
   accountProof: TrieProof,
 })
 
+// Content type mapping
 export type HeadStateNetworkContent<T extends HeadStateNetworkContentType> =
   T extends HeadStateNetworkContentType.AccountTrieDiff
     ? AccountTrieDiff
@@ -115,49 +122,50 @@ export type HeadStateNetworkContent<T extends HeadStateNetworkContentType> =
           ? ContractTrieNode
           : never
 
-const sszSerialize: {
+export type HeadStateNetworkContentValue<T extends HeadStateNetworkContentType> =
+  T extends HeadStateNetworkContentType.AccountTrieDiff
+    ? AccountTrieDiffValue
+    : T extends HeadStateNetworkContentType.AccountTrieNode
+      ? AccountTrieNodeValue
+      : T extends HeadStateNetworkContentType.ContractTrieDiff
+        ? ContractTrieDiffValue
+        : T extends HeadStateNetworkContentType.ContractTrieNode
+          ? ContractTrieNodeValue
+          : never
+
+// Serialization helpers
+const contentKeySerializers: {
   [T in HeadStateNetworkContentType]: {
     serialize: (content: HeadStateNetworkContent<T>) => Uint8Array
   }
 } = {
-  [HeadStateNetworkContentType.AccountTrieDiff]: AccountTrieDiffType,
-  [HeadStateNetworkContentType.AccountTrieNode]: AccountTrieNodeType,
-  [HeadStateNetworkContentType.ContractTrieDiff]: ContractTrieDiffType,
-  [HeadStateNetworkContentType.ContractTrieNode]: ContractTrieNodeType,
+  [HeadStateNetworkContentType.AccountTrieDiff]: AccountTrieDiffSszType,
+  [HeadStateNetworkContentType.AccountTrieNode]: AccountTrieNodeSszType,
+  [HeadStateNetworkContentType.ContractTrieDiff]: ContractTrieDiffSszType,
+  [HeadStateNetworkContentType.ContractTrieNode]: ContractTrieNodeSszType,
+}
+
+const contentValueSerializers: {
+  [T in HeadStateNetworkContentType]: {
+    serialize: (content: HeadStateNetworkContentValue<T>) => Uint8Array
+  }
+} = {
+  [HeadStateNetworkContentType.AccountTrieDiff]: AccountTrieDiffValueSszType,
+  [HeadStateNetworkContentType.AccountTrieNode]: AccountTrieNodeValueSszType,
+  [HeadStateNetworkContentType.ContractTrieDiff]: ContractTrieDiffValueSszType,
+  [HeadStateNetworkContentType.ContractTrieNode]: ContractTrieNodeValueSszType,
 }
 
 export function getContentKey<T extends HeadStateNetworkContentType>(
   type: T,
   content: HeadStateNetworkContent<T>,
 ) {
-    return Uint8Array.from([type, ...sszSerialize[type].serialize(content)])
-}
-
-type TContentValue<T extends HeadStateNetworkContentType> =
-  T extends HeadStateNetworkContentType.AccountTrieDiff
-    ? TAccountTrieDiffValue
-    : T extends HeadStateNetworkContentType.AccountTrieNode
-      ? TAccountTrieNodeValue
-      : T extends HeadStateNetworkContentType.ContractTrieDiff
-        ? TContractTrieDiffValue
-        : T extends HeadStateNetworkContentType.ContractTrieNode
-          ? TContractTrieNodeValue
-          : never
-
-export const serializeContentValue: {
-  [T in HeadStateNetworkContentType]: {
-    serialize: (content: TContentValue<T>) => Uint8Array
-  }
-} = {
-  [HeadStateNetworkContentType.AccountTrieDiff]: AccountTrieDiffValue,
-  [HeadStateNetworkContentType.AccountTrieNode]: AccountTrieNodeValue,
-  [HeadStateNetworkContentType.ContractTrieDiff]: ContractTrieDiffValue,
-  [HeadStateNetworkContentType.ContractTrieNode]: ContractTrieNodeValue,
+  return Uint8Array.from([type, ...contentKeySerializers[type].serialize(content)])
 }
 
 export function getContentValue<T extends HeadStateNetworkContentType>(
   type: T,
-  content: TContentValue<T>,
+  content: HeadStateNetworkContentValue<T>,
 ) {
-  return serializeContentValue[type].serialize(content)
+  return contentValueSerializers[type].serialize(content)
 }
