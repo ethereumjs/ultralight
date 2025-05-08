@@ -599,7 +599,7 @@ export abstract class BaseNetwork extends EventEmitter {
    * Offers content corresponding to `contentKeys` to peer corresponding to `dstId`
    * @param dstId node ID of a peer
    * @param contentKeys content keys being offered as specified by the subnetwork
-   * @param networkId network ID of subnetwork being used
+   * @param content content being offered
    */
   public sendOffer = async (enr: ENR, contentKeys: Uint8Array[], content?: Uint8Array[]) => {
     let version
@@ -698,12 +698,12 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
-  protected handleOffer = async (
+  protected async handleOffer(
     src: INodeAddress,
     requestId: Uint8Array,
     msg: OfferMessage,
     version: Version,
-  ) => {
+  ) {
     this.logger.extend('OFFER')(
       `Received from ${shortId(src.nodeId, this.routingTable)} with ${msg.contentKeys.length
       } pieces of content.`,
@@ -884,7 +884,7 @@ export abstract class BaseNetwork extends EventEmitter {
       } pieces of content.  connectionId: ${id}`,
     )
     const enr = this.findEnr(src.nodeId) ?? src
-    await this.handleNewRequest({
+    const req = await this.handleNewRequest({
       networkId: this.networkId,
       contentKeys: desiredContentKeys,
       enr,

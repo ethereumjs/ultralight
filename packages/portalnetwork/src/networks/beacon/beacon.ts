@@ -360,8 +360,7 @@ export class BeaconNetwork extends BaseNetwork {
             hexToBytes(intToHex(BeaconNetworkContentType.LightClientOptimisticUpdate)),
           )
           this.logger.extend('FINDLOCALLY')(
-            `light client is not running, retrieving whatever we have - ${
-              value !== undefined ? short(value) : 'nothing found'
+            `light client is not running, retrieving whatever we have - ${value !== undefined ? short(value) : 'nothing found'
             }`,
           )
         } else {
@@ -371,10 +370,8 @@ export class BeaconNetwork extends BaseNetwork {
       case BeaconNetworkContentType.LightClientFinalityUpdate:
         key = LightClientFinalityUpdateKey.deserialize(contentKey.slice(1))
         this.logger.extend('FINDLOCALLY')(
-          `looking for finality update for slot - ${
-            key.finalitySlot
-          } and local finalized update is for slot - ${
-            this.lightClient?.getFinalized().beacon.slot ?? 'unavailable'
+          `looking for finality update for slot - ${key.finalitySlot
+          } and local finalized update is for slot - ${this.lightClient?.getFinalized().beacon.slot ?? 'unavailable'
           }`,
         )
         if (
@@ -589,10 +586,10 @@ export class BeaconNetwork extends BaseNetwork {
     ) {
       this.logger(
         'Found value for requested content ' +
-          bytesToHex(decodedContentMessage.contentKey) +
-          ' ' +
-          bytesToHex(value.slice(0, 10)) +
-          '...',
+        bytesToHex(decodedContentMessage.contentKey) +
+        ' ' +
+        bytesToHex(value.slice(0, 10)) +
+        '...',
       )
       const payload = ContentMessageType.serialize({
         selector: 1,
@@ -650,7 +647,7 @@ export class BeaconNetwork extends BaseNetwork {
 
   /**
    * The generalized `store` method used to put data into the DB
-   * @param contentType the content type being stored (defined in @link { BeaconNetworkContentType })
+   * @param contentType the content type being stored (defined in {@link BeaconNetworkContentType }
    * @param contentKey the network level content key formatted as a prefixed hex string
    * @param value the Uint8Array corresponding to the SSZ serialized value being stored
    */
@@ -845,11 +842,11 @@ export class BeaconNetwork extends BaseNetwork {
             const requestedKeys: Uint8Array[] =
               version === 0
                 ? contentKeys.filter(
-                    (n, idx) => (<AcceptMessage<0>>msg).contentKeys.get(idx) === true,
-                  )
+                  (n, idx) => (<AcceptMessage<0>>msg).contentKeys.get(idx) === true,
+                )
                 : contentKeys.filter(
-                    (n, idx) => (<AcceptMessage<1>>msg).contentKeys[idx] === AcceptCode.ACCEPT,
-                  )
+                  (n, idx) => (<AcceptMessage<1>>msg).contentKeys[idx] === AcceptCode.ACCEPT,
+                )
             if (requestedKeys.length === 0) {
               // Don't start uTP stream if no content ACCEPTed
               this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr.nodeId)}`)
@@ -911,8 +908,7 @@ export class BeaconNetwork extends BaseNetwork {
    */
   override handleOffer = async (src: INodeAddress, requestId: Uint8Array, msg: OfferMessage) => {
     this.logger.extend('OFFER')(
-      `Received from ${shortId(src.nodeId, this.routingTable)} with ${
-        msg.contentKeys.length
+      `Received from ${shortId(src.nodeId, this.routingTable)} with ${msg.contentKeys.length
       } pieces of content.`,
     )
     try {
