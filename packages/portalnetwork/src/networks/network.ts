@@ -830,7 +830,7 @@ export abstract class BaseNetwork extends EventEmitter {
       case 1:
         {
           this.logger.extend('ACCEPT')(
-            `Accepting: ${desiredContentKeys.length} pieces of content.  connectionId: ${id}`,
+            `Accepting: ${desiredContentKeys.length} pieces of content.  connectionId: ${id} v1`,
           )
           this.portal.metrics?.acceptMessagesSent.inc()
           const idBuffer = new Uint8Array(2)

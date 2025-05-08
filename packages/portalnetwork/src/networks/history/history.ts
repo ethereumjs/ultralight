@@ -750,7 +750,7 @@ export class HistoryNetwork extends BaseNetwork {
     msg: OfferMessage,
     version: Version,
   ) {
-    this.logger.extend('OFFER')(
+    this.logger.extend('ACCEPT')(
       `Received from ${shortId(src.nodeId, this.routingTable)} with ${msg.contentKeys.length
       } pieces of content.`,
     )
@@ -758,9 +758,11 @@ export class HistoryNetwork extends BaseNetwork {
     // Check to see if the first content key is for ephemeral headers.  If so, we expect all
     // content keys to be for ephemeral headers.
     if (contentKeys[0].contentType === HistoryNetworkContentType.EphemeralHeaderOffer) {
+      this.logger.extend('OFFER').extend('EPHEMERALHEADERS')('Received offer for ephemeral headers starting with block hash: ' + bytesToHex(contentKeys[0].keyOpt as Uint8Array))
       const contentIds: number[] = Array(msg.contentKeys.length).fill(AcceptCode.GENERIC_DECLINE)
       for (const key of contentKeys) {
         if (key.contentType !== HistoryNetworkContentType.EphemeralHeaderOffer) {
+          this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')('Received non-ephemeral header in offer for ephemeral headers.  Declining offer.')
           // If we get an offer for ephemeral headers, all offered content keys should be for ephemeral headers
           await this.sendAccept(src, requestId, contentIds, [], version)
           // TODO: Ban/descore peers who send spec-noncompliant offers
@@ -769,6 +771,7 @@ export class HistoryNetwork extends BaseNetwork {
       const beacon = this.portal.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
       if (beacon === undefined || (beacon.lightClient?.status !== RunStatusCode.started && beacon.lightClient?.status !== RunStatusCode.syncing)) {
         // We can't validate ephemeral headers if our light client is not active and/or syncing
+        this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')('Light client is not active and/or syncing.  Declining offer.')
         await this.sendAccept(src, requestId, contentIds, [], version)
         return
       }
@@ -788,6 +791,8 @@ export class HistoryNetwork extends BaseNetwork {
           desiredContentKeys.push(key.keyOpt as Uint8Array)
         }
       }
+      console.log(contentIds, version)
+      this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')(`Sending accept for ${desiredContentKeys.length} desired headers`)
       await this.sendAccept(src, requestId, contentIds, desiredContentKeys, version)
       await new Promise(resolve => {
         const gossipEphemeralHeaders = async (contentKey: Uint8Array) => {

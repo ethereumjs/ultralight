@@ -1,17 +1,20 @@
 import { SignableENR } from '@chainsafe/enr'
 import type { BlockHeader, JSONRPCBlock } from '@ethereumjs/block'
 import { createBlockFromRPC } from '@ethereumjs/block'
-import { concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
+import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
-import { assert, beforeAll, describe, it } from 'vitest'
+import { assert, beforeAll, describe, it, vi } from 'vitest'
 import {
+  type BeaconNetwork,
+  BeaconNetworkContentType,
   EphemeralHeaderOfferPayload,
   EphemeralHeaderPayload,
   HistoryNetworkContentType,
   LightClientBootstrapKey,
   NetworkId,
   createPortalNetwork,
+  getBeaconContentKey,
   getContentKey,
 } from '../../src/index.js'
 import latestBlocks from '../networks/history/testData/latest3Blocks.json'
@@ -139,6 +142,8 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
 })
 describe('should offer headers to peers', () => {
   it.only('should offer headers to peers', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
+    vi.setSystemTime(1746551640000)
     const header22426081 = await import('./testdata/postDenebData/header22426081.json')
     const header22426082 = await import('./testdata/postDenebData/header22426082.json')
     const header22426083 = await import('./testdata/postDenebData/header22426083.json')
@@ -158,13 +163,15 @@ describe('should offer headers to peers', () => {
         setHardfork: true,
       }).header,
     )
+    headers.reverse()
     const offerPayload = headers.map((h) => getContentKey(HistoryNetworkContentType.EphemeralHeaderOffer, h.hash()))
 
     const bootstrapJson = await import('./testdata/postDenebData/bootstrap.json')
     const bootstrap = ssz.deneb.LightClientBootstrap.fromJson(bootstrapJson.data)
+    const bootstrapRoot = ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon)
+    const bootstrapKey = getBeaconContentKey(BeaconNetworkContentType.LightClientBootstrap, LightClientBootstrapKey.serialize({ blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon) }))
     const chainConfig = createBeaconConfig(mainnetChainConfig, hexToBytes(genesisData.mainnet.genesisValidatorsRoot as `0x${string}`))
     const forkDigest = chainConfig.forkName2ForkDigest(ForkName.deneb)
-    const bootstrapKey = LightClientBootstrapKey.serialize({ blockHash: bootstrap.header.beacon.bodyRoot })
     const privateKeys = [
       '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
       '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
@@ -205,16 +212,19 @@ describe('should offer headers to peers', () => {
         privateKey: pk2,
       },
     })
+    node1.enableLog('cheese')
+    node2.enableLog('*Portal*')
     await node1.start()
     await node2.start()
-    const network1 = node1.network()['0x500b']
-    const network2 = node2.network()['0x500b']
-    await network1!.store(bootstrapKey, concatBytes(forkDigest, ssz.deneb.LightClientBootstrap.serialize(bootstrap)))
-    await network2!.store(bootstrapKey, concatBytes(forkDigest, ssz.deneb.LightClientBootstrap.serialize(bootstrap)))
-    await network1?.store(offerPayload[0], EphemeralHeaderOfferPayload.serialize({ header: headers[0].serialize() }))
-    await network1?.store(offerPayload[1], EphemeralHeaderOfferPayload.serialize({ header: headers[1].serialize() }))
-    await network1?.store(offerPayload[2], EphemeralHeaderOfferPayload.serialize({ header: headers[2].serialize() }))
-    const res = await network1!.sendOffer(node2.discv5.enr.toENR(), offerPayload)
+    const history1 = node1.network()['0x500b']
+    const history2 = node2.network()['0x500b']
+    await node1.network()['0x500c']!.store(bootstrapKey, concatBytes(forkDigest, ssz.deneb.LightClientBootstrap.serialize(bootstrap)))
+    await node2.network()['0x500c']!.store(bootstrapKey, concatBytes(forkDigest, ssz.deneb.LightClientBootstrap.serialize(bootstrap)))
+    await history1?.store(offerPayload[0], EphemeralHeaderOfferPayload.serialize({ header: headers[0].serialize() }))
+    await history1?.store(offerPayload[1], EphemeralHeaderOfferPayload.serialize({ header: headers[1].serialize() }))
+    await history1?.store(offerPayload[2], EphemeralHeaderOfferPayload.serialize({ header: headers[2].serialize() }))
+    await (node2.network()['0x500c'] as BeaconNetwork).initializeLightClient(bytesToHex(bootstrapRoot))
+    const res = await history1!.sendOffer(node2.discv5.enr.toENR(), offerPayload, headers.map(h => h.serialize()))
     assert.exists(res)
     console.log(res)
   })
