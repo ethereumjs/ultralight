@@ -793,57 +793,59 @@ export class HistoryNetwork extends BaseNetwork {
         // biome-ignore lint/correctness/noConstantCondition: We only want to do `sendAccept` once
       } while (false)
 
+      await this.sendAccept(src, requestId, contentIds, desiredContentKeys, version)
+
       // Set up gossip parameters
       // 1) Define our gossip function (gossip ephemeral headers to random peers)
       // 2) Set up listener
       // 3) Send accept
-      await new Promise(resolve => {
-        // We use a custom gossip function here because ephemeral headers cannot be gossiped with other content types
-        const gossipEphemeralHeaders = async (contentKey: Uint8Array) => {
-          if (desiredContentKeys.length < 1) {
-            this.removeListener('ContentAdded', gossipEphemeralHeaders)
-            resolve(true)
-            return
-          }
+      // await new Promise(resolve => {
+      //   // We use a custom gossip function here because ephemeral headers cannot be gossiped with other content types
+      //   const gossipEphemeralHeaders = async (contentKey: Uint8Array) => {
+      //     if (desiredContentKeys.length < 1) {
+      //       this.removeListener('ContentAdded', gossipEphemeralHeaders)
+      //       resolve(true)
+      //       return
+      //     }
 
-          if (equalsBytes(desiredContentKeys[desiredContentKeys.length - 1], contentKey)) {
-            // Once we've received the last desired header, gossip all offered ephemeral headers starting with the head hash
-            // We either already have all of the headers or have received them from this gossip message and the spec calls for 
-            // us to neighborhood gossip all of these
-            this.removeListener('ContentAdded', gossipEphemeralHeaders)
-            const content = []
-            for (const key of decodedContentKeys.slice(headHashIndex)) {
-              const value = await this.get(getEphemeralHeaderDbKey(key.keyOpt as Uint8Array))
-              if (value === undefined) {
-                // This shouldn't happen but short circuit here to avoid trying to gossip content we don't have
-                this.logger.extend('GOSSIP').extend('EPHEMERALHEADERS')(`Expected header ${bytesToHex(key.keyOpt as Uint8Array)} not found`)
-                resolve(false)
-              }
-              content.push(hexToBytes(value as PrefixedHexString))
-            }
-            const gossipPromises = []
-            // TODO: Replace 5 with a constant defined in History types once the proper number of peers is defined
-            for (let i = 0; i < 5; i++) {
-              let enr: ENR | undefined = this.routingTable.random()
-              while (enr === undefined) {
-                enr = this.routingTable.random()
-              }
-              const offerKeys = msg.contentKeys.slice(headHashIndex)
-              gossipPromises.push(this.sendOffer(enr, offerKeys, content))
-            }
+      //     if (equalsBytes(desiredContentKeys[desiredContentKeys.length - 1], contentKey)) {
+      //       // Once we've received the last desired header, gossip all offered ephemeral headers starting with the head hash
+      //       // We either already have all of the headers or have received them from this gossip message and the spec calls for 
+      //       // us to neighborhood gossip all of these
+      //       this.removeListener('ContentAdded', gossipEphemeralHeaders)
+      //       const content = []
+      //       for (const key of decodedContentKeys.slice(headHashIndex)) {
+      //         const value = await this.get(getEphemeralHeaderDbKey(key.keyOpt as Uint8Array))
+      //         if (value === undefined) {
+      //           // This shouldn't happen but short circuit here to avoid trying to gossip content we don't have
+      //           this.logger.extend('GOSSIP').extend('EPHEMERALHEADERS')(`Expected header ${bytesToHex(key.keyOpt as Uint8Array)} not found`)
+      //           resolve(false)
+      //         }
+      //         content.push(hexToBytes(value as PrefixedHexString))
+      //       }
+      //       const gossipPromises = []
+      //       // TODO: Replace 5 with a constant defined in History types once the proper number of peers is defined
+      //       for (let i = 0; i < 5; i++) {
+      //         let enr: ENR | undefined = this.routingTable.random()
+      //         while (enr === undefined) {
+      //           enr = this.routingTable.random()
+      //         }
+      //         const offerKeys = msg.contentKeys.slice(headHashIndex)
+      //         gossipPromises.push(this.sendOffer(enr, offerKeys, content))
+      //       }
 
-            await Promise.allSettled(gossipPromises)
-            resolve(true)
-          }
-        }
-        this.addListener('ContentAdded', gossipEphemeralHeaders)
-        void this.sendAccept(src, requestId, contentIds, desiredContentKeys, version)
-        if (desiredContentKeys.length < 1) {
-          // Clean up listener and return early if we don't accept any headers
-          this.removeListener('ContentAdded', gossipEphemeralHeaders)
-          return
-        }
-      })
+      //       await Promise.allSettled(gossipPromises)
+      //       resolve(true)
+      //     }
+      //   }
+      //   this.addListener('ContentAdded', gossipEphemeralHeaders)
+
+      //   if (desiredContentKeys.length < 1) {
+      //     // Clean up listener and return early if we don't accept any headers
+      //     this.removeListener('ContentAdded', gossipEphemeralHeaders)
+      //     return
+      //   }
+      // })
     } else
       await super.handleOffer(src, requestId, msg, version)
   }
