@@ -647,7 +647,7 @@ export class BeaconNetwork extends BaseNetwork {
 
   /**
    * The generalized `store` method used to put data into the DB
-   * @param contentType the content type being stored (defined in @link BeaconNetworkContentType)
+   * @param contentType the content type being stored (defined in {@link BeaconNetworkContentType }
    * @param contentKey the network level content key formatted as a prefixed hex string
    * @param value the Uint8Array corresponding to the SSZ serialized value being stored
    */
