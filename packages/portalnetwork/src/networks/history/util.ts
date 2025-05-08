@@ -135,26 +135,34 @@ export const decodeHistoryNetworkContentKey = (
   contentKey: Uint8Array,
 ):
   | {
-      contentType:
-        | HistoryNetworkContentType.BlockHeader
-        | HistoryNetworkContentType.BlockBody
-        | HistoryNetworkContentType.Receipt
-        | HistoryNetworkContentType.EphemeralHeaderOffer
+    contentType:
+    | HistoryNetworkContentType.BlockHeader
+    | HistoryNetworkContentType.BlockBody
+    | HistoryNetworkContentType.Receipt
+    | HistoryNetworkContentType.EphemeralHeaderOffer
+    keyOpt: Uint8Array
+  }
+  | {
+    contentType: HistoryNetworkContentType.BlockHeaderByNumber
+    keyOpt: bigint
+  }
+  | {
+    contentType: HistoryNetworkContentType.EphemeralHeaderFindContent
+    keyOpt: EphemeralHeaderKeyValues
+  }
+  | {
+    contentType: HistoryNetworkContentType.BlockHeaderByNumber
+    keyOpt: bigint
+  }
+  | {
+    contentType: HistoryNetworkContentType.EphemeralHeaderFindContent
+    keyOpt:
+    | EphemeralHeaderKeyValues
+    | {
+      contentType: HistoryNetworkContentType.EphemeralHeaderOffer
       keyOpt: Uint8Array
     }
-  | {
-      contentType: HistoryNetworkContentType.BlockHeaderByNumber
-      keyOpt: bigint
-    }
-  | {
-      contentType: HistoryNetworkContentType.EphemeralHeaderFindContent
-      keyOpt:
-        | EphemeralHeaderKeyValues
-        | {
-            contentType: HistoryNetworkContentType.EphemeralHeaderOffer
-            keyOpt: Uint8Array
-          }
-    } => {
+  } => {
   const contentType: HistoryNetworkContentType = contentKey[0]
   switch (contentType) {
     case HistoryNetworkContentType.BlockHeaderByNumber: {
