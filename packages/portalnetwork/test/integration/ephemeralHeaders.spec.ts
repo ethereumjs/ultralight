@@ -16,6 +16,7 @@ import {
   createPortalNetwork,
   getBeaconContentKey,
   getContentKey,
+  getEphemeralHeaderDbKey,
 } from '../../src/index.js'
 import latestBlocks from '../networks/history/testData/latest3Blocks.json'
 import { ssz } from '@lodestar/types'
@@ -141,7 +142,7 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
   })
 })
 describe('should offer headers to peers', () => {
-  it.only('should offer headers to peers', async () => {
+  it('should accept offered headers from a peer', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
     vi.setSystemTime(1746551640000)
     const header22426081 = await import('./testdata/postDenebData/header22426081.json')
@@ -163,7 +164,7 @@ describe('should offer headers to peers', () => {
         setHardfork: true,
       }).header,
     )
-    headers.reverse()
+    headers.reverse()  // Ephemeral headers are offered in reverse order
     const offerPayload = headers.map((h) => getContentKey(HistoryNetworkContentType.EphemeralHeaderOffer, h.hash()))
 
     const bootstrapJson = await import('./testdata/postDenebData/bootstrap.json')
@@ -190,6 +191,7 @@ describe('should offer headers to peers', () => {
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.BeaconChainNetwork },
       ],
+      supportedVersions: [0, 1],
       config: {
         enr: enr1,
         bindAddrs: {
@@ -204,6 +206,7 @@ describe('should offer headers to peers', () => {
         { networkId: NetworkId.HistoryNetwork },
         { networkId: NetworkId.BeaconChainNetwork },
       ],
+      supportedVersions: [0, 1],
       config: {
         enr: enr2,
         bindAddrs: {
@@ -212,20 +215,30 @@ describe('should offer headers to peers', () => {
         privateKey: pk2,
       },
     })
-    node1.enableLog('cheese')
-    node2.enableLog('*Portal*')
+
     await node1.start()
     await node2.start()
     const history1 = node1.network()['0x500b']
     const history2 = node2.network()['0x500b']
+    await history2?.sendPing(node1.discv5.enr.toENR())
     await node1.network()['0x500c']!.store(bootstrapKey, concatBytes(forkDigest, ssz.deneb.LightClientBootstrap.serialize(bootstrap)))
     await node2.network()['0x500c']!.store(bootstrapKey, concatBytes(forkDigest, ssz.deneb.LightClientBootstrap.serialize(bootstrap)))
     await history1?.store(offerPayload[0], EphemeralHeaderOfferPayload.serialize({ header: headers[0].serialize() }))
     await history1?.store(offerPayload[1], EphemeralHeaderOfferPayload.serialize({ header: headers[1].serialize() }))
     await history1?.store(offerPayload[2], EphemeralHeaderOfferPayload.serialize({ header: headers[2].serialize() }))
     await (node2.network()['0x500c'] as BeaconNetwork).initializeLightClient(bytesToHex(bootstrapRoot))
-    const res = await history1!.sendOffer(node2.discv5.enr.toENR(), offerPayload, headers.map(h => h.serialize()))
-    assert.exists(res)
-    console.log(res)
-  })
+    await new Promise(resolve => {
+      let count = 0
+      history2?.on('ContentAdded', async (key, value) => {
+        count++
+        if (count === 3) {
+          const header = await history2.get(getEphemeralHeaderDbKey(headers[2].hash()))
+          assert.strictEqual(header, bytesToHex(headers[2].serialize()))
+          resolve(true)
+        }
+      })
+
+      void history1!.sendOffer(node2.discv5.enr.toENR(), offerPayload, headers.map(h => EphemeralHeaderOfferPayload.serialize({ header: h.serialize() })))
+    })
+  }, 10000)
 })

@@ -830,7 +830,7 @@ export abstract class BaseNetwork extends EventEmitter {
       case 1:
         {
           this.logger.extend('ACCEPT')(
-            `Accepting: ${desiredContentKeys.length} pieces of content.  connectionId: ${id} v1`,
+            `Accepting: ${desiredContentKeys.length} pieces of content.  connectionId: ${id}`,
           )
           this.portal.metrics?.acceptMessagesSent.inc()
           const idBuffer = new Uint8Array(2)
@@ -884,7 +884,7 @@ export abstract class BaseNetwork extends EventEmitter {
       } pieces of content.  connectionId: ${id}`,
     )
     const enr = this.findEnr(src.nodeId) ?? src
-    await this.handleNewRequest({
+    const req = await this.handleNewRequest({
       networkId: this.networkId,
       contentKeys: desiredContentKeys,
       enr,
