@@ -7,4 +7,3 @@ export const APPROVED_METHODS = [
   'portal_historyFindContent',
   'portal_historyFindNodes',
 ] as const
-

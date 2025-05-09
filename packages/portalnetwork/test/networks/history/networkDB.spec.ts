@@ -1,5 +1,5 @@
 import { SignableENR } from '@chainsafe/enr'
-import { hexToBytes, PrefixedHexString } from '@ethereumjs/util'
+import { type PrefixedHexString, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { assert, describe, expect, it } from 'vitest'
 import { HistoryNetwork, NetworkId, createPortalNetwork } from '../../../src/index.js'

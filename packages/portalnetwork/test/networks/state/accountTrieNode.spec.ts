@@ -4,12 +4,12 @@ import { keys } from '@libp2p/crypto'
 import { assert, describe, expect, it } from 'vitest'
 
 import {
-  AccountTrieNodeContentKey,
   AccountTrieNodeOffer,
   NetworkId,
-  StateNetworkContentId,
   createPortalNetwork,
+  decodeAccountTrieNodeContentKey,
   distance,
+  stateNetworkContentIdFromBytes,
 } from '../../../src/index.js'
 
 import samples from './testdata/accountNodeSamples.json'
@@ -20,8 +20,8 @@ describe('samples', () => {
   const _samples = samples as [string, object][]
   for (const [key, value] of _samples) {
     const contentBytes = Uint8Array.from(Object.values(value))
-    const contentKeyBytes = hexToBytes(key)
-    const contentKey = AccountTrieNodeContentKey.decode(contentKeyBytes)
+    const contentKeyBytes = hexToBytes(key as `0x${string}`)
+    const contentKey = decodeAccountTrieNodeContentKey(contentKeyBytes)
     it('should decode sample key', () => {
       expect(contentKey.path).toBeDefined()
       expect(contentKey.nodeHash).toBeDefined()
@@ -58,8 +58,8 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
   const sample = samples.slice(-1)[0]
   const [key, value] = sample as [string, object]
   const contentBytes = Uint8Array.from(Object.values(value))
-  const contentKeyBytes = hexToBytes(key)
-  const contentKey = AccountTrieNodeContentKey.decode(contentKeyBytes)
+  const contentKeyBytes = hexToBytes(key as `0x${string}`)
+  const contentKey = decodeAccountTrieNodeContentKey(contentKeyBytes)
   const content = AccountTrieNodeOffer.deserialize(contentBytes)
   const { path } = contentKey
   const { proof } = content
@@ -69,12 +69,12 @@ describe('StateNetwork AccountTrieNode Gossip', async () => {
     expect(interested.length).toBeGreaterThan(0)
     expect(proof.length - interested.length).toEqual(notInterested.length)
     for (const { contentKey } of interested) {
-      const id = StateNetworkContentId.fromBytes(contentKey)
+      const id = stateNetworkContentIdFromBytes(contentKey)
       const dist = distance(client.discv5.enr.nodeId, bytesToUnprefixedHex(id))
       expect(dist).toBeLessThan(state.nodeRadius)
     }
     for (const { contentKey } of notInterested) {
-      const id = StateNetworkContentId.fromBytes(contentKey)
+      const id = stateNetworkContentIdFromBytes(contentKey)
       const dist = distance(client.discv5.enr.nodeId, bytesToUnprefixedHex(id))
       expect(dist).toBeGreaterThan(state.nodeRadius)
     }

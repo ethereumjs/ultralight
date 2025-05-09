@@ -1,6 +1,11 @@
 import { Common, Mainnet } from '@ethereumjs/common'
 import { createEVM } from '@ethereumjs/evm'
-import { bytesToHex, createAddressFromString, hexToBytes, PrefixedHexString } from '@ethereumjs/util'
+import {
+  type PrefixedHexString,
+  bytesToHex,
+  createAddressFromString,
+  hexToBytes,
+} from '@ethereumjs/util'
 import { keccak256 } from 'ethereum-cryptography/keccak.js'
 
 import {

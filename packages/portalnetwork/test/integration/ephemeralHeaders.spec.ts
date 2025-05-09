@@ -3,6 +3,10 @@ import type { BlockHeader, JSONRPCBlock } from '@ethereumjs/block'
 import { createBlockFromRPC } from '@ethereumjs/block'
 import { bytesToHex, concatBytes, hexToBytes, randomBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
+import { createBeaconConfig, createChainForkConfig } from '@lodestar/config'
+import { genesisData, mainnetChainConfig } from '@lodestar/config/networks'
+import { ForkName } from '@lodestar/params'
+import { ssz } from '@lodestar/types'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, beforeAll, describe, it, vi } from 'vitest'
 import {
@@ -19,10 +23,6 @@ import {
   getEphemeralHeaderDbKey,
 } from '../../src/index.js'
 import latestBlocks from '../networks/history/testData/latest3Blocks.json'
-import { ssz } from '@lodestar/types'
-import { createBeaconConfig, createChainForkConfig } from '@lodestar/config'
-import { genesisData, mainnetChainConfig } from '@lodestar/config/networks'
-import { ForkName } from '@lodestar/params'
 
 describe('should be able to retrieve ephemeral headers from a peer', () => {
   let headers: BlockHeader[]
@@ -110,10 +110,13 @@ describe('should be able to retrieve ephemeral headers from a peer', () => {
     }
 
     // Verify that we get a single ancestor for a content key with an ancestor count of 1
-    const contentKeyForOneAncestor = getContentKey(HistoryNetworkContentType.EphemeralHeaderFindContent, {
-      blockHash: headers[0].hash(),
-      ancestorCount: 1,
-    })
+    const contentKeyForOneAncestor = getContentKey(
+      HistoryNetworkContentType.EphemeralHeaderFindContent,
+      {
+        blockHash: headers[0].hash(),
+        ancestorCount: 1,
+      },
+    )
 
     const res2 = await network2!.sendFindContent(node1.discv5.enr.toENR(), contentKeyForOneAncestor)
     assert.exists(res2)
@@ -164,14 +167,24 @@ describe('should offer headers to peers', () => {
         setHardfork: true,
       }).header,
     )
-    headers.reverse()  // Ephemeral headers are offered in reverse order
-    const offerPayload = headers.map((h) => getContentKey(HistoryNetworkContentType.EphemeralHeaderOffer, h.hash()))
+    headers.reverse() // Ephemeral headers are offered in reverse order
+    const offerPayload = headers.map((h) =>
+      getContentKey(HistoryNetworkContentType.EphemeralHeaderOffer, h.hash()),
+    )
 
     const bootstrapJson = await import('./testdata/postDenebData/bootstrap.json')
     const bootstrap = ssz.deneb.LightClientBootstrap.fromJson(bootstrapJson.data)
     const bootstrapRoot = ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon)
-    const bootstrapKey = getBeaconContentKey(BeaconNetworkContentType.LightClientBootstrap, LightClientBootstrapKey.serialize({ blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon) }))
-    const chainConfig = createBeaconConfig(mainnetChainConfig, hexToBytes(genesisData.mainnet.genesisValidatorsRoot as `0x${string}`))
+    const bootstrapKey = getBeaconContentKey(
+      BeaconNetworkContentType.LightClientBootstrap,
+      LightClientBootstrapKey.serialize({
+        blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
+      }),
+    )
+    const chainConfig = createBeaconConfig(
+      mainnetChainConfig,
+      hexToBytes(genesisData.mainnet.genesisValidatorsRoot as `0x${string}`),
+    )
     const forkDigest = chainConfig.forkName2ForkDigest(ForkName.deneb)
     const privateKeys = [
       '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
@@ -221,13 +234,34 @@ describe('should offer headers to peers', () => {
     const history1 = node1.network()['0x500b']
     const history2 = node2.network()['0x500b']
     await history2?.sendPing(node1.discv5.enr.toENR())
-    await node1.network()['0x500c']!.store(bootstrapKey, concatBytes(forkDigest, ssz.deneb.LightClientBootstrap.serialize(bootstrap)))
-    await node2.network()['0x500c']!.store(bootstrapKey, concatBytes(forkDigest, ssz.deneb.LightClientBootstrap.serialize(bootstrap)))
-    await history1?.store(offerPayload[0], EphemeralHeaderOfferPayload.serialize({ header: headers[0].serialize() }))
-    await history1?.store(offerPayload[1], EphemeralHeaderOfferPayload.serialize({ header: headers[1].serialize() }))
-    await history1?.store(offerPayload[2], EphemeralHeaderOfferPayload.serialize({ header: headers[2].serialize() }))
-    await (node2.network()['0x500c'] as BeaconNetwork).initializeLightClient(bytesToHex(bootstrapRoot))
-    await new Promise(resolve => {
+    await node1
+      .network()
+      ['0x500c']!.store(
+        bootstrapKey,
+        concatBytes(forkDigest, ssz.deneb.LightClientBootstrap.serialize(bootstrap)),
+      )
+    await node2
+      .network()
+      ['0x500c']!.store(
+        bootstrapKey,
+        concatBytes(forkDigest, ssz.deneb.LightClientBootstrap.serialize(bootstrap)),
+      )
+    await history1?.store(
+      offerPayload[0],
+      EphemeralHeaderOfferPayload.serialize({ header: headers[0].serialize() }),
+    )
+    await history1?.store(
+      offerPayload[1],
+      EphemeralHeaderOfferPayload.serialize({ header: headers[1].serialize() }),
+    )
+    await history1?.store(
+      offerPayload[2],
+      EphemeralHeaderOfferPayload.serialize({ header: headers[2].serialize() }),
+    )
+    await (node2.network()['0x500c'] as BeaconNetwork).initializeLightClient(
+      bytesToHex(bootstrapRoot),
+    )
+    await new Promise((resolve) => {
       let count = 0
       history2?.on('ContentAdded', async (key, value) => {
         count++
@@ -238,7 +272,11 @@ describe('should offer headers to peers', () => {
         }
       })
 
-      void history1!.sendOffer(node2.discv5.enr.toENR(), offerPayload, headers.map(h => EphemeralHeaderOfferPayload.serialize({ header: h.serialize() })))
+      void history1!.sendOffer(
+        node2.discv5.enr.toENR(),
+        offerPayload,
+        headers.map((h) => EphemeralHeaderOfferPayload.serialize({ header: h.serialize() })),
+      )
     })
   }, 10000)
 })

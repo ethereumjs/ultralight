@@ -40,7 +40,9 @@ export class PortalTrieDB extends MapDB<string, string> implements DB<string, st
         this.logger.extend('GET')(
           `${key.slice(0, 6)}...found in DB with key ${dbKey.slice(0, 6)}...: (${value.length} bytes)`,
         )
-        const { node } = AccountTrieNodeRetrieval.deserialize(hexToBytes(value as PrefixedHexString))
+        const { node } = AccountTrieNodeRetrieval.deserialize(
+          hexToBytes(value as PrefixedHexString),
+        )
         return bytesToUnprefixedHex(node)
       } catch (e) {
         this.logger.extend('GET')(`${key.slice(0, 6)}...not found in DB... looking in temp`)

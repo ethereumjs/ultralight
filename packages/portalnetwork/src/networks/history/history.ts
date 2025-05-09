@@ -1,6 +1,13 @@
 import type { BlockHeader } from '@ethereumjs/block'
 import { Block, createBlockHeaderFromRLP } from '@ethereumjs/block'
-import { bytesToHex, bytesToInt, concatBytes, equalsBytes, hexToBytes, type PrefixedHexString } from '@ethereumjs/util'
+import {
+  type PrefixedHexString,
+  bytesToHex,
+  bytesToInt,
+  concatBytes,
+  equalsBytes,
+  hexToBytes,
+} from '@ethereumjs/util'
 import debug from 'debug'
 
 import type {
@@ -63,8 +70,8 @@ import {
 import type { ENR } from '@chainsafe/enr'
 
 import { RunStatusCode } from '@lodestar/light-client'
-import type { Debugger } from 'debug'
 import type { LightClientHeader } from '@lodestar/types/lib/deneb/types.js'
+import type { Debugger } from 'debug'
 
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
@@ -93,7 +100,7 @@ export class HistoryNetwork extends BaseNetwork {
   }
 
   public blockHashToNumber(blockHash: Uint8Array): bigint | undefined {
-    const blockNumber = this.blockHashIndex.get(bytesToHex(blockHash) as PrefixedHexString)
+    const blockNumber = this.blockHashIndex.get(bytesToHex(blockHash))
     return blockNumber === undefined ? undefined : BigInt(blockNumber)
   }
 
@@ -408,7 +415,10 @@ export class HistoryNetwork extends BaseNetwork {
     const contentKey = decodeHistoryNetworkContentKey(decodedContentMessage.contentKey)
     let value: Uint8Array | undefined
     if (contentKey.contentType === HistoryNetworkContentType.EphemeralHeaderFindContent) {
-      const ck = contentKey as { contentType: HistoryNetworkContentType.EphemeralHeaderFindContent, keyOpt: EphemeralHeaderKeyValues }
+      const ck = contentKey as {
+        contentType: HistoryNetworkContentType.EphemeralHeaderFindContent
+        keyOpt: EphemeralHeaderKeyValues
+      }
       if (ck.keyOpt.ancestorCount < 0 || ck.keyOpt.ancestorCount > 255) {
         const errorMessage = `received invalid ephemeral headers request with invalid ancestorCount: expected 0 <= 255, got ${ck.keyOpt.ancestorCount}`
         this.logger.extend('FOUNDCONTENT')(errorMessage)
@@ -418,14 +428,16 @@ export class HistoryNetwork extends BaseNetwork {
         `Received ephemeral headers request for block ${bytesToHex(ck.keyOpt.blockHash)} with ancestorCount ${ck.keyOpt.ancestorCount}`,
       )
       try {
-        const payload = await this.assembleEphemeralHeadersPayload(ck.keyOpt.blockHash, ck.keyOpt.ancestorCount)
+        const payload = await this.assembleEphemeralHeadersPayload(
+          ck.keyOpt.blockHash,
+          ck.keyOpt.ancestorCount,
+        )
         this.logger.extend('FOUNDCONTENT')(
           `Found ${payload.length} headers for ${bytesToHex(ck.keyOpt.blockHash)}, assembling ephemeral headers response to ${shortId(src.nodeId)}`,
         )
         value = payload
-      }
-      catch (err: any) {
-        if (err.message.includes('Header not found')) {
+      } catch (err: any) {
+        if (err.message.includes('Header not found') === true) {
           this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(
             `Header not found for ${bytesToHex(ck.keyOpt.blockHash)}, sending empty ephemeral headers response to ${shortId(src.nodeId)}`,
           )
@@ -447,7 +459,6 @@ export class HistoryNetwork extends BaseNetwork {
         )
         return
       }
-
     } else {
       value = await this.findContentLocally(decodedContentMessage.contentKey)
     }
@@ -626,7 +637,9 @@ export class HistoryNetwork extends BaseNetwork {
         const header = createBlockHeaderFromRLP(payload.header, { setHardfork: true })
         // Check if we already have this header
         if (this.ephemeralHeaderIndex.getByValue(bytesToHex(header.hash())) !== undefined) {
-          this.logger.extend('STORE')(`Ephemeral header ${bytesToHex(header.hash())} already exists`)
+          this.logger.extend('STORE')(
+            `Ephemeral header ${bytesToHex(header.hash())} already exists`,
+          )
           return
         }
         const hashKey = getEphemeralHeaderDbKey(header.hash())
@@ -638,7 +651,11 @@ export class HistoryNetwork extends BaseNetwork {
 
     this.emit('ContentAdded', contentKey, value)
     if (this.routingTable.values().length > 0) {
-      if (contentType !== HistoryNetworkContentType.EphemeralHeader && contentType !== HistoryNetworkContentType.EphemeralHeaderOffer && contentType !== HistoryNetworkContentType.EphemeralHeaderFindContent) {
+      if (
+        contentType !== HistoryNetworkContentType.EphemeralHeader &&
+        contentType !== HistoryNetworkContentType.EphemeralHeaderOffer &&
+        contentType !== HistoryNetworkContentType.EphemeralHeaderFindContent
+      ) {
         // Gossip new content to network except for ephemeral headers
         this.gossipManager.add(contentKey)
       }
@@ -711,13 +728,18 @@ export class HistoryNetwork extends BaseNetwork {
    * @param ancestorCount - The number of ancestor headers to include in the payload
    * @returns The assembled ephemeral header payload
    */
-  public async assembleEphemeralHeadersPayload(blockHash: Uint8Array, ancestorCount: number): Promise<Uint8Array> {
+  public async assembleEphemeralHeadersPayload(
+    blockHash: Uint8Array,
+    ancestorCount: number,
+  ): Promise<Uint8Array> {
     const headers: Uint8Array[] = []
     const header = await this.get(getEphemeralHeaderDbKey(blockHash))
     if (header === undefined) {
       throw new Error('Header not found')
     }
-    this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(`Found requested header for ${bytesToHex(blockHash)}`)
+    this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(
+      `Found requested header for ${bytesToHex(blockHash)}`,
+    )
     headers.push(hexToBytes(header as PrefixedHexString))
     if (ancestorCount === 0) {
       return EphemeralHeaderPayload.serialize(headers)
@@ -729,14 +751,18 @@ export class HistoryNetwork extends BaseNetwork {
       }
       ancestorNumber--
       // TODO: Decide if this is safe or if we should retrieve each header from the DB and step back using the parent hash (which would be less efficient)
-      const ancestorHashKey = getEphemeralHeaderDbKey(hexToBytes(this.ephemeralHeaderIndex.getByKey(ancestorNumber)! as PrefixedHexString))
+      const ancestorHashKey = getEphemeralHeaderDbKey(
+        hexToBytes(this.ephemeralHeaderIndex.getByKey(ancestorNumber)! as PrefixedHexString),
+      )
       const ancestorHeader = await this.get(ancestorHashKey)
       if (ancestorHeader === undefined) {
         break
       }
       headers.push(hexToBytes(ancestorHeader as PrefixedHexString))
     }
-    this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(`Found ${headers.length - 1} ancestor headers out of ${ancestorCount} requested for ${bytesToHex(blockHash)}`)
+    this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(
+      `Found ${headers.length - 1} ancestor headers out of ${ancestorCount} requested for ${bytesToHex(blockHash)}`,
+    )
     return EphemeralHeaderPayload.serialize(headers)
   }
 
@@ -750,11 +776,14 @@ export class HistoryNetwork extends BaseNetwork {
       `Received from ${shortId(src.nodeId, this.routingTable)} with ${msg.contentKeys.length
       } pieces of content.`,
     )
-    const decodedContentKeys = msg.contentKeys.map(key => decodeHistoryNetworkContentKey(key))
+    const decodedContentKeys = msg.contentKeys.map((key) => decodeHistoryNetworkContentKey(key))
     // Check to see if the first content key is for ephemeral headers.  If so, we expect all
     // content keys to be for ephemeral headers.
     if (decodedContentKeys[0].contentType === HistoryNetworkContentType.EphemeralHeaderOffer) {
-      this.logger.extend('OFFER').extend('EPHEMERALHEADERS')('Received offer for ephemeral headers starting with block hash: ' + bytesToHex(decodedContentKeys[0].keyOpt as Uint8Array))
+      this.logger.extend('OFFER').extend('EPHEMERALHEADERS')(
+        'Received offer for ephemeral headers starting with block hash: ' +
+        bytesToHex(decodedContentKeys[0].keyOpt),
+      )
       const contentIds: number[] = Array(msg.contentKeys.length).fill(AcceptCode.GENERIC_DECLINE)
       const desiredContentKeys: Uint8Array[] = []
       let headHash: Uint8Array | undefined
@@ -762,34 +791,50 @@ export class HistoryNetwork extends BaseNetwork {
       do {
         for (const key of decodedContentKeys) {
           if (key.contentType !== HistoryNetworkContentType.EphemeralHeaderOffer) {
-            this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')('Received non-ephemeral header in offer for ephemeral headers.  Declining offer.')
+            this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')(
+              'Received non-ephemeral header in offer for ephemeral headers.  Declining offer.',
+            )
             // If we get an offer for ephemeral headers, all offered content keys should be for ephemeral headers
             // TODO: Ban/descore peers who send spec-noncompliant offers
             break
           }
         }
         const beacon = this.portal.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
-        if (beacon === undefined || (beacon.lightClient?.status !== RunStatusCode.started && beacon.lightClient?.status !== RunStatusCode.syncing)) {
+        if (
+          beacon === undefined ||
+          (beacon.lightClient?.status !== RunStatusCode.started &&
+            beacon.lightClient?.status !== RunStatusCode.syncing)
+        ) {
           // We can't validate ephemeral headers if our light client is not active and/or syncing
-          this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')('Light client is not active and/or syncing.  Declining offer.')
+          this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')(
+            'Light client is not active and/or syncing.  Declining offer.',
+          )
           break
         }
         // TODO: Make this fork safe (and not assume deneb)
         headHash = (beacon.lightClient.getHead() as LightClientHeader).execution.blockHash
-        headHashIndex = decodedContentKeys.findIndex((key) => equalsBytes(key.keyOpt as Uint8Array, headHash!))
+        headHashIndex = decodedContentKeys.findIndex((key) =>
+          equalsBytes(key.keyOpt as Uint8Array, headHash!),
+        )
         if (headHashIndex === -1) {
           // If our known head hash isn't in the request, we can't validate other ephemeral headers so decline
-          this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')('Known head hash not found in offer.  Declining offer.')
+          this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')(
+            'Known head hash not found in offer.  Declining offer.',
+          )
           break
         }
         for (let i = headHashIndex; i < decodedContentKeys.length; i++) {
           const key = decodedContentKeys[i]
-          if (this.ephemeralHeaderIndex.getByValue(bytesToHex(key.keyOpt as Uint8Array)) === undefined) {
+          if (
+            this.ephemeralHeaderIndex.getByValue(bytesToHex(key.keyOpt as Uint8Array)) === undefined
+          ) {
             contentIds[i] = AcceptCode.ACCEPT
             desiredContentKeys.push(msg.contentKeys[i])
           }
         }
-        this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')(`Sending accept for ${desiredContentKeys.length} desired headers`)
+        this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')(
+          `Sending accept for ${desiredContentKeys.length} desired headers`,
+        )
         // biome-ignore lint/correctness/noConstantCondition: We only want to do `sendAccept` once
       } while (false)
 
@@ -810,7 +855,7 @@ export class HistoryNetwork extends BaseNetwork {
 
       //     if (equalsBytes(desiredContentKeys[desiredContentKeys.length - 1], contentKey)) {
       //       // Once we've received the last desired header, gossip all offered ephemeral headers starting with the head hash
-      //       // We either already have all of the headers or have received them from this gossip message and the spec calls for 
+      //       // We either already have all of the headers or have received them from this gossip message and the spec calls for
       //       // us to neighborhood gossip all of these
       //       this.removeListener('ContentAdded', gossipEphemeralHeaders)
       //       const content = []
@@ -846,7 +891,6 @@ export class HistoryNetwork extends BaseNetwork {
       //     return
       //   }
       // })
-    } else
-      await super.handleOffer(src, requestId, msg, version)
+    } else await super.handleOffer(src, requestId, msg, version)
   }
 }

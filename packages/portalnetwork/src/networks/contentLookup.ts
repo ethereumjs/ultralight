@@ -42,10 +42,10 @@ export class ContentLookup {
     this.completedRequests = trace ? new Map() : undefined
     this.contentTrace = trace
       ? {
-          origin: ('0x' + this.network.portal.discv5.enr.nodeId) as PrefixedHexString,
-          targetId: Array.from(hexToBytes(`0x${this.contentId}`)) as any,
-          metadata: {},
-        }
+        origin: ('0x' + this.network.portal.discv5.enr.nodeId) as PrefixedHexString,
+        targetId: Array.from(hexToBytes(`0x${this.contentId}`)) as any,
+        metadata: {},
+      }
       : undefined
   }
 
@@ -53,7 +53,7 @@ export class ContentLookup {
     if (this.queuedPeers.has(enr.nodeId) || this.network.portal.uTP.hasRequests(enr.nodeId)) {
       return
     }
-    
+
     const dist = distance(enr.nodeId, this.contentId)
     this.lookupPeers.push({ enr, distance: Number(dist) })
     this.queuedPeers.add(enr.nodeId)
@@ -61,9 +61,7 @@ export class ContentLookup {
       enr: enr.encodeTxt(),
       distance: bigIntToHex(dist),
     })
-    this.logger(
-      `Adding ${shortId(enr.nodeId)} to lookup queue (${this.lookupPeers.size()})`,
-    )
+    this.logger(`Adding ${shortId(enr.nodeId)} to lookup queue (${this.lookupPeers.size()})`)
   }
 
   /**
@@ -109,7 +107,7 @@ export class ContentLookup {
           const timeoutId = setTimeout(() => {
             controller.abort()
           }, this.timeout)
-          
+
           return Promise.race([
             this.processPeer(peer, controller.signal).finally(() => {
               clearTimeout(timeoutId)
@@ -176,7 +174,10 @@ export class ContentLookup {
     return this.content
   }
 
-  private processPeer = async (peer: LookupPeer, signal?: AbortSignal): Promise<ContentLookupResponse | void> => {
+  private processPeer = async (
+    peer: LookupPeer,
+    signal?: AbortSignal,
+  ): Promise<ContentLookupResponse | void> => {
     if (this.finished) return
     if (this.network.routingTable.isIgnored(peer.enr.nodeId)) {
       this.logger(`peer ${shortId(peer.enr.nodeId)} is ignored`)
@@ -196,10 +197,10 @@ export class ContentLookup {
       })
 
       // Race between the actual request and the abort signal
-      const res = await Promise.race([
+      const res = (await Promise.race([
         this.network.sendFindContent!(peer.enr, this.contentKey),
-        abortPromise
-      ]) as ContentLookupResponse | undefined
+        abortPromise,
+      ])) as ContentLookupResponse | undefined
 
       this.pending.delete(peer.enr.encodeTxt())
       if (this.finished) {
@@ -239,7 +240,7 @@ export class ContentLookup {
       }
     } catch (err) {
       this.pending.delete(peer.enr.encodeTxt())
-      if (signal?.aborted) {
+      if (signal?.aborted === true) {
         this.logger(`Request to ${shortId(peer.enr.nodeId)} was cancelled`)
       }
       throw err

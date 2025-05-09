@@ -3,13 +3,13 @@ import { EntryStatus, MAX_NODES_PER_BUCKET, distance } from '@chainsafe/discv5'
 import { ENR } from '@chainsafe/enr'
 import { BitArray } from '@chainsafe/ssz'
 import {
+  type PrefixedHexString,
   bytesToHex,
   bytesToInt,
   bytesToUnprefixedHex,
   concatBytes,
   fromAscii,
   hexToBytes,
-  type PrefixedHexString,
   randomBytes,
 } from '@ethereumjs/util'
 import { EventEmitter } from 'eventemitter3'
@@ -216,7 +216,10 @@ export abstract class BaseNetwork extends EventEmitter {
       }
       for (const [key, val] of toDelete) {
         this.logger.extend('prune')(`Gossiping ${key}`)
-        void this.gossipContent(hexToBytes(key as PrefixedHexString), hexToBytes(val as PrefixedHexString))
+        void this.gossipContent(
+          hexToBytes(key as PrefixedHexString),
+          hexToBytes(val as PrefixedHexString),
+        )
       }
     } catch (err: any) {
       this.logger.extend('prune')(`Error pruning content: ${err.message}`)
@@ -637,11 +640,11 @@ export abstract class BaseNetwork extends EventEmitter {
             const requestedKeys: Uint8Array[] =
               version === 0
                 ? contentKeys.filter(
-                  (n, idx) => (<AcceptMessage<0>>msg).contentKeys.get(idx) === true,
-                )
+                    (n, idx) => (<AcceptMessage<0>>msg).contentKeys.get(idx) === true,
+                  )
                 : contentKeys.filter(
-                  (n, idx) => (<AcceptMessage<1>>msg).contentKeys[idx] === AcceptCode.ACCEPT,
-                )
+                    (n, idx) => (<AcceptMessage<1>>msg).contentKeys[idx] === AcceptCode.ACCEPT,
+                  )
             if (requestedKeys.length === 0) {
               // Don't start uTP stream if no content ACCEPTed
               this.logger.extend('ACCEPT')(`No content ACCEPTed by ${shortId(enr.nodeId)}`)
@@ -671,7 +674,7 @@ export abstract class BaseNetwork extends EventEmitter {
               for (const key of requestedKeys) {
                 let value = Uint8Array.from([])
                 try {
-                  value = hexToBytes(await this.get(key) as PrefixedHexString)
+                  value = hexToBytes((await this.get(key)) as PrefixedHexString)
                   requestedData.push(value)
                 } catch (err: any) {
                   this.logger(`Error retrieving content -- ${err.toString()}`)
@@ -705,7 +708,8 @@ export abstract class BaseNetwork extends EventEmitter {
     version: Version,
   ) {
     this.logger.extend('OFFER')(
-      `Received from ${shortId(src.nodeId, this.routingTable)} with ${msg.contentKeys.length
+      `Received from ${shortId(src.nodeId, this.routingTable)} with ${
+        msg.contentKeys.length
       } pieces of content.`,
     )
     switch (version) {
@@ -880,7 +884,8 @@ export abstract class BaseNetwork extends EventEmitter {
     }
     await this.sendResponse(src, requestId, encodedPayload)
     this.logger.extend('ACCEPT')(
-      `Sent to ${shortId(src.nodeId, this.routingTable)} for ${desiredContentKeys.length
+      `Sent to ${shortId(src.nodeId, this.routingTable)} for ${
+        desiredContentKeys.length
       } pieces of content.  connectionId: ${id}`,
     )
     const enr = this.findEnr(src.nodeId) ?? src
@@ -916,10 +921,10 @@ export abstract class BaseNetwork extends EventEmitter {
     ) {
       this.logger(
         'Found value for requested content ' +
-        bytesToHex(decodedContentMessage.contentKey) +
-        ' ' +
-        bytesToHex(value.slice(0, 10)) +
-        '...',
+          bytesToHex(decodedContentMessage.contentKey) +
+          ' ' +
+          bytesToHex(value.slice(0, 10)) +
+          '...',
       )
       const payload = ContentMessageType.serialize({
         selector: 1,
@@ -979,7 +984,11 @@ export abstract class BaseNetwork extends EventEmitter {
     }
   }
 
-  protected enrResponse = async (contentKey: Uint8Array, src: INodeAddress, requestId: Uint8Array) => {
+  protected enrResponse = async (
+    contentKey: Uint8Array,
+    src: INodeAddress,
+    requestId: Uint8Array,
+  ) => {
     const lookupKey = this.contentKeyToId(contentKey)
     // Discv5 calls for maximum of 16 nodes per NODES message
     const ENRs = this.routingTable.nearest(lookupKey, 16)
@@ -993,7 +1002,7 @@ export abstract class BaseNetwork extends EventEmitter {
       while (
         encodedEnrs.length > 0 &&
         arrayByteLength(encodedEnrs) >
-        MAX_UDP_PACKET_SIZE - getTalkReqOverhead(hexToBytes(this.networkId).byteLength)
+          MAX_UDP_PACKET_SIZE - getTalkReqOverhead(hexToBytes(this.networkId).byteLength)
       ) {
         // Remove ENRs until total ENRs less than 1200 bytes
         encodedEnrs.pop()

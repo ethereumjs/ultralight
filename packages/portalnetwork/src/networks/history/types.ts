@@ -39,7 +39,7 @@ export enum HistoryNetworkContentType {
   BlockHeaderByNumber = 3,
   EphemeralHeaderFindContent = 4,
   EphemeralHeaderOffer = 5,
-  EphemeralHeader = 99,  // using an arbitrarily high number to avoid potential conflicts with future content types
+  EphemeralHeader = 99, // using an arbitrarily high number to avoid potential conflicts with future content types
 }
 export enum HistoryNetworkRetrievalMechanism {
   BlockHeaderByHash = 0,

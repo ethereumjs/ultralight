@@ -95,8 +95,7 @@ export class UltralightStateManager implements StateManagerInterface {
     let account: Account | undefined
     const accountRLP = await this.state.manager.getAccount(
       address.toBytes(),
-      hexToBytes(this.stateRoot as PrefixedHexString
-      ),
+      hexToBytes(this.stateRoot as PrefixedHexString),
     )
     if (accountRLP !== undefined) {
       account = createAccountFromRLP(accountRLP)
@@ -135,7 +134,10 @@ export class UltralightStateManager implements StateManagerInterface {
   getContractCode = async (address: Address): Promise<Uint8Array> => {
     let code = this._contractCache.get(address.toString())
     if (code !== undefined) return code
-    code = await this.state.manager.getCode(address.toBytes(), hexToBytes(this.stateRoot as PrefixedHexString))
+    code = await this.state.manager.getCode(
+      address.toBytes(),
+      hexToBytes(this.stateRoot as PrefixedHexString),
+    )
     if (code !== undefined) {
       this._contractCache.set(address.toString(), code)
     }

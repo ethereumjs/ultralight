@@ -64,9 +64,6 @@
   "author": "acolytec3",
   "license": "MIT",
   "nodemonConfig": {
-    "watch": [
-      "src",
-      "../portalnetwork/dist"
-    ]
+    "watch": ["src", "../portalnetwork/dist"]
   }
 }

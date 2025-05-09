@@ -1,6 +1,6 @@
 import { distance } from '@chainsafe/discv5'
 import { ContainerType, UintBigintType } from '@chainsafe/ssz'
-import { bytesToHex, hexToBytes, padToEven, PrefixedHexString } from '@ethereumjs/util'
+import { type PrefixedHexString, bytesToHex, hexToBytes, padToEven } from '@ethereumjs/util'
 import debug from 'debug'
 import { MemoryLevel } from 'memory-level'
 
@@ -77,7 +77,9 @@ export class NetworkDB {
       this.logger(`Error putting content in DB: ${err.toString()}`)
     }
     this.streaming.delete(key)
-    this.logger(`Put ${key} in DB.  Size=${hexToBytes(padToEven(val) as PrefixedHexString).length} bytes`)
+    this.logger(
+      `Put ${key} in DB.  Size=${hexToBytes(padToEven(val) as PrefixedHexString).length} bytes`,
+    )
     this.approximateSize += 2 * (val.length - 2)
     this.approximateSize += 2 * (key.length - 2)
   }
