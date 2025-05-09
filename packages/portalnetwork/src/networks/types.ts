@@ -24,12 +24,14 @@ const BYTE_SIZE = 256
 
 // subnetwork IDs
 export enum NetworkId {
+  HeadStateNetwork = '0x5009',
   StateNetwork = '0x500a',
   HistoryNetwork = '0x500b',
   BeaconChainNetwork = '0x500c',
   CanonicalTxIndexNetwork = '0x500d',
   VerkleStateNetwork = '0x500e',
   TransactionGossipNetwork = '0x500f',
+  Angelfood_HeadStateNetwork = '0x5049',
   Angelfood_StateNetwork = '0x504a',
   Angelfood_HistoryNetwork = '0x504b',
   Angelfood_BeaconChainNetwork = '0x504c',
@@ -39,19 +41,23 @@ export enum NetworkId {
   UTPNetwork = '0x757470',
 }
 
-export type SubNetwork<T extends NetworkId> = T extends '0x500a'
-  ? HistoryNetwork
-  : T extends '0x504a'
-    ? HistoryNetwork
-    : T extends '0x500b'
-      ? StateNetwork
-      : T extends '0x504b'
-        ? StateNetwork
-        : T extends '0x500c'
-          ? BeaconNetwork
-          : T extends '0x504c'
-            ? BeaconNetwork
-            : never
+export type SubNetwork<T extends NetworkId> = T extends '0x5009'
+  ? HeadStateNetwork
+  : T extends '0x5049'
+    ? HeadStateNetwork
+    : T extends '0x500a'
+      ? HistoryNetwork
+      : T extends '0x504a'
+        ? HistoryNetwork
+        : T extends '0x500b'
+          ? StateNetwork
+          : T extends '0x504b'
+            ? StateNetwork
+            : T extends '0x500c'
+              ? BeaconNetwork
+              : T extends '0x504c'
+                ? BeaconNetwork
+                : never
 
 export class Bloom {
   bitvector: Uint8Array
