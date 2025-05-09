@@ -264,7 +264,7 @@ export class HistoryNetwork extends BaseNetwork {
         this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
         throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)
       }
-      const beacon = this.portal.network()['0x500c']
+      const beacon = this.portal.network()['0x500c'] as BeaconNetwork | undefined
       if (beacon !== undefined && beacon.lightClient?.status === RunStatusCode.started) {
         try {
           verifyHistoricalSummariesHeaderProof(

@@ -29,9 +29,9 @@ export class ultralight {
 
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
-    this._history = this._client.network()[NetworkId.HistoryNetwork]
-    this._state = this._client.network()[NetworkId.StateNetwork]
-    this._beacon = this._client.network()[NetworkId.BeaconChainNetwork]
+    this._history = this._client.network()[NetworkId.HistoryNetwork] as HistoryNetwork | undefined
+    this._state = this._client.network()[NetworkId.StateNetwork] as StateNetwork | undefined
+    this._beacon = this._client.network()[NetworkId.BeaconChainNetwork] as BeaconNetwork | undefined
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.addContentToDB = middleware(this.addContentToDB.bind(this), 2, [
