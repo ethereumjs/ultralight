@@ -42,10 +42,10 @@ export class ContentLookup {
     this.completedRequests = trace ? new Map() : undefined
     this.contentTrace = trace
       ? {
-          origin: ('0x' + this.network.portal.discv5.enr.nodeId) as PrefixedHexString,
-          targetId: Array.from(hexToBytes(`0x${this.contentId}`)) as any,
-          metadata: {},
-        }
+        origin: ('0x' + this.network.portal.discv5.enr.nodeId) as PrefixedHexString,
+        targetId: Array.from(hexToBytes(`0x${this.contentId}`)) as any,
+        metadata: {},
+      }
       : undefined
   }
 
@@ -240,7 +240,7 @@ export class ContentLookup {
       }
     } catch (err) {
       this.pending.delete(peer.enr.encodeTxt())
-      if (signal?.aborted) {
+      if (signal?.aborted === true) {
         this.logger(`Request to ${shortId(peer.enr.nodeId)} was cancelled`)
       }
       throw err

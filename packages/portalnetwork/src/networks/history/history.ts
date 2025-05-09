@@ -100,7 +100,7 @@ export class HistoryNetwork extends BaseNetwork {
   }
 
   public blockHashToNumber(blockHash: Uint8Array): bigint | undefined {
-    const blockNumber = this.blockHashIndex.get(bytesToHex(blockHash) as PrefixedHexString)
+    const blockNumber = this.blockHashIndex.get(bytesToHex(blockHash))
     return blockNumber === undefined ? undefined : BigInt(blockNumber)
   }
 
@@ -437,7 +437,7 @@ export class HistoryNetwork extends BaseNetwork {
         )
         value = payload
       } catch (err: any) {
-        if (err.message.includes('Header not found')) {
+        if (err.message.includes('Header not found') === true) {
           this.logger.extend('FOUNDCONTENT').extend('EPHEMERALHEADERS')(
             `Header not found for ${bytesToHex(ck.keyOpt.blockHash)}, sending empty ephemeral headers response to ${shortId(src.nodeId)}`,
           )
@@ -470,10 +470,10 @@ export class HistoryNetwork extends BaseNetwork {
     ) {
       this.logger.extend('FOUNDCONTENT')(
         'Found value for requested content ' +
-          bytesToHex(decodedContentMessage.contentKey) +
-          ' ' +
-          bytesToHex(value.slice(0, 10)) +
-          '...',
+        bytesToHex(decodedContentMessage.contentKey) +
+        ' ' +
+        bytesToHex(value.slice(0, 10)) +
+        '...',
       )
       const payload = ContentMessageType.serialize({
         selector: FoundContent.CONTENT,
@@ -661,8 +661,7 @@ export class HistoryNetwork extends BaseNetwork {
       }
     }
     this.logger(
-      `${HistoryNetworkContentType[contentType]} added for ${
-        keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
+      `${HistoryNetworkContentType[contentType]} added for ${keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
       }`,
     )
   }
@@ -774,8 +773,7 @@ export class HistoryNetwork extends BaseNetwork {
     version: Version,
   ) {
     this.logger.extend('ACCEPT')(
-      `Received from ${shortId(src.nodeId, this.routingTable)} with ${
-        msg.contentKeys.length
+      `Received from ${shortId(src.nodeId, this.routingTable)} with ${msg.contentKeys.length
       } pieces of content.`,
     )
     const decodedContentKeys = msg.contentKeys.map((key) => decodeHistoryNetworkContentKey(key))
@@ -784,7 +782,7 @@ export class HistoryNetwork extends BaseNetwork {
     if (decodedContentKeys[0].contentType === HistoryNetworkContentType.EphemeralHeaderOffer) {
       this.logger.extend('OFFER').extend('EPHEMERALHEADERS')(
         'Received offer for ephemeral headers starting with block hash: ' +
-          bytesToHex(decodedContentKeys[0].keyOpt as Uint8Array),
+        bytesToHex(decodedContentKeys[0].keyOpt),
       )
       const contentIds: number[] = Array(msg.contentKeys.length).fill(AcceptCode.GENERIC_DECLINE)
       const desiredContentKeys: Uint8Array[] = []
