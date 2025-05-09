@@ -2,28 +2,28 @@ import { distance } from '@chainsafe/discv5'
 import { SignableENR } from '@chainsafe/enr'
 import { Chain, Common, Hardfork } from '@ethereumjs/common'
 import { getGenesis } from '@ethereumjs/genesis'
-import { ExtensionNode, Trie, decodeNode } from '@ethereumjs/mpt'
-import { DefaultStateManager } from '@ethereumjs/statemanager'
+import { ExtensionMPTNode, type LeafMPTNode, Trie, decodeMPTNode } from '@ethereumjs/mpt'
+import { MerkleStateManager, StateManager } from '@ethereumjs/statemanager'
 import { bytesToHex, bytesToUnprefixedHex, hexToBytes, padToEven } from '@ethereumjs/util'
-import { VM } from '@ethereumjs/vm'
+import { VM, createVM } from '@ethereumjs/vm'
 import { privateKeyFromProtobuf } from '@libp2p/crypto/keys'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, expect, it } from 'vitest'
 
 import {
-  AccountTrieNodeContentKey,
   AccountTrieNodeOffer,
   NetworkId,
   type PortalNetwork,
   TransportLayer,
   createPortalNetwork,
+  decodeAccountTrieNodeContentKey,
+  encodeAccountTrieNodeContentKey,
   packNibbles,
 } from '../../src/index.js'
 import { mainnet } from '../../src/networks/state/genesis.js'
 
-import type { LeafNode } from '@ethereumjs/mpt'
-import type { StateNetwork, TAccountTrieNodeKey, TNibble } from '../../src'
-import type { StateDB } from '../../src/networks/state/statedb'
+import type { StateNetwork, TAccountTrieNodeKey, TNibble } from '../../src/index.js'
+import type { StateDB } from '../../src/networks/state/statedb.js'
 
 export const protoBufs = [
   '0x0a27002508021221024776a66a32c732ff71d6477fab2beb1e1b303ae157c3b5d95789aa52b1740b82122508021221024776a66a32c732ff71d6477fab2beb1e1b303ae157c3b5d95789aa52b1740b821a240802122091b5cbbc2bf054f913c3a344bf8ce6d19373142854eabeeffb5a3f159c44e610',
@@ -68,14 +68,14 @@ export const getVM = async (trie?: Trie) => {
     hardfork: Hardfork.Chainstart,
   })
   const genesis = getGenesis(1)
-  const stateManager = new DefaultStateManager({
+  const stateManager = new MerkleStateManager({
     trie,
     common,
     accountCacheOpts: {
       deactivate: true,
     },
   })
-  const vm = await VM.create({
+  const vm = await createVM({
     common,
     stateManager,
     genesisState: genesis,
@@ -101,23 +101,25 @@ export const genesisContent = async (
   const proofs = await Promise.all(
     Object.keys(mainnet.alloc).map(async (add) => {
       const address = '0x' + padToEven(add)
-      const leafproof = await trie.createProof(hexToBytes(address))
+      const leafproof = await trie.createProof(hexToBytes(address as `0x${string}`))
       return { address, leafproof }
     }),
   )
   const leafProofs: [Uint8Array, { nibbles: string[]; proof: Uint8Array[] }][] = proofs.map(
     ({ address, leafproof }) => {
-      const addressPath = bytesToUnprefixedHex(trie['hash'](hexToBytes(address))).split('')
+      const addressPath = bytesToUnprefixedHex(
+        trie['hash'](hexToBytes(address as `0x${string}`)),
+      ).split('')
       const nodePath: string[] = []
       for (const p of leafproof.slice(0, -1)) {
-        const node = decodeNode(p)
-        if (node instanceof ExtensionNode) {
+        const node = decodeMPTNode(p)
+        if (node instanceof ExtensionMPTNode) {
           nodePath.push(...addressPath.splice(0, node.keyLength()))
         } else {
           nodePath.push(addressPath.shift()!)
         }
       }
-      const leafNode = decodeNode(leafproof[leafproof.length - 1]) as LeafNode
+      const leafNode = decodeMPTNode(leafproof[leafproof.length - 1]) as LeafMPTNode
       if (addressPath.length !== leafNode.keyLength()) {
         throw new Error(`${addressPath.length} !== ${leafNode.keyLength()}`) // keyLength where keyLength is Uint8
       }
@@ -142,7 +144,7 @@ export const genesisContent = async (
         nodeHash,
         path,
       }
-      const contentKey = bytesToHex(AccountTrieNodeContentKey.encode(key))
+      const contentKey = bytesToHex(encodeAccountTrieNodeContentKey(key))
       const content = AccountTrieNodeOffer.serialize({
         blockHash: hexToBytes('0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3'),
         proof,
@@ -154,10 +156,10 @@ export const genesisContent = async (
     ([nodeHash, { nibbles, proof }]) => {
       const path = packNibbles(nibbles)
       const key: TAccountTrieNodeKey = {
-        nodeHash: hexToBytes(nodeHash),
+        nodeHash: hexToBytes(nodeHash as `0x${string}`),
         path,
       }
-      const contentKey = bytesToHex(AccountTrieNodeContentKey.encode(key))
+      const contentKey = bytesToHex(encodeAccountTrieNodeContentKey(key))
       const content = AccountTrieNodeOffer.serialize({
         blockHash: hexToBytes('0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3'),
         proof,
@@ -184,11 +186,15 @@ export const sortedById = (
   )
   const allContent = [...leafNodeContent, ...trieNodeContent]
   for (const [contentKey] of allContent) {
-    const contentId = new Trie({ useKeyHashing: true })['hash'](hexToBytes(contentKey))
+    const contentId = new Trie({ useKeyHashing: true })['hash'](
+      hexToBytes(contentKey as `0x${string}`),
+    )
     for (const { nodeId, radius } of clients) {
       const d = distance(nodeId, bytesToUnprefixedHex(contentId))
       if (d < radius) {
-        const { nodeHash } = AccountTrieNodeContentKey.decode(hexToBytes(contentKey))
+        const { nodeHash } = decodeAccountTrieNodeContentKey(
+          hexToBytes(contentKey as `0x${string}`),
+        )
         trieNodes[nodeId].push(nodeHash)
       }
     }

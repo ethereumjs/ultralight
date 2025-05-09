@@ -6,15 +6,17 @@ import yaml from 'js-yaml'
 import { assert, describe, it } from 'vitest'
 
 import {
-  AccountTrieNodeContentKey,
   AccountTrieNodeOffer,
   AccountTrieNodeRetrieval,
-  ContractCodeContentKey,
   ContractCodeOffer,
   ContractRetrieval,
-  StateNetworkContentId,
-  StorageTrieNodeContentKey,
   StorageTrieNodeOffer,
+  decodeAccountTrieNodeContentKey,
+  decodeContractCodeContentKey,
+  encodeAccountTrieNodeContentKey,
+  encodeContractCodeContentKey,
+  encodeStorageTrieNodeContentKey,
+  fromKeyObjToStateNetworkContentId,
   packNibbles,
 } from '../../../src/index.js'
 
@@ -42,23 +44,25 @@ describe('Account Trie Node', async () => {
     ),
   ) as any
   it('serializes a content key', () => {
-    const contentKey = AccountTrieNodeContentKey.encode({
-      nodeHash: hexToBytes(keyData.node_hash),
+    const contentKey = encodeAccountTrieNodeContentKey({
+      nodeHash: hexToBytes(keyData.node_hash as `0x${string}`),
       path: packNibbles(keyData.path.map((x) => x.toString(16))),
     })
     assert.equal(keyData.content_key, bytesToHex(contentKey))
   })
   it('decodes a content key', () => {
-    const decoded = AccountTrieNodeContentKey.decode(hexToBytes(keyData.content_key))
+    const decoded = decodeAccountTrieNodeContentKey(
+      hexToBytes(keyData.content_key as `0x${string}`),
+    )
     assert.equal(bytesToHex(decoded.nodeHash), keyData.node_hash)
     assert.deepEqual(decoded, {
-      nodeHash: hexToBytes(keyData.node_hash),
+      nodeHash: hexToBytes(keyData.node_hash as `0x${string}`),
       path: packNibbles(keyData.path.map((x) => x.toString(16))),
     })
   })
   it('creates the correct content id', () => {
-    const contentId = StateNetworkContentId.fromKeyObj({
-      nodeHash: hexToBytes(keyData.node_hash),
+    const contentId = fromKeyObjToStateNetworkContentId({
+      nodeHash: hexToBytes(keyData.node_hash as `0x${string}`),
       path: packNibbles(keyData.path.map((x) => x.toString(16))),
     })
     assert.equal(keyData.content_id, bytesToHex(contentId))
@@ -77,8 +81,8 @@ describe('Account Trie Node', async () => {
   ) as any
   it('serializes a content value', () => {
     const serialized = AccountTrieNodeOffer.serialize({
-      blockHash: hexToBytes(nodeWithProofData.block_hash),
-      proof: nodeWithProofData.proof.map((x) => hexToBytes(x)),
+      blockHash: hexToBytes(nodeWithProofData.block_hash as `0x${string}`),
+      proof: nodeWithProofData.proof.map((x) => hexToBytes(x as `0x${string}`)),
     })
     assert.equal(nodeWithProofData.content_value, bytesToHex(serialized))
   })
@@ -95,7 +99,7 @@ describe('Account Trie Node', async () => {
   ) as any
   it('serializes a content value without proof', () => {
     const serialized = AccountTrieNodeRetrieval.serialize({
-      node: hexToBytes(nodeData.trie_node),
+      node: hexToBytes(nodeData.trie_node as `0x${string}`),
     })
     assert.equal(nodeData.content_value, bytesToHex(serialized))
   })
@@ -120,27 +124,27 @@ describe('Contract ByteCode', async () => {
     ),
   ) as any
   it('serializes a content key', () => {
-    const addressHash = keccak256(hexToBytes(keyData.address))
-    const contentKey = ContractCodeContentKey.encode({
+    const addressHash = keccak256(hexToBytes(keyData.address as `0x${string}`))
+    const contentKey = encodeContractCodeContentKey({
       addressHash,
-      codeHash: hexToBytes(keyData.code_hash),
+      codeHash: hexToBytes(keyData.code_hash as `0x${string}`),
     })
     assert.equal(keyData.content_key, bytesToHex(contentKey))
-    const contentId = StateNetworkContentId.fromKeyObj({
+    const contentId = fromKeyObjToStateNetworkContentId({
       addressHash,
-      codeHash: hexToBytes(keyData.code_hash),
+      codeHash: hexToBytes(keyData.code_hash as `0x${string}`),
     })
     assert.equal(keyData.content_id, bytesToHex(contentId))
   })
   it('decodes a content key', () => {
-    const decoded = ContractCodeContentKey.decode(hexToBytes(keyData.content_key))
+    const decoded = decodeContractCodeContentKey(hexToBytes(keyData.content_key as `0x${string}`))
     assert.equal(
       bytesToHex(decoded.addressHash),
-      bytesToHex(keccak256(hexToBytes(keyData.address))),
+      bytesToHex(keccak256(hexToBytes(keyData.address as `0x${string}`))),
     )
     assert.deepEqual(decoded, {
-      addressHash: keccak256(hexToBytes(keyData.address)),
-      codeHash: hexToBytes(keyData.code_hash),
+      addressHash: keccak256(hexToBytes(keyData.address as `0x${string}`)),
+      codeHash: hexToBytes(keyData.code_hash as `0x${string}`),
     })
   })
   const contractByteCodeWithProofData = yaml.load(
@@ -156,9 +160,11 @@ describe('Contract ByteCode', async () => {
   ) as any
   it('serializes a content value', () => {
     const serialized = ContractCodeOffer.serialize({
-      accountProof: contractByteCodeWithProofData.account_proof.map((x: string) => hexToBytes(x)),
-      blockHash: hexToBytes(contractByteCodeWithProofData.block_hash),
-      code: hexToBytes(contractByteCodeWithProofData.bytecode),
+      accountProof: contractByteCodeWithProofData.account_proof.map((x: string) =>
+        hexToBytes(x as `0x${string}`),
+      ),
+      blockHash: hexToBytes(contractByteCodeWithProofData.block_hash as `0x${string}`),
+      code: hexToBytes(contractByteCodeWithProofData.bytecode as `0x${string}`),
     })
     assert.equal(contractByteCodeWithProofData.content_value, bytesToHex(serialized))
   })
@@ -195,7 +201,7 @@ describe('Storage Trie Node', async () => {
   ) as any
   it('serializes a content key', () => {
     const addressHash = keccak256(hexToBytes(storageTrieNodeKeyData.address))
-    const contentKey = StorageTrieNodeContentKey.encode({
+    const contentKey = encodeStorageTrieNodeContentKey({
       addressHash,
       nodeHash: hexToBytes(storageTrieNodeKeyData.node_hash),
       path: packNibbles(storageTrieNodeKeyData.path.map((x: number) => x.toString(16))),
@@ -203,7 +209,7 @@ describe('Storage Trie Node', async () => {
     assert.equal(storageTrieNodeKeyData.content_key, bytesToHex(contentKey))
   })
   it('finds a content id', () => {
-    const contentId = StateNetworkContentId.fromKeyObj({
+    const contentId = fromKeyObjToStateNetworkContentId({
       addressHash: keccak256(hexToBytes(storageTrieNodeKeyData.address)),
       nodeHash: hexToBytes(storageTrieNodeKeyData.node_hash),
       path: packNibbles(storageTrieNodeKeyData.path.map((x: number) => x.toString(16))),
@@ -223,9 +229,13 @@ describe('Storage Trie Node', async () => {
   ) as any
   it('serializes a content value', () => {
     const serialized = StorageTrieNodeOffer.serialize({
-      accountProof: storageTrieNodeData.account_proof.map((x: string) => hexToBytes(x)),
-      blockHash: hexToBytes(storageTrieNodeData.block_hash),
-      storageProof: storageTrieNodeData.storage_proof.map((x: string) => hexToBytes(x)),
+      accountProof: storageTrieNodeData.account_proof.map((x: string) =>
+        hexToBytes(x as `0x${string}`),
+      ),
+      blockHash: hexToBytes(storageTrieNodeData.block_hash as `0x${string}`),
+      storageProof: storageTrieNodeData.storage_proof.map((x: string) =>
+        hexToBytes(x as `0x${string}`),
+      ),
     })
     assert.equal(storageTrieNodeData.content_value, bytesToHex(serialized))
   })

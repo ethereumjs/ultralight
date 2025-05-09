@@ -70,8 +70,8 @@ import {
 import type { ENR } from '@chainsafe/enr'
 
 import { RunStatusCode } from '@lodestar/light-client'
-import type { Debugger } from 'debug'
 import type { LightClientHeader } from '@lodestar/types/lib/deneb/types.js'
+import type { Debugger } from 'debug'
 
 export class HistoryNetwork extends BaseNetwork {
   networkId: NetworkId.HistoryNetwork
@@ -651,7 +651,11 @@ export class HistoryNetwork extends BaseNetwork {
 
     this.emit('ContentAdded', contentKey, value)
     if (this.routingTable.values().length > 0) {
-      if (contentType !== HistoryNetworkContentType.EphemeralHeader && contentType !== HistoryNetworkContentType.EphemeralHeaderOffer && contentType !== HistoryNetworkContentType.EphemeralHeaderFindContent) {
+      if (
+        contentType !== HistoryNetworkContentType.EphemeralHeader &&
+        contentType !== HistoryNetworkContentType.EphemeralHeaderOffer &&
+        contentType !== HistoryNetworkContentType.EphemeralHeaderFindContent
+      ) {
         // Gossip new content to network except for ephemeral headers
         this.gossipManager.add(contentKey)
       }
@@ -770,14 +774,18 @@ export class HistoryNetwork extends BaseNetwork {
     version: Version,
   ) {
     this.logger.extend('ACCEPT')(
-      `Received from ${shortId(src.nodeId, this.routingTable)} with ${msg.contentKeys.length
+      `Received from ${shortId(src.nodeId, this.routingTable)} with ${
+        msg.contentKeys.length
       } pieces of content.`,
     )
-    const decodedContentKeys = msg.contentKeys.map(key => decodeHistoryNetworkContentKey(key))
+    const decodedContentKeys = msg.contentKeys.map((key) => decodeHistoryNetworkContentKey(key))
     // Check to see if the first content key is for ephemeral headers.  If so, we expect all
     // content keys to be for ephemeral headers.
     if (decodedContentKeys[0].contentType === HistoryNetworkContentType.EphemeralHeaderOffer) {
-      this.logger.extend('OFFER').extend('EPHEMERALHEADERS')('Received offer for ephemeral headers starting with block hash: ' + bytesToHex(decodedContentKeys[0].keyOpt as Uint8Array))
+      this.logger.extend('OFFER').extend('EPHEMERALHEADERS')(
+        'Received offer for ephemeral headers starting with block hash: ' +
+          bytesToHex(decodedContentKeys[0].keyOpt as Uint8Array),
+      )
       const contentIds: number[] = Array(msg.contentKeys.length).fill(AcceptCode.GENERIC_DECLINE)
       const desiredContentKeys: Uint8Array[] = []
       let headHash: Uint8Array | undefined
@@ -785,34 +793,50 @@ export class HistoryNetwork extends BaseNetwork {
       do {
         for (const key of decodedContentKeys) {
           if (key.contentType !== HistoryNetworkContentType.EphemeralHeaderOffer) {
-            this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')('Received non-ephemeral header in offer for ephemeral headers.  Declining offer.')
+            this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')(
+              'Received non-ephemeral header in offer for ephemeral headers.  Declining offer.',
+            )
             // If we get an offer for ephemeral headers, all offered content keys should be for ephemeral headers
             // TODO: Ban/descore peers who send spec-noncompliant offers
             break
           }
         }
         const beacon = this.portal.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
-        if (beacon === undefined || (beacon.lightClient?.status !== RunStatusCode.started && beacon.lightClient?.status !== RunStatusCode.syncing)) {
+        if (
+          beacon === undefined ||
+          (beacon.lightClient?.status !== RunStatusCode.started &&
+            beacon.lightClient?.status !== RunStatusCode.syncing)
+        ) {
           // We can't validate ephemeral headers if our light client is not active and/or syncing
-          this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')('Light client is not active and/or syncing.  Declining offer.')
+          this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')(
+            'Light client is not active and/or syncing.  Declining offer.',
+          )
           break
         }
         // TODO: Make this fork safe (and not assume deneb)
         headHash = (beacon.lightClient.getHead() as LightClientHeader).execution.blockHash
-        headHashIndex = decodedContentKeys.findIndex((key) => equalsBytes(key.keyOpt as Uint8Array, headHash!))
+        headHashIndex = decodedContentKeys.findIndex((key) =>
+          equalsBytes(key.keyOpt as Uint8Array, headHash!),
+        )
         if (headHashIndex === -1) {
           // If our known head hash isn't in the request, we can't validate other ephemeral headers so decline
-          this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')('Known head hash not found in offer.  Declining offer.')
+          this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')(
+            'Known head hash not found in offer.  Declining offer.',
+          )
           break
         }
         for (let i = headHashIndex; i < decodedContentKeys.length; i++) {
           const key = decodedContentKeys[i]
-          if (this.ephemeralHeaderIndex.getByValue(bytesToHex(key.keyOpt as Uint8Array)) === undefined) {
+          if (
+            this.ephemeralHeaderIndex.getByValue(bytesToHex(key.keyOpt as Uint8Array)) === undefined
+          ) {
             contentIds[i] = AcceptCode.ACCEPT
             desiredContentKeys.push(msg.contentKeys[i])
           }
         }
-        this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')(`Sending accept for ${desiredContentKeys.length} desired headers`)
+        this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')(
+          `Sending accept for ${desiredContentKeys.length} desired headers`,
+        )
         // biome-ignore lint/correctness/noConstantCondition: We only want to do `sendAccept` once
       } while (false)
 
@@ -833,7 +857,7 @@ export class HistoryNetwork extends BaseNetwork {
 
       //     if (equalsBytes(desiredContentKeys[desiredContentKeys.length - 1], contentKey)) {
       //       // Once we've received the last desired header, gossip all offered ephemeral headers starting with the head hash
-      //       // We either already have all of the headers or have received them from this gossip message and the spec calls for 
+      //       // We either already have all of the headers or have received them from this gossip message and the spec calls for
       //       // us to neighborhood gossip all of these
       //       this.removeListener('ContentAdded', gossipEphemeralHeaders)
       //       const content = []
@@ -869,7 +893,6 @@ export class HistoryNetwork extends BaseNetwork {
       //     return
       //   }
       // })
-    } else
-      await super.handleOffer(src, requestId, msg, version)
+    } else await super.handleOffer(src, requestId, msg, version)
   }
 }
