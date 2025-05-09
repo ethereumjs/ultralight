@@ -8,7 +8,7 @@ import { EventEmitter } from 'eventemitter3'
 import packageJson from '../../package.json' with { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
-import { BeaconNetwork, NetworkId, StateNetwork, SyncStrategy } from '../networks/index.js'
+import { type BeaconNetwork, NetworkId, type StateNetwork, type SubNetwork, SyncStrategy } from '../networks/index.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
 import { DBManager } from './dbManager.js'
@@ -30,6 +30,7 @@ import type {
   PortalNetworkMetrics,
   PortalNetworkOpts,
 } from './types.js'
+import { createNetwork } from '../networks/constructor.js'
 
 export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   clientInfo: IClientInfo
@@ -78,54 +79,19 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     )
     opts.supportedNetworks = opts.supportedNetworks ?? []
     for (const network of opts.supportedNetworks) {
-      switch (network.networkId) {
-        case NetworkId.HistoryNetwork:
-          this.networks.set(
-            network.networkId,
-            new HistoryNetwork({
-              client: this,
-              networkId: NetworkId.HistoryNetwork,
-              maxStorage: network.maxStorage,
-              db: network.db,
-              gossipCount: opts.gossipCount,
-              dbSize: async () => opts.dbSize((opts.dataDir ?? '.') + '/history'),
-            }),
-          )
-          break
-        case NetworkId.StateNetwork:
-          this.networks.set(
-            network.networkId,
-            new StateNetwork({
-              client: this,
-              networkId: NetworkId.StateNetwork,
-              maxStorage: network.maxStorage,
-              db: network.db,
-              gossipCount: opts.gossipCount,
-              dbSize: async () => opts.dbSize((opts.dataDir ?? '.') + '/state'),
-            }),
-          )
-          break
-        case NetworkId.BeaconChainNetwork:
-          {
-            const syncStrategy =
-              opts.trustedBlockRoot !== undefined
-                ? SyncStrategy.TrustedBlockRoot
-                : SyncStrategy.PollNetwork
-            this.networks.set(
-              network.networkId,
-              new BeaconNetwork({
-                client: this,
-                networkId: NetworkId.BeaconChainNetwork,
-                maxStorage: network.maxStorage,
-                trustedBlockRoot: opts.trustedBlockRoot,
-                sync: syncStrategy,
-                db: network.db,
-                gossipCount: opts.gossipCount,
-                dbSize: async () => opts.dbSize((opts.dataDir ?? '.') + '/beacon'),
-              }),
-            )
-          }
-          break
+      try {
+        const networkInstance = createNetwork(network.networkId, {
+          client: this,
+          maxStorage: network.maxStorage,
+          db: network.db,
+          gossipCount: opts.gossipCount,
+          dbSize: (dir: string) => opts.dbSize(dir),
+          trustedBlockRoot: opts.trustedBlockRoot as Uint8Array | undefined,
+          dataDir: opts.dataDir
+        })
+        this.networks.set(network.networkId, networkInstance)
+      } catch (err: any) {
+        this.logger.extend('error')(`Failed to initialize network ${network.networkId}: ${err.message}`)
       }
     }
     for (const network of this.networks.values()) {
@@ -216,25 +182,12 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     }
   }
 
-  public network = (): {
-    [NetworkId.HistoryNetwork]: HistoryNetwork | undefined
-    [NetworkId.StateNetwork]: StateNetwork | undefined
-    [NetworkId.BeaconChainNetwork]: BeaconNetwork | undefined
-  } => {
-    const history = this.networks.get(NetworkId.HistoryNetwork)
-      ? (this.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork)
-      : undefined
-    const state = this.networks.get(NetworkId.StateNetwork)
-      ? (this.networks.get(NetworkId.StateNetwork) as StateNetwork)
-      : undefined
-    const beacon = this.networks.get(NetworkId.BeaconChainNetwork)
-      ? (this.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork)
-      : undefined
-    return {
-      [NetworkId.HistoryNetwork]: history,
-      [NetworkId.StateNetwork]: state,
-      [NetworkId.BeaconChainNetwork]: beacon,
+  public network(): Partial<Record<NetworkId, SubNetwork<NetworkId> | undefined>> {
+    const networks: Partial<Record<NetworkId, SubNetwork<NetworkId> | undefined>> = {}
+    for (const [networkId, network] of this.networks.entries()) {
+      networks[networkId] = network as SubNetwork<NetworkId>
     }
+    return networks
   }
 
   /**
