@@ -69,6 +69,7 @@ export enum ChainId {
 }
 
 export interface PortalNetworkOpts {
+  chainId?: ChainId
   shortCommit?: string
   operatingSystemAndCpuArchitecture?: string
   supportedNetworks?: NetworkConfig[]

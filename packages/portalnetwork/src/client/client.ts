@@ -24,11 +24,12 @@ import type { IClientInfo } from '../wire/payloadExtensions.js'
 import type { Version } from '../wire/types.js'
 import { MessageCodes, PortalWireMessageType } from '../wire/types.js'
 import { ENRCache } from './enrCache.js'
-import type {
-  INodeAddress,
-  PortalNetworkEvents,
-  PortalNetworkMetrics,
-  PortalNetworkOpts,
+import {
+  ChainId,
+  type INodeAddress,
+  type PortalNetworkEvents,
+  type PortalNetworkMetrics,
+  type PortalNetworkOpts,
 } from './types.js'
 import { createNetwork } from '../networks/constructor.js'
 
@@ -36,6 +37,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   clientInfo: IClientInfo
   eventLog: boolean
   discv5: Discv5
+  chainId: ChainId
   networks: Map<NetworkId, BaseNetwork>
   uTP: PortalNetworkUTP
   utpTimout: number
@@ -54,6 +56,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    */
   constructor(opts: PortalNetworkOpts) {
     super()
+    this.chainId = opts.chainId ?? ChainId.Mainnet
     this.clientInfo = {
       clientName: 'ultralight',
       clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
