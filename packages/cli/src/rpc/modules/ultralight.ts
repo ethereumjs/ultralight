@@ -1,5 +1,5 @@
 import { type PrefixedHexString, bytesToHex, hexToBytes } from '@ethereumjs/util'
-import { HistoryNetworkContentType, NetworkId } from 'portalnetwork'
+import { HistoryNetworkContentType, type NetworkId, NetworkIdByChain } from 'portalnetwork'
 
 import { INTERNAL_ERROR } from '../error-code.js'
 import { middleware, validators } from '../validators.js'
@@ -29,9 +29,9 @@ export class ultralight {
 
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
-    this._history = this._client.network()[NetworkId.HistoryNetwork] as HistoryNetwork | undefined
-    this._state = this._client.network()[NetworkId.StateNetwork] as StateNetwork | undefined
-    this._beacon = this._client.network()[NetworkId.BeaconChainNetwork] as BeaconNetwork | undefined
+    this._history = this._client.network()[NetworkIdByChain[client.chainId].HistoryNetwork] as HistoryNetwork | undefined
+    this._state = this._client.network()[NetworkIdByChain[client.chainId].StateNetwork] as StateNetwork | undefined
+    this._beacon = this._client.network()[NetworkIdByChain[client.chainId].BeaconChainNetwork] as BeaconNetwork | undefined
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
     this.addContentToDB = middleware(this.addContentToDB.bind(this), 2, [
@@ -106,15 +106,15 @@ export class ultralight {
     const [networkId, radius] = params
     try {
       switch (networkId) {
-        case NetworkId.HistoryNetwork: {
+        case NetworkIdByChain[this._client.chainId].HistoryNetwork: {
           await this._history!.setRadius(2n ** BigInt(Number.parseInt(radius)) - 1n)
           return '0x' + this._history!.nodeRadius.toString(16)
         }
-        case NetworkId.StateNetwork: {
+        case NetworkIdByChain[this._client.chainId].StateNetwork: {
           await this._state!.setRadius(2n ** BigInt(Number.parseInt(radius)) - 1n)
           return '0x' + this._state!.nodeRadius.toString(16)
         }
-        case NetworkId.BeaconChainNetwork: {
+        case NetworkIdByChain[this._client.chainId].BeaconChainNetwork: {
           await this._beacon!.setRadius(2n ** BigInt(Number.parseInt(radius)) - 1n)
           return '0x' + this._beacon!.nodeRadius.toString(16)
         }

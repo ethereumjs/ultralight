@@ -7,6 +7,7 @@ import {
   ContentLookup,
   LightClientUpdatesByRangeKey,
   NetworkId,
+  NetworkIdByChain,
   type PortalNetwork,
   computeLightClientKeyFromPeriod,
   getBeaconContentKey,
@@ -31,7 +32,7 @@ export class beacon {
    * @param rpcManager RPC client to which the module binds
    */
   constructor(client: PortalNetwork, logger: Debugger) {
-    this._beacon = client.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    this._beacon = client.networks.get(NetworkIdByChain[client.chainId].BeaconChainNetwork) as BeaconNetwork
     this.logger = logger.extend('beacon')
 
     this.methods = middleware(this.methods.bind(this), 0, [])

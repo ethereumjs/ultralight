@@ -1,6 +1,6 @@
 import type { PrefixedHexString } from '@ethereumjs/util'
 import { bigIntToHex, hexToBytes, intToHex, toBytes } from '@ethereumjs/util'
-import { GET_LOGS_BLOCK_RANGE_LIMIT, NetworkId, getLogs } from 'portalnetwork'
+import { GET_LOGS_BLOCK_RANGE_LIMIT, NetworkId, NetworkIdByChain, getLogs } from 'portalnetwork'
 
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
 import { jsonRpcLog } from '../types.js'
@@ -26,7 +26,7 @@ export class eth {
    */
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
-    this._history = client.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
+    this._history = client.networks.get(NetworkIdByChain[client.chainId].HistoryNetwork) as HistoryNetwork
     this.logger = logger.extend('eth')
 
     this.getBlockByNumber = middleware(

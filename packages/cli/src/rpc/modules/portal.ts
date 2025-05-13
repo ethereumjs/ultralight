@@ -11,6 +11,7 @@ import {
   ContentLookup,
   FoundContent,
   NetworkId,
+  NetworkIdByChain,
   NodeLookup,
   decodeExtensionPayloadToJson,
   encodeExtensionPayloadFromJson,
@@ -98,9 +99,9 @@ export class portal {
 
   constructor(client: PortalNetwork, logger: Debugger) {
     this._client = client
-    this._history = this._client.networks.get(NetworkId.HistoryNetwork) as HistoryNetwork
-    this._beacon = this._client.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
-    this._state = this._client.networks.get(NetworkId.StateNetwork) as StateNetwork
+    this._history = this._client.networks.get(NetworkIdByChain[client.chainId].HistoryNetwork) as HistoryNetwork
+    this._beacon = this._client.networks.get(NetworkIdByChain[client.chainId].BeaconChainNetwork) as BeaconNetwork
+    this._state = this._client.networks.get(NetworkIdByChain[client.chainId].StateNetwork) as StateNetwork
     this.logger = logger
     this.methods = middleware(this.methods.bind(this), 0, [])
 
