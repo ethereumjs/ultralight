@@ -14,6 +14,7 @@ import {
   ContentLookup,
   HistoryNetworkContentType,
   NetworkId,
+  NetworkIdByChain,
   UltralightStateManager,
   getContentKey,
   reassembleBlock,
@@ -39,9 +40,9 @@ export class ETH {
   logger: Debugger
   constructor(portal: PortalNetwork) {
     this.activeNetworks = Array.from(portal.networks.keys())
-    this.history = portal.network()['0x500b'] as HistoryNetwork | undefined
-    this.state = portal.network()['0x500a'] as StateNetwork | undefined
-    this.beacon = portal.network()['0x500c'] as BeaconNetwork | undefined
+    this.history = portal.network()[NetworkIdByChain[portal.chainId].HistoryNetwork] as HistoryNetwork | undefined
+    this.state = portal.network()[NetworkIdByChain[portal.chainId].StateNetwork] as StateNetwork | undefined
+    this.beacon = portal.network()[NetworkIdByChain[portal.chainId].BeaconChainNetwork] as BeaconNetwork | undefined
     this.logger = portal.logger.extend('ETH')
   }
 
