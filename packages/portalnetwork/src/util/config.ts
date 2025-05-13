@@ -50,6 +50,7 @@ export const NetworkStrings: Record<ChainId, Record<string, NetworkId>> = {
 }
 
 export const cliConfig = async (args: PortalClientOpts) => {
+  const chainId = args.chainId ? ChainId[args.chainId.toUpperCase() as keyof typeof ChainId] : ChainId.MAINNET
   const ip = args.bindAddress !== undefined ? args.bindAddress.split(':')[0] : '0.0.0.0'
   const bindPort = args.bindAddress !== undefined ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
   let privateKey: AsyncReturnType<typeof keys.generateKeyPair>
@@ -71,6 +72,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
     db = new Level<string, string>(args.dataDir)
   }
   const config = {
+    chainId,
     enr,
     privateKey,
     config: {
@@ -96,7 +98,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
       }
     }
     networks.push({
-      networkId: NetworkStrings[network],
+      networkId: NetworkStrings[chainId][network],
       maxStorage: argsStorage[i],
       //@ts-ignore Because level doesn't know how to get along with itself
       db: networkdb,

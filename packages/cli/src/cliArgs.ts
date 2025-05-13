@@ -61,6 +61,12 @@ export const args: ClientOpts = yargs(hideBin(process.argv))
     string: true,
     optional: true,
   })
+  .option('chainId', {
+    describe: 'string representation of the chain id (defaults to mainnet)',
+    choices: ['mainnet', 'sepolia', 'angelfood'],
+    string: true,
+    default: 'mainnet',
+  })
   .option('networks', {
     describe: 'subnetworks to enable',
     string: true,
