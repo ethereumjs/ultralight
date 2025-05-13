@@ -4,7 +4,7 @@ import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import type { ENR, NodeId } from '@chainsafe/enr'
 import type { PrefixedHexString } from '@ethereumjs/util'
 import type { AbstractLevel } from 'abstract-level'
-import { ChainId, type PortalNetwork } from '../client'
+import type { ChainId, PortalNetwork } from '../client'
 import type { BeaconNetwork } from './beacon'
 import type { HistoryNetwork } from './history'
 import type { StateNetwork } from './state'
@@ -75,9 +75,9 @@ const AngelFoodId: Record<string, NetworkId> = {
 }
 
 export const NetworkIdByChain: Record<ChainId, Record<string, NetworkId>> = {
-  [ChainId.MAINNET]: MainnetId,
-  [ChainId.SEPOLIA]: SepoliaId,
-  [ChainId.ANGELFOOD]: AngelFoodId,
+  'MAINNET': MainnetId,
+  'SEPOLIA': SepoliaId,
+  'ANGELFOOD': AngelFoodId,
 }
 
 export type SubNetwork<T extends NetworkId> = T extends `0x${string}a`

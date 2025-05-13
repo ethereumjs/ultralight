@@ -8,7 +8,7 @@ import { EventEmitter } from 'eventemitter3'
 import packageJson from '../../package.json' with { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
-import { type BeaconNetwork, NetworkId, type StateNetwork, type SubNetwork, SyncStrategy } from '../networks/index.js'
+import { NetworkId, type SubNetwork } from '../networks/index.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
 
 import { DBManager } from './dbManager.js'
@@ -89,12 +89,14 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
           db: network.db,
           gossipCount: opts.gossipCount,
           dbSize: (dir: string) => opts.dbSize(dir),
-          trustedBlockRoot: opts.trustedBlockRoot as Uint8Array | undefined,
-          dataDir: opts.dataDir
+          trustedBlockRoot: opts.trustedBlockRoot ? hexToBytes(opts.trustedBlockRoot as `0x${string}`) : undefined,
+          dataDir: opts.dataDir,
         })
         this.networks.set(network.networkId, networkInstance)
       } catch (err: any) {
-        this.logger.extend('error')(`Failed to initialize network ${network.networkId}: ${err.message}`)
+        this.logger.extend('error')(
+          `Failed to initialize network ${network.networkId}: ${err.message}`,
+        )
       }
     }
     for (const network of this.networks.values()) {

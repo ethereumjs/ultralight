@@ -32,17 +32,17 @@ export interface PortalClientOpts {
 }
 
 export const NetworkStrings: Record<ChainId, Record<string, NetworkId>> = {
-  [ChainId.MAINNET]: {
+  'MAINNET': {
     history: NetworkId.HistoryNetwork,
     beacon: NetworkId.BeaconChainNetwork,
     state: NetworkId.StateNetwork,
   },
-  [ChainId.SEPOLIA]: {
+  'SEPOLIA': {
     history: NetworkId.SepoliaHistoryNetwork,
     beacon: NetworkId.SepoliaBeaconChainNetwork,
     state: NetworkId.SepoliaStateNetwork,
   },
-  [ChainId.ANGELFOOD]: {
+  'ANGELFOOD': {
     history: NetworkId.AngelFoodHistoryNetwork,
     beacon: NetworkId.AngelFoodBeaconChainNetwork,
     state: NetworkId.AngelFoodStateNetwork,

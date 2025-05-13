@@ -63,9 +63,9 @@ export interface NetworkConfig {
 }
 
 export enum ChainId {
-  MAINNET = '0x500',
-  SEPOLIA = '0x505',
-  ANGELFOOD = '0x504',
+  MAINNET = 'MAINNET',
+  SEPOLIA = 'SEPOLIA',
+  ANGELFOOD = 'ANGELFOOD',
 }
 
 export interface PortalNetworkOpts {
