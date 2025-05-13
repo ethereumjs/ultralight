@@ -4,7 +4,7 @@ import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import type { ENR, NodeId } from '@chainsafe/enr'
 import type { PrefixedHexString } from '@ethereumjs/util'
 import type { AbstractLevel } from 'abstract-level'
-import type { PortalNetwork } from '../client'
+import { ChainId, type PortalNetwork } from '../client'
 import type { BeaconNetwork } from './beacon'
 import type { HistoryNetwork } from './history'
 import type { StateNetwork } from './state'
@@ -47,6 +47,37 @@ export enum NetworkId {
 
   // UTP
   UTPNetwork = '0x757470',
+  
+}
+
+enum MainnetId {
+  StateNetwork = '0x500a',
+  HistoryNetwork = '0x500b',
+  BeaconChainNetwork = '0x500c',
+  CanonicalTxIndexNetwork = '0x500d',
+  VerkleStateNetwork = '0x500e',
+}
+
+enum SepoliaId {
+  StateNetwork = '0x505a',
+  HistoryNetwork = '0x505b',
+  BeaconChainNetwork = '0x505c',
+  CanonicalTxIndexNetwork = '0x505d',
+  VerkleStateNetwork = '0x505e',
+}
+
+enum AngelFoodId {
+  StateNetwork = '0x504a',
+  HistoryNetwork = '0x504b',
+  BeaconChainNetwork = '0x504c',
+  CanonicalTxIndexNetwork = '0x504d',
+  VerkleStateNetwork = '0x504e',
+}
+
+export const NetworkIdByChain = {
+  [ChainId.Mainnet]: MainnetId,
+  [ChainId.Sepolia]: SepoliaId,
+  [ChainId.AngelFood]: AngelFoodId,
 }
 
 export type SubNetwork<T extends NetworkId> = T extends `0x${string}a`
