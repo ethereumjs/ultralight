@@ -8,7 +8,7 @@ import { NetworkId } from '../networks/types.js'
 
 import { setupMetrics } from './metrics.js'
 
-import { type NetworkConfig, type PortalNetworkOpts, SupportedVersions } from '../client/index.js'
+import { ChainId, type NetworkConfig, type PortalNetworkOpts, SupportedVersions } from '../client/index.js'
 import { DEFAULT_BOOTNODES } from './bootnodes.js'
 
 export type AsyncReturnType<T extends (...args: any) => Promise<any>> = T extends (
@@ -18,6 +18,7 @@ export type AsyncReturnType<T extends (...args: any) => Promise<any>> = T extend
   : any
 
 export interface PortalClientOpts {
+  chainId?: string
   pk?: string
   bootnode?: string
   bindAddress?: string
@@ -30,10 +31,22 @@ export interface PortalClientOpts {
   supportedVersions?: number[]
 }
 
-export const NetworkStrings: Record<string, NetworkId> = {
-  history: NetworkId.HistoryNetwork,
-  beacon: NetworkId.BeaconChainNetwork,
-  state: NetworkId.StateNetwork,
+export const NetworkStrings: Record<ChainId, Record<string, NetworkId>> = {
+  [ChainId.MAINNET]: {
+    history: NetworkId.HistoryNetwork,
+    beacon: NetworkId.BeaconChainNetwork,
+    state: NetworkId.StateNetwork,
+  },
+  [ChainId.SEPOLIA]: {
+    history: NetworkId.SepoliaHistoryNetwork,
+    beacon: NetworkId.SepoliaBeaconChainNetwork,
+    state: NetworkId.SepoliaStateNetwork,
+  },
+  [ChainId.ANGELFOOD]: {
+    history: NetworkId.AngelFoodHistoryNetwork,
+    beacon: NetworkId.AngelFoodBeaconChainNetwork,
+    state: NetworkId.AngelFoodStateNetwork,
+  },
 }
 
 export const cliConfig = async (args: PortalClientOpts) => {

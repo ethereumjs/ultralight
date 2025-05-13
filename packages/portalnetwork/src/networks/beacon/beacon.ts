@@ -35,7 +35,7 @@ import {
   PortalWireMessageType,
 } from '../../wire/types.js'
 import { BaseNetwork } from '../network.js'
-import { NetworkId } from '../types.js'
+import { type NetworkId, NetworkIdByChain } from '../types.js'
 
 import {
   BeaconNetworkContentType,
@@ -61,7 +61,7 @@ import type { ContentLookupResponse } from '../types.js'
 import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
 
 export class BeaconNetwork extends BaseNetwork {
-  networkId: NetworkId.BeaconChainNetwork
+  networkId: NetworkId
   beaconConfig: BeaconConfig
   networkName = 'BeaconNetwork'
   logger: Debugger
@@ -82,12 +82,11 @@ export class BeaconNetwork extends BaseNetwork {
     trustedBlockRoot,
     sync,
   }: BeaconChainNetworkConfig) {
-    super({ client, db, radius, maxStorage, networkId: NetworkId.BeaconChainNetwork })
+    super({ client, db, radius, maxStorage, networkId: NetworkIdByChain[client.chainId].BeaconChainNetwork })
     // This config is used to identify the Beacon Chain fork any given light client update is from
     const genesisRoot = hexToBytes(genesisData.mainnet.genesisValidatorsRoot as PrefixedHexString)
     this.beaconConfig = createBeaconConfig(defaultChainConfig, genesisRoot)
-
-    this.networkId = NetworkId.BeaconChainNetwork
+    this.networkId = NetworkIdByChain[client.chainId].BeaconChainNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('BeaconNetwork')
     this.routingTable.setLogger(this.logger)
     this.forkDigest = Uint8Array.from([0, 0, 0, 0])
@@ -133,7 +132,7 @@ export class BeaconNetwork extends BaseNetwork {
    */
   private getBootstrap = async (nodeId: string, network: NetworkId) => {
     // We check the network ID because NodeAdded is emitted regardless of network
-    if (network !== NetworkId.BeaconChainNetwork) return
+    if (network !== this.networkId) return
     const enr = getENR(this.routingTable, nodeId)
     if (enr === undefined) return
     const decoded = await this.sendFindContent(
@@ -171,7 +170,7 @@ export class BeaconNetwork extends BaseNetwork {
    */
   private getBootStrapVote = async (nodeId: string, network: NetworkId) => {
     try {
-      if (network === NetworkId.BeaconChainNetwork) {
+      if (network === this.networkId) {
         // We check the network ID because NodeAdded is emitted regardless of network
         if (this.bootstrapFinder.has(nodeId)) {
           return

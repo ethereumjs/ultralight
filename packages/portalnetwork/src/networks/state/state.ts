@@ -24,7 +24,7 @@ import {
   PortalWireMessageType,
 } from '../../wire/types.js'
 import { BaseNetwork } from '../network.js'
-import { NetworkId } from '../types.js'
+import { type NetworkId, NetworkIdByChain } from '../types.js'
 
 import type { ENR } from '@chainsafe/enr'
 import type { Debugger } from 'debug'
@@ -54,15 +54,15 @@ import {
 } from './util.js'
 
 export class StateNetwork extends BaseNetwork {
-  networkId: NetworkId.StateNetwork
+  networkId: NetworkId
   networkName = 'StateNetwork'
   logger: Debugger
   stateroots: Map<bigint, Uint8Array> = new Map()
   manager: StateManager
 
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
-    super({ client, db, radius, maxStorage, networkId: NetworkId.StateNetwork })
-    this.networkId = NetworkId.StateNetwork
+    super({ client, db, radius, maxStorage, networkId: NetworkIdByChain[client.chainId].StateNetwork })
+    this.networkId = NetworkIdByChain[client.chainId].StateNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
     this.routingTable.setLogger(this.logger)
     this.manager = new StateManager(this)

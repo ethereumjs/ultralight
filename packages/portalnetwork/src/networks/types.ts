@@ -32,11 +32,11 @@ export enum NetworkId {
   VerkleStateNetwork = '0x500e',
 
   // Angelfood
-  AngelfoodStateNetwork = '0x504a',
-  AngelfoodHistoryNetwork = '0x504b',
-  AngelfoodBeaconChainNetwork = '0x504c',
-  AngelfoodCanonicalTxIndexNetwork = '0x504d',
-  AngelfoodVerkleStateNetwork = '0x504e',
+  AngelFoodStateNetwork = '0x504a',
+  AngelFoodHistoryNetwork = '0x504b',
+  AngelFoodBeaconChainNetwork = '0x504c',
+  AngelFoodCanonicalTxIndexNetwork = '0x504d',
+  AngelFoodVerkleStateNetwork = '0x504e',
 
   // Sepolia
   SepoliaStateNetwork = '0x505a',
@@ -50,34 +50,34 @@ export enum NetworkId {
   
 }
 
-enum MainnetId {
-  StateNetwork = '0x500a',
-  HistoryNetwork = '0x500b',
-  BeaconChainNetwork = '0x500c',
-  CanonicalTxIndexNetwork = '0x500d',
-  VerkleStateNetwork = '0x500e',
+const MainnetId: Record<string, NetworkId> = {
+  StateNetwork: NetworkId.StateNetwork,
+  HistoryNetwork: NetworkId.HistoryNetwork,
+  BeaconChainNetwork: NetworkId.BeaconChainNetwork,
+  CanonicalTxIndexNetwork: NetworkId.CanonicalTxIndexNetwork,
+  VerkleStateNetwork: NetworkId.VerkleStateNetwork,
 }
 
-enum SepoliaId {
-  StateNetwork = '0x505a',
-  HistoryNetwork = '0x505b',
-  BeaconChainNetwork = '0x505c',
-  CanonicalTxIndexNetwork = '0x505d',
-  VerkleStateNetwork = '0x505e',
+const SepoliaId: Record<string, NetworkId> = {
+  StateNetwork: NetworkId.SepoliaStateNetwork,
+  HistoryNetwork: NetworkId.SepoliaHistoryNetwork,
+  BeaconChainNetwork: NetworkId.SepoliaBeaconChainNetwork,
+  CanonicalTxIndexNetwork: NetworkId.SepoliaCanonicalTxIndexNetwork,
+  VerkleStateNetwork: NetworkId.SepoliaVerkleStateNetwork,
 }
 
-enum AngelFoodId {
-  StateNetwork = '0x504a',
-  HistoryNetwork = '0x504b',
-  BeaconChainNetwork = '0x504c',
-  CanonicalTxIndexNetwork = '0x504d',
-  VerkleStateNetwork = '0x504e',
+const AngelFoodId: Record<string, NetworkId> = {
+  StateNetwork: NetworkId.AngelFoodStateNetwork,
+  HistoryNetwork: NetworkId.AngelFoodHistoryNetwork,
+  BeaconChainNetwork: NetworkId.AngelFoodBeaconChainNetwork,
+  CanonicalTxIndexNetwork: NetworkId.AngelFoodCanonicalTxIndexNetwork,
+  VerkleStateNetwork: NetworkId.AngelFoodVerkleStateNetwork,
 }
 
-export const NetworkIdByChain = {
-  [ChainId.Mainnet]: MainnetId,
-  [ChainId.Sepolia]: SepoliaId,
-  [ChainId.AngelFood]: AngelFoodId,
+export const NetworkIdByChain: Record<ChainId, Record<string, NetworkId>> = {
+  [ChainId.MAINNET]: MainnetId,
+  [ChainId.SEPOLIA]: SepoliaId,
+  [ChainId.ANGELFOOD]: AngelFoodId,
 }
 
 export type SubNetwork<T extends NetworkId> = T extends `0x${string}a`

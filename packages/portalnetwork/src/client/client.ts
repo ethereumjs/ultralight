@@ -56,7 +56,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    */
   constructor(opts: PortalNetworkOpts) {
     super()
-    this.chainId = opts.chainId ?? ChainId.Mainnet
+    this.chainId = opts.chainId ?? ChainId.MAINNET
     this.clientInfo = {
       clientName: 'ultralight',
       clientVersionAndShortCommit: `${packageJson.version}-${opts.shortCommit ?? ''}`,
