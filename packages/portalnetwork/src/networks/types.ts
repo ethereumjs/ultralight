@@ -4,7 +4,7 @@ import { keccak256 } from 'ethereum-cryptography/keccak.js'
 import type { ENR, NodeId } from '@chainsafe/enr'
 import type { PrefixedHexString } from '@ethereumjs/util'
 import type { AbstractLevel } from 'abstract-level'
-import type { PortalNetwork } from '../client'
+import type { ChainId, PortalNetwork } from '../client'
 import type { BeaconNetwork } from './beacon'
 import type { HistoryNetwork } from './history'
 import type { StateNetwork } from './state'
@@ -24,34 +24,69 @@ const BYTE_SIZE = 256
 
 // subnetwork IDs
 export enum NetworkId {
+  // Mainnet
   StateNetwork = '0x500a',
   HistoryNetwork = '0x500b',
   BeaconChainNetwork = '0x500c',
   CanonicalTxIndexNetwork = '0x500d',
   VerkleStateNetwork = '0x500e',
-  TransactionGossipNetwork = '0x500f',
-  Angelfood_StateNetwork = '0x504a',
-  Angelfood_HistoryNetwork = '0x504b',
-  Angelfood_BeaconChainNetwork = '0x504c',
-  Angelfood_CanonicalTxIndexNetwork = '0x504d',
-  Angelfood_VerkleStateNetwork = '0x504e',
-  Angelfood_TransactionGossipNetwork = '0x504f',
+
+  // Angelfood
+  AngelFoodStateNetwork = '0x504a',
+  AngelFoodHistoryNetwork = '0x504b',
+  AngelFoodBeaconChainNetwork = '0x504c',
+  AngelFoodCanonicalTxIndexNetwork = '0x504d',
+  AngelFoodVerkleStateNetwork = '0x504e',
+
+  // Sepolia
+  SepoliaStateNetwork = '0x505a',
+  SepoliaHistoryNetwork = '0x505b',
+  SepoliaBeaconChainNetwork = '0x505c',
+  SepoliaCanonicalTxIndexNetwork = '0x505d',
+  SepoliaVerkleStateNetwork = '0x505e',
+
+  // UTP
   UTPNetwork = '0x757470',
+  
 }
 
-export type SubNetwork<T extends NetworkId> = T extends '0x500a'
-  ? HistoryNetwork
-  : T extends '0x504a'
+const MainnetId: Record<string, NetworkId> = {
+  StateNetwork: NetworkId.StateNetwork,
+  HistoryNetwork: NetworkId.HistoryNetwork,
+  BeaconChainNetwork: NetworkId.BeaconChainNetwork,
+  CanonicalTxIndexNetwork: NetworkId.CanonicalTxIndexNetwork,
+  VerkleStateNetwork: NetworkId.VerkleStateNetwork,
+}
+
+const SepoliaId: Record<string, NetworkId> = {
+  StateNetwork: NetworkId.SepoliaStateNetwork,
+  HistoryNetwork: NetworkId.SepoliaHistoryNetwork,
+  BeaconChainNetwork: NetworkId.SepoliaBeaconChainNetwork,
+  CanonicalTxIndexNetwork: NetworkId.SepoliaCanonicalTxIndexNetwork,
+  VerkleStateNetwork: NetworkId.SepoliaVerkleStateNetwork,
+}
+
+const AngelFoodId: Record<string, NetworkId> = {
+  StateNetwork: NetworkId.AngelFoodStateNetwork,
+  HistoryNetwork: NetworkId.AngelFoodHistoryNetwork,
+  BeaconChainNetwork: NetworkId.AngelFoodBeaconChainNetwork,
+  CanonicalTxIndexNetwork: NetworkId.AngelFoodCanonicalTxIndexNetwork,
+  VerkleStateNetwork: NetworkId.AngelFoodVerkleStateNetwork,
+}
+
+export const NetworkIdByChain: Record<ChainId, Record<string, NetworkId>> = {
+  'MAINNET': MainnetId,
+  'SEPOLIA': SepoliaId,
+  'ANGELFOOD': AngelFoodId,
+}
+
+export type SubNetwork<T extends NetworkId> = T extends `0x${string}a`
+  ? StateNetwork
+  : T extends `0x${string}b`
     ? HistoryNetwork
-    : T extends '0x500b'
-      ? StateNetwork
-      : T extends '0x504b'
-        ? StateNetwork
-        : T extends '0x500c'
-          ? BeaconNetwork
-          : T extends '0x504c'
-            ? BeaconNetwork
-            : never
+    : T extends `0x${string}c`
+      ? BeaconNetwork
+      : never
 
 export class Bloom {
   bitvector: Uint8Array

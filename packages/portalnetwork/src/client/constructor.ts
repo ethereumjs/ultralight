@@ -4,11 +4,11 @@ import { type PrefixedHexString, hexToBytes } from '@ethereumjs/util'
 import { keys } from '@libp2p/crypto'
 import { multiaddr } from '@multiformats/multiaddr'
 
-import { NetworkId } from '../networks/index.js'
+import { NetworkIdByChain } from '../networks/index.js'
 import { RateLimiter } from '../transports/rateLimiter.js'
 import { MEGABYTE } from '../util/index.js'
 import { PortalNetwork } from './client.js'
-import { TransportLayer } from './types.js'
+import { ChainId, TransportLayer } from './types.js'
 
 import type { IDiscv5CreateOptions, ITransportService, SignableENRInput } from '@chainsafe/discv5'
 import type { PortalNetworkOpts } from './types.js'
@@ -137,7 +137,7 @@ export async function createPortalNetwork(
     bootnodes,
     db: opts.db,
     supportedNetworks: opts.supportedNetworks ?? [
-      { networkId: NetworkId.HistoryNetwork, maxStorage: 1024 },
+      { networkId: NetworkIdByChain[opts.chainId ?? ChainId.MAINNET].HistoryNetwork, maxStorage: 1024 },
     ],
     dbSize: dbSize as () => Promise<number>,
     metrics: opts.metrics,

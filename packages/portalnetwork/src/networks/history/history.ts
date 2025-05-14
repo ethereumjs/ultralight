@@ -45,7 +45,7 @@ import {
 } from '../../index.js'
 import { BasicRadius, PingPongPayloadExtensions } from '../../wire/payloadExtensions.js'
 import { BaseNetwork } from '../network.js'
-import { NetworkId } from '../types.js'
+import { type NetworkId, NetworkIdByChain } from '../types.js'
 import {
   AccumulatorProofType,
   BlockHeaderWithProof,
@@ -74,18 +74,18 @@ import type { LightClientHeader } from '@lodestar/types/lib/deneb/types.js'
 import type { Debugger } from 'debug'
 
 export class HistoryNetwork extends BaseNetwork {
-  networkId: NetworkId.HistoryNetwork
+  networkId: NetworkId
   networkName = 'HistoryNetwork'
   logger: Debugger
   public ephemeralHeaderIndex: BiMap<bigint, string> // Map of block number to block hashes
   public blockHashIndex: Map<string, string>
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
-    super({ client, networkId: NetworkId.HistoryNetwork, db, radius, maxStorage })
+    super({ client, networkId: NetworkIdByChain[client.chainId].HistoryNetwork, db, radius, maxStorage })
     this.capabilities = [
       PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
       PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD,
     ]
-    this.networkId = NetworkId.HistoryNetwork
+    this.networkId = NetworkIdByChain[client.chainId].HistoryNetwork
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
     this.routingTable.setLogger(this.logger)
     this.blockHashIndex = new Map()
@@ -264,7 +264,7 @@ export class HistoryNetwork extends BaseNetwork {
         this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
         throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)
       }
-      const beacon = this.portal.network()['0x500c']
+      const beacon = this.portal.network()['0x500c'] as BeaconNetwork | undefined
       if (beacon !== undefined && beacon.lightClient?.status === RunStatusCode.started) {
         try {
           verifyHistoricalSummariesHeaderProof(
@@ -304,9 +304,6 @@ export class HistoryNetwork extends BaseNetwork {
         break
       }
       case PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD: {
-        if (this.networkId !== NetworkId.HistoryNetwork) {
-          throw new Error('HISTORY_RADIUS extension not supported on this network')
-        }
         payload = HistoryRadius.serialize({
           dataRadius: this.nodeRadius,
           ephemeralHeadersCount: this.ephemeralHeaderIndex.size,
@@ -799,7 +796,7 @@ export class HistoryNetwork extends BaseNetwork {
             break
           }
         }
-        const beacon = this.portal.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+        const beacon = this.portal.networks.get(NetworkIdByChain[this.portal.chainId].BeaconChainNetwork) as BeaconNetwork
         if (
           beacon === undefined ||
           (beacon.lightClient?.status !== RunStatusCode.started &&

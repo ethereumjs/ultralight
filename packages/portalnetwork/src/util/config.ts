@@ -8,7 +8,7 @@ import { NetworkId } from '../networks/types.js'
 
 import { setupMetrics } from './metrics.js'
 
-import { type NetworkConfig, type PortalNetworkOpts, SupportedVersions } from '../client/index.js'
+import { ChainId, type NetworkConfig, type PortalNetworkOpts, SupportedVersions } from '../client/index.js'
 import { DEFAULT_BOOTNODES } from './bootnodes.js'
 
 export type AsyncReturnType<T extends (...args: any) => Promise<any>> = T extends (
@@ -18,6 +18,7 @@ export type AsyncReturnType<T extends (...args: any) => Promise<any>> = T extend
   : any
 
 export interface PortalClientOpts {
+  chainId?: string
   pk?: string
   bootnode?: string
   bindAddress?: string
@@ -30,13 +31,26 @@ export interface PortalClientOpts {
   supportedVersions?: number[]
 }
 
-export const NetworkStrings: Record<string, NetworkId> = {
-  history: NetworkId.HistoryNetwork,
-  beacon: NetworkId.BeaconChainNetwork,
-  state: NetworkId.StateNetwork,
+export const NetworkStrings: Record<ChainId, Record<string, NetworkId>> = {
+  'MAINNET': {
+    history: NetworkId.HistoryNetwork,
+    beacon: NetworkId.BeaconChainNetwork,
+    state: NetworkId.StateNetwork,
+  },
+  'SEPOLIA': {
+    history: NetworkId.SepoliaHistoryNetwork,
+    beacon: NetworkId.SepoliaBeaconChainNetwork,
+    state: NetworkId.SepoliaStateNetwork,
+  },
+  'ANGELFOOD': {
+    history: NetworkId.AngelFoodHistoryNetwork,
+    beacon: NetworkId.AngelFoodBeaconChainNetwork,
+    state: NetworkId.AngelFoodStateNetwork,
+  },
 }
 
 export const cliConfig = async (args: PortalClientOpts) => {
+  const chainId = args.chainId ? ChainId[args.chainId.toUpperCase() as keyof typeof ChainId] : ChainId.MAINNET
   const ip = args.bindAddress !== undefined ? args.bindAddress.split(':')[0] : '0.0.0.0'
   const bindPort = args.bindAddress !== undefined ? args.bindAddress.split(':')[1] : 9000 // Default discv5 port
   let privateKey: AsyncReturnType<typeof keys.generateKeyPair>
@@ -58,6 +72,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
     db = new Level<string, string>(args.dataDir)
   }
   const config = {
+    chainId,
     enr,
     privateKey,
     config: {
@@ -83,7 +98,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
       }
     }
     networks.push({
-      networkId: NetworkStrings[network],
+      networkId: NetworkStrings[chainId][network],
       maxStorage: argsStorage[i],
       //@ts-ignore Because level doesn't know how to get along with itself
       db: networkdb,

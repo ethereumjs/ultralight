@@ -14,6 +14,7 @@ import {
   ContentLookup,
   HistoryNetworkContentType,
   NetworkId,
+  NetworkIdByChain,
   UltralightStateManager,
   getContentKey,
   reassembleBlock,
@@ -29,19 +30,21 @@ import type {
   StateNetwork,
 } from '../networks/index.js'
 import type { PortalNetwork } from './client.js'
-import type { RpcTx } from './types.js'
+import type { ChainId, RpcTx } from './types.js'
 
 export class ETH {
+  chainId: ChainId
   history?: HistoryNetwork
   state?: StateNetwork
   beacon?: BeaconNetwork
   activeNetworks: NetworkId[]
   logger: Debugger
   constructor(portal: PortalNetwork) {
+    this.chainId = portal.chainId
     this.activeNetworks = Array.from(portal.networks.keys())
-    this.history = portal.network()['0x500b']
-    this.state = portal.network()['0x500a']
-    this.beacon = portal.network()['0x500c']
+    this.history = portal.network()[NetworkIdByChain[portal.chainId].HistoryNetwork] as HistoryNetwork | undefined
+    this.state = portal.network()[NetworkIdByChain[portal.chainId].StateNetwork] as StateNetwork | undefined
+    this.beacon = portal.network()[NetworkIdByChain[portal.chainId].BeaconChainNetwork] as BeaconNetwork | undefined
     this.logger = portal.logger.extend('ETH')
   }
 
@@ -52,7 +55,7 @@ export class ETH {
    * @returns returns the ETH balance of an address at the specified block number or undefined if not available
    */
   getBalance = async (address: Uint8Array, blockNumber: bigint): Promise<bigint | undefined> => {
-    this.networkCheck([NetworkId.StateNetwork, NetworkId.HistoryNetwork])
+    this.networkCheck([NetworkIdByChain[this.chainId].StateNetwork, NetworkIdByChain[this.chainId].HistoryNetwork])
     const stateRoot = await this.history!.getStateRoot(blockNumber)
     if (!stateRoot) {
       this.logger.extend('getBalance')(`Unable to find StateRoot for block ${blockNumber}`)
@@ -69,7 +72,7 @@ export class ETH {
     let header: any
     let body: any
     let block
-    this.networkCheck([NetworkId.HistoryNetwork])
+    this.networkCheck([NetworkIdByChain[this.chainId].HistoryNetwork])
     const headerContentKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
     const bodyContentKey = includeTransactions
       ? getContentKey(HistoryNetworkContentType.BlockBody, blockHash)
@@ -109,7 +112,7 @@ export class ETH {
     includeTransactions: boolean,
   ): Promise<Block | undefined> => {
     // Requires beacon light client to be running to get `latest` or `finalized` blocks
-    this.networkCheck([NetworkId.BeaconChainNetwork])
+    this.networkCheck([NetworkIdByChain[this.chainId].BeaconChainNetwork])
     let clHeader
     switch (blockTag) {
       case 'latest': {
@@ -135,7 +138,7 @@ export class ETH {
     blockNumber: number | bigint | 'latest' | 'finalized',
     includeTransactions: boolean,
   ): Promise<Block | undefined> => {
-    this.networkCheck([NetworkId.HistoryNetwork])
+    this.networkCheck([NetworkIdByChain[this.chainId].HistoryNetwork])
     if (blockNumber === 'latest' || blockNumber === 'finalized') {
       return this.getBlockByTag(blockNumber, includeTransactions)
     }
@@ -187,7 +190,7 @@ export class ETH {
    * @returns An execution result as defined by the `eth_call` spec
    */
   call = async (tx: RpcTx, blockNumber: bigint): Promise<any> => {
-    this.networkCheck([NetworkId.HistoryNetwork, NetworkId.StateNetwork])
+    this.networkCheck([NetworkIdByChain[this.chainId].HistoryNetwork, NetworkIdByChain[this.chainId].StateNetwork])
     const stateRoot = await this.history!.getStateRoot(blockNumber)
     const common = new Common({ chain: Mainnet })
     if (!stateRoot) {
@@ -236,7 +239,7 @@ export class ETH {
     slot: Uint8Array,
     blockTag?: string,
   ): Promise<string | undefined> {
-    this.networkCheck([NetworkId.StateNetwork, NetworkId.HistoryNetwork])
+    this.networkCheck([NetworkIdByChain[this.chainId].StateNetwork, NetworkIdByChain[this.chainId].HistoryNetwork])
     if (
       blockTag === undefined ||
       blockTag === 'pending' ||
@@ -261,7 +264,7 @@ export class ETH {
    * @returns
    */
   async getTransactionCount(address: Uint8Array, blockTag?: string): Promise<bigint | undefined> {
-    this.networkCheck([NetworkId.StateNetwork, NetworkId.HistoryNetwork])
+    this.networkCheck([NetworkIdByChain[this.chainId].StateNetwork, NetworkIdByChain[this.chainId].HistoryNetwork])
     if (
       blockTag === undefined ||
       blockTag === 'pending' ||
@@ -287,7 +290,7 @@ export class ETH {
    * @returns code at a given address
    */
   async getCode(address: Uint8Array, blockTag?: string) {
-    this.networkCheck([NetworkId.StateNetwork, NetworkId.HistoryNetwork])
+    this.networkCheck([NetworkIdByChain[this.chainId].StateNetwork, NetworkIdByChain[this.chainId].HistoryNetwork])
     if (
       blockTag === undefined ||
       blockTag === 'pending' ||

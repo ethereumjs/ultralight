@@ -62,7 +62,14 @@ export interface NetworkConfig {
   }
 }
 
+export enum ChainId {
+  MAINNET = 'MAINNET',
+  SEPOLIA = 'SEPOLIA',
+  ANGELFOOD = 'ANGELFOOD',
+}
+
 export interface PortalNetworkOpts {
+  chainId?: ChainId
   shortCommit?: string
   operatingSystemAndCpuArchitecture?: string
   supportedNetworks?: NetworkConfig[]
