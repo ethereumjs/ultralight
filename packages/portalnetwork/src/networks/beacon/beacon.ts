@@ -695,14 +695,13 @@ export class BeaconNetwork extends BaseNetwork {
           // TODO: Decide whether it ever makes sense to accept a HistoricalSummaries object if we don't already have a finality update to verify against
           // return
         } else {
-          // TODO: Make this future proof with forkConfig
-          const reconstructedStateMerkleTree = ssz.capella.BeaconState.createFromProof({
+          const forkName = this.beaconConfig.forkDigest2ForkName(value.slice(0, 4)) as LightClientForkName
+          const reconstructedStateMerkleTree = ssz[ForkName[forkName]].BeaconState.createFromProof({
             type: ProofType.single,
-            gindex: ssz.capella.BeaconState.getPathInfo(['historicalSummaries']).gindex,
+            gindex: ssz[ForkName[forkName]].BeaconState.getPathInfo(['historicalSummaries']).gindex,
             witnesses: summaries.proof,
-            leaf: ssz.capella.BeaconState.fields.historicalSummaries
-              .toView(summaries.historicalSummaries)
-              .hashTreeRoot(),
+            leaf: (ssz[ForkName[forkName]].BeaconState.fields as any).historicalSummaries
+              .hashTreeRoot(summaries.historicalSummaries)
           })
           if (
             equalsBytes(
