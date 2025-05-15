@@ -766,16 +766,16 @@ describe('beacon light client sync tests', () => {
 describe('historicalSummaries verification', () => {
   it('should sync two light clients to present and then gossip HistoricalSummaries', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
-    vi.setSystemTime(1722959051100)
+    vi.setSystemTime(1747332119000)
     const bootstrapJson =
-      require('./testdata/historicalSummaries/bootstrap0xb7918b28a8e9c6be29467a0771d0ab2693d5061f43d214b6056e8c6a12a5b9f3.json').data
-    const bootstrap = ssz.deneb.LightClientBootstrap.fromJson(bootstrapJson)
+      require('./testdata/historicalSummaries/bootstrap.json').data
+    const bootstrap = ssz.electra.LightClientBootstrap.fromJson(bootstrapJson)
 
-    const finalityUpdatejson = require('./testdata/historicalSummaries/finality_update.json').data
-    const finalityUpdate = ssz.deneb.LightClientFinalityUpdate.fromJson(finalityUpdatejson)
+    const finalityUpdatejson = require('./testdata/historicalSummaries/finalityUpdateSlot11708998.json').data
+    const finalityUpdate = ssz.electra.LightClientFinalityUpdate.fromJson(finalityUpdatejson)
     const optimisticUpdateJson =
-      require('./testdata/historicalSummaries/optimistic_update.json').data
-    const optimisticUpdate = ssz.deneb.LightClientOptimisticUpdate.fromJson(optimisticUpdateJson)
+      require('./testdata/historicalSummaries/optimisticUpdateSlot11709008.json').data
+    const optimisticUpdate = ssz.electra.LightClientOptimisticUpdate.fromJson(optimisticUpdateJson)
     const initMa: any = multiaddr('/ip4/127.0.0.1/udp/30027')
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/30028')
@@ -808,8 +808,8 @@ describe('historicalSummaries verification', () => {
     const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
-    const capellaForkDigest = network1.beaconConfig.forkName2ForkDigest(ForkName.deneb)
-
+    const capellaForkDigest = network1.beaconConfig.forkName2ForkDigest(ForkName.electra)
+    console.log(bytesToHex(ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon)))
     await network1.store(
       getBeaconContentKey(
         BeaconNetworkContentType.LightClientBootstrap,
@@ -817,7 +817,7 @@ describe('historicalSummaries verification', () => {
           blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
         }),
       ),
-      concatBytes(capellaForkDigest, ssz.deneb.LightClientBootstrap.serialize(bootstrap)),
+      concatBytes(capellaForkDigest, ssz.electra.LightClientBootstrap.serialize(bootstrap)),
     )
 
     await network1.store(
@@ -843,10 +843,10 @@ describe('historicalSummaries verification', () => {
     )
 
     await network1.initializeLightClient(
-      '0xb7918b28a8e9c6be29467a0771d0ab2693d5061f43d214b6056e8c6a12a5b9f3',
+      '0xee691ed0308c995e53203ca26fb68e652a172c4356d72002dd0c058d7489ca3a',
     )
     await network2.initializeLightClient(
-      '0xb7918b28a8e9c6be29467a0771d0ab2693d5061f43d214b6056e8c6a12a5b9f3',
+      '0xee691ed0308c995e53203ca26fb68e652a172c4356d72002dd0c058d7489ca3a',
     )
 
     await network1.store(
@@ -868,24 +868,23 @@ describe('historicalSummaries verification', () => {
       'light client synced to latest epoch successfully',
     )
 
-    const epoch = BigInt(Math.floor(9677824 / 8192))
-    const historicalSummariesJson = require('./testdata/historicalSummaries/historicalSummaries_slot_9677824.json')
-    const historicalSummariesProofJson = require('./testdata/historicalSummaries/historicalSummariesStateProof_slot_9677824.json')
+    const historicalSummariesJson = require('./testdata/historicalSummaries/historicalSummariesSlot11708928.json')
+    const epoch = BigInt(Math.floor(Number(historicalSummariesJson.data.slot) / 8192))
     const hsWProof = HistoricalSummariesWithProof.fromJson({
       epoch: bigIntToHex(epoch),
-      historical_summaries: historicalSummariesJson,
-      proof: historicalSummariesProofJson,
+      historical_summaries: historicalSummariesJson.data.historical_summaries,
+      proof: historicalSummariesJson.data.proof,
     })
     await network1.store(
       getBeaconContentKey(
         BeaconNetworkContentType.HistoricalSummaries,
         HistoricalSummariesKey.serialize({ epoch }),
       ),
-      concatBytes(network1.forkDigest, HistoricalSummariesWithProof.serialize(hsWProof)),
+      concatBytes(network1.beaconConfig.forkName2ForkDigest(ForkName.electra), HistoricalSummariesWithProof.serialize(hsWProof)),
     )
     while (network2.historicalSummaries.length === 0) {
       await new Promise((r) => setTimeout(r, 1000))
     }
-    assert.equal(network2.historicalSummariesEpoch, 1181n)
+    assert.equal(network2.historicalSummariesEpoch, 1429n)
   }, 15000)
 })
