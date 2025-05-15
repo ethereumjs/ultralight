@@ -69,7 +69,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
   enr.set('pv', SupportedVersions.serialize(args.supportedVersions ?? [0]))
   let db
   if (args.dataDir !== undefined) {
-    db = new Level<string, string>(args.dataDir)
+    db = new Level<string, string>(args.dataDir + '/' + chainId, { createIfMissing: true })
   }
   const config = {
     chainId,
