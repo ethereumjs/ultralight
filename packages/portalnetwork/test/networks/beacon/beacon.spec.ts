@@ -22,6 +22,7 @@ import {
   LightClientUpdatesByRange,
 } from '../../../src/networks/beacon/types.js'
 
+import { ForkName } from '@lodestar/params'
 import type { BeaconNetwork } from '../../../src/networks/beacon/index.js'
 
 const require = createRequire(import.meta.url)
@@ -31,18 +32,9 @@ const privateKeys = [
   '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
   '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
 ]
-const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
+const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0] as `0x${string}`).slice(-36))
 const enr1 = SignableENR.createFromPrivateKey(pk1)
-console.log(
-  bytesToHex(
-    getBeaconContentKey(
-      BeaconNetworkContentType.LightClientBootstrap,
-      LightClientBootstrapKey.serialize({
-        blockHash: hexToBytes('0xf090380ffd4ba91c51488bb0fcdcfe70a34d03fac8011861f65bd9ef90576639'),
-      }),
-    ),
-  ),
-)
+
 describe('API tests', async () => {
   const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3000')
   enr1.setLocationMultiaddr(initMa)
@@ -145,7 +137,7 @@ describe('API tests', async () => {
 
   it('stores a LightClientUpdate locally', async () => {
     const gossipSpy = vi.spyOn(network, 'sendOffer')
-    const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).slice(-36))
+    const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1] as `0x${string}`).slice(-36))
     const enr2 = SignableENR.createFromPrivateKey(pk2)
     const initMa2 = multiaddr('/ip4/127.0.0.1/udp/3001')
     enr2.setLocationMultiaddr(initMa2)
@@ -205,16 +197,13 @@ describe('API tests', async () => {
   })
 
   it('stores and retrieves a HistoricalSummariesWithProof object', async () => {
-    const summariesProofJson = (
-      await import('./testData/historicalSummariesProof_slot_9583072.json')
-    ).default
-    const summariesJson = (await import('./testData/historicalSummaries_slot_9583072.json')).default
+    const summariesJson = (await import('./testData/historicalSummaries_slot11708128.json'))
     const historicalSummaries =
-      ssz.deneb.BeaconState.fields.historicalSummaries.fromJson(summariesJson)
+      ssz.electra.BeaconState.fields.historicalSummaries.fromJson(summariesJson.data.historical_summaries)
     const finalityUpdateJson = (
-      await import('./testData/lightClientFinalityUpdate_slot_9583072.json')
+      await import('./testData/finalityUpdate_slot11708128.json')
     ).data
-    const finalizedHeader = ssz.altair.LightClientFinalityUpdate.fromJson(finalityUpdateJson)
+    const finalizedHeader = ssz.electra.LightClientFinalityUpdate.fromJson(finalityUpdateJson)
     // stub out lightclient to return finalized header we want
     network.lightClient = {
       //@ts-ignore
@@ -238,18 +227,18 @@ describe('API tests', async () => {
     await network.store(
       historicalSummariesKey,
       concatBytes(
-        network.forkDigest,
+        network.beaconConfig.forkName2ForkDigest(ForkName.electra),
         HistoricalSummariesWithProof.serialize({
           epoch,
           historicalSummaries,
-          proof: summariesProofJson.map((el) => hexToBytes(el)),
+          proof: summariesJson.data.proof.map((el) => hexToBytes(el as `0x${string}`)),
         }),
       ),
     )
     const res = HistoricalSummariesWithProof.deserialize(
       ((await network.findContentLocally(historicalSummariesKey)) as Uint8Array).slice(4),
     )
-    assert.equal(res.epoch, 1169n)
+    assert.equal(res.epoch, 1429n)
   })
 })
 

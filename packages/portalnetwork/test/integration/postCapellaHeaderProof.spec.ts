@@ -10,9 +10,8 @@ import { ssz } from '@lodestar/types'
 import { multiaddr } from '@multiformats/multiaddr'
 import { assert, describe, it, vi } from 'vitest'
 import {
+  type BeaconNetwork,
   BeaconNetworkContentType,
-  BlockHeaderWithProof,
-  HistoricalSummariesBlockProof,
   HistoricalSummariesKey,
   HistoricalSummariesWithProof,
   HistoryNetworkContentType,
@@ -20,18 +19,18 @@ import {
   NetworkId,
   createPortalNetwork,
   getBeaconContentKey,
-  getContentKey,
+  getContentKey
 } from '../../src/index.js'
 
 describe('Block Bridge Data Test', () => {
   it('should store and retrieve block header data', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true, shouldClearNativeTimers: true })
-    vi.setSystemTime(1737151319000)
+    vi.setSystemTime(1747332119000)
     const privateKeys = [
       '0x0a2700250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c12250802122102273097673a2948af93317235d2f02ad9cf3b79a34eeb37720c5f19e09f11783c1a2408021220aae0fff4ac28fdcdf14ee8ecb591c7f1bc78651206d86afe16479a63d9cb73bd',
       '0x0a27002508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd743764122508021221039909a8a7e81dbdc867480f0eeb7468189d1e7a1dd7ee8a13ee486c8cbd7437641a2408021220c6eb3ae347433e8cfe7a0a195cc17fc8afcd478b9fb74be56d13bccc67813130',
     ]
-    const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).slice(-36))
+    const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0] as `0x${string}`).slice(-36))
     const enr1 = SignableENR.createFromPrivateKey(pk1)
     const initMa: any = multiaddr('/ip4/127.0.0.1/udp/5033')
 
@@ -44,12 +43,8 @@ describe('Block Bridge Data Test', () => {
     })
     await client.start()
 
-    const bootstrapHex = JSON.parse(
-      readFileSync('./test/integration/testdata/postCapellaData/bootstrap.json', 'utf8'),
-    )
-    const historicalSummariesJson = JSON.parse(
-      readFileSync('./test/integration/testdata/postCapellaData/historical_summaries.json', 'utf8'),
-    )
+    const bootstrapJson = await import('./testdata/historicalSummaries/bootstrap.json')
+    const historicalSummariesJson = await import('./testdata/historicalSummaries/historicalSummariesSlot11708928.json')
     const fullBlock = JSON.parse(
       readFileSync('./test/integration/testdata/postCapellaData/full_block.json', 'utf8'),
     )
@@ -57,44 +52,43 @@ describe('Block Bridge Data Test', () => {
       readFileSync('./test/integration/testdata/postCapellaData/header_with_proof.json', 'utf8'),
     )
 
-    const bootstrap = ssz.deneb.LightClientBootstrap.deserialize(hexToBytes(bootstrapHex.bootstrap))
-    const bootstrapRoot = '0x47a956b9cd45c73a60dac4c89dc869a5faa46a9d5d802486f31025c74d41ef39'
-
+    const bootstrap = ssz.electra.LightClientBootstrap.fromJson((bootstrapJson.data))
+    const bootstrapRoot = ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon)
     // Get fork info
     const forkConfig = getChainForkConfigFromNetwork('mainnet')
     const bootstrapSlot = bootstrap.header.beacon.slot
     const forkName = forkConfig.getForkName(bootstrapSlot)
     const forkDigest = createBeaconConfig(
       mainnetChainConfig,
-      hexToBytes(genesisData.mainnet.genesisValidatorsRoot),
+      hexToBytes(genesisData.mainnet.genesisValidatorsRoot as `0x${string}`),
     ).forkName2ForkDigest(forkName)
 
     // Store bootstrap
 
     const bootstrapKey = getBeaconContentKey(
       BeaconNetworkContentType.LightClientBootstrap,
-      LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) }),
+      LightClientBootstrapKey.serialize({ blockHash: bootstrapRoot }),
     )
     const bootstrapValue = concatBytes(
       forkDigest,
-      ssz.deneb.LightClientBootstrap.serialize(bootstrap),
+      ssz.electra.LightClientBootstrap.serialize(bootstrap),
     )
 
-    const beacon = client.network()['0x500c']
+    const beacon = client.network()['0x500c'] as BeaconNetwork
     const history = client.network()['0x500b']
 
     await beacon?.store(bootstrapKey, bootstrapValue)
 
     // Start light client
-    await beacon?.initializeLightClient(bootstrapRoot)
+    await beacon?.initializeLightClient(bytesToHex(bootstrapRoot))
 
     const historicalSummariesEpoch = computeEpochAtSlot(bootstrapSlot)
 
     // Store historical summaries
     const historicalSummariesObj = HistoricalSummariesWithProof.fromJson({
       epoch: historicalSummariesEpoch,
-      historical_summaries: historicalSummariesJson.historical_summaries,
-      proof: historicalSummariesJson.proof,
+      historical_summaries: historicalSummariesJson.data.historical_summaries,
+      proof: historicalSummariesJson.data.proof,
     })
     const summariesKey = getBeaconContentKey(
       BeaconNetworkContentType.HistoricalSummaries,

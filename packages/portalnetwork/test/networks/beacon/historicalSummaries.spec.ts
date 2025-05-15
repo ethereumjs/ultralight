@@ -5,21 +5,18 @@ import { assert, describe, it } from 'vitest'
 
 describe('historicalSummaries', () => {
   it('should verify historicalSummariesProof', async () => {
-    const summariesProofJson = (
-      await import('./testData/historicalSummariesProof_slot_9583072.json')
-    ).default
-    const summariesJson = (await import('./testData/historicalSummaries_slot_9583072.json')).default
+    const summariesJson = (await import('./testData/historicalSummaries_slot11708128.json')).default
     const historicalSummaries =
-      ssz.deneb.BeaconState.fields.historicalSummaries.fromJson(summariesJson)
+      ssz.electra.BeaconState.fields.historicalSummaries.fromJson(summariesJson.data.historical_summaries)
     const finalityUpdateJson = (
-      await import('./testData/lightClientFinalityUpdate_slot_9583072.json')
+      await import('./testData/finalityUpdate_slot11708128.json')
     ).data
-    const finalizedHeader = ssz.altair.LightClientFinalityUpdate.fromJson(finalityUpdateJson)
-    const reconstructedState = ssz.capella.BeaconState.createFromProof({
+    const finalizedHeader = ssz.electra.LightClientFinalityUpdate.fromJson(finalityUpdateJson)
+    const reconstructedState = ssz.electra.BeaconState.createFromProof({
       type: ProofType.single,
-      gindex: ssz.capella.BeaconState.getPathInfo(['historicalSummaries']).gindex,
-      witnesses: summariesProofJson.map((witness) => hexToBytes(witness)),
-      leaf: ssz.deneb.BeaconState.fields.historicalSummaries
+      gindex: ssz.electra.BeaconState.getPathInfo(['historicalSummaries']).gindex,
+      witnesses: summariesJson.data.proof.map((witness: string) => hexToBytes(witness as `0x${string}`)),
+      leaf: ssz.electra.BeaconState.fields.historicalSummaries
         .toView(historicalSummaries)
         .hashTreeRoot(),
     })

@@ -52,7 +52,7 @@ export const LightClientOptimisticUpdateKey = new ContainerType({
 
 export const HistoricalSummariesKey = new ContainerType({ epoch: new UintBigintType(8) })
 
-export const HistoricalSummariesStateProof = new VectorCompositeType(Bytes32Type, 5)
+export const HistoricalSummariesStateProof = new VectorCompositeType(Bytes32Type, 6)
 
 export const HistoricalSummariesWithProof = new ContainerType<{
   epoch: UintBigintType
