@@ -93,8 +93,8 @@ export const cliConfig = async (args: PortalClientOpts) => {
     let networkdb
     if (args.dataDir !== undefined) {
       networkdb = {
-        db: new Level<string, string>(args.dataDir + '/' + network, { createIfMissing: true }),
-        path: args.dataDir + '/' + network,
+        db: new Level<string, string>(args.dataDir + '/' + chainId + '/' + network, { createIfMissing: true }),
+        path: args.dataDir + '/' + chainId + '/' + network,
       }
     }
     networks.push({
