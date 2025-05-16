@@ -69,7 +69,7 @@ export const cliConfig = async (args: PortalClientOpts) => {
   enr.set('pv', SupportedVersions.serialize(args.supportedVersions ?? [0]))
   let db
   if (args.dataDir !== undefined) {
-    db = new Level<string, string>(args.dataDir)
+    db = new Level<string, string>(args.dataDir + '/' + chainId, { createIfMissing: true })
   }
   const config = {
     chainId,
@@ -93,8 +93,8 @@ export const cliConfig = async (args: PortalClientOpts) => {
     let networkdb
     if (args.dataDir !== undefined) {
       networkdb = {
-        db: new Level<string, string>(args.dataDir + '/' + network, { createIfMissing: true }),
-        path: args.dataDir + '/' + network,
+        db: new Level<string, string>(args.dataDir + '/' + chainId + '/' + network, { createIfMissing: true }),
+        path: args.dataDir + '/' + chainId + '/' + network,
       }
     }
     networks.push({
