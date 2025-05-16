@@ -33,14 +33,19 @@ const main = async () => {
         ? readFileSync(args.bootnodeList, 'utf-8').split('\n')
         : undefined,
   })
-  log(`portalConfig: ${JSON.stringify(args, null, 2)}`)
+  log(`portalConfig: ${JSON.stringify({
+    "addr": args.bindAddress,
+    "rpc": args.rpc ? args.rpcPort : 'disabled',
+    "metrics": args.metrics ? args.metricsPort : 'disabled',
+    "chain": args.chainId,
+    "networks": args.networks,
+    "storage": args.storage,
+  }, null, 2)}`)
   portalConfig.operatingSystemAndCpuArchitecture = args.arch
   portalConfig.shortCommit = args.commit ?? execSync('git rev-parse HEAD').toString().slice(0, 7)
   portalConfig.dbSize = dirSize
   portalConfig.supportedVersions = [0, 1]
   const portal = await createPortalNetwork(portalConfig)
-
-  log(`discv5Config: ${JSON.stringify(portal.discv5['config'], null, 2)}`)
 
   const rpcAddr = args.rpcAddr ?? ip // Set RPC address (used by metrics server and rpc server)
   let metricsServer: http.Server | undefined
@@ -55,6 +60,9 @@ const main = async () => {
   }
 
   await portal.start()
+  log(`multiaddr: ${portal.discv5.enr.getLocationMultiaddr('udp')?.toString()}`)
+  log(`nodeId: ${portal.discv5.enr.nodeId}`)
+  log(`enr: ${portal.discv5.enr.encodeTxt()}`)
 
   // Proof of concept for a web3 bridge to import block headers from a locally running full node
   if (args.web3 !== undefined) {

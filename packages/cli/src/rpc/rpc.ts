@@ -51,7 +51,6 @@ export class RPCManager {
       }
     }
 
-    this.logger(`RPC Initialized ${Object.keys(methods).join(', ')}`)
     return methods
   }
   private _methods: { [key: string]: Function }

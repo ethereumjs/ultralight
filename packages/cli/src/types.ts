@@ -276,6 +276,7 @@ export interface ClientOpts {
   metricsPort: number
   dataDir?: string
   web3?: string
+  chainId?: string
   networks: string
   storage: string
   trustedBlockRoot?: string
