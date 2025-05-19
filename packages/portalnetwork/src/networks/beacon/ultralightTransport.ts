@@ -227,7 +227,7 @@ export class UltralightTransport implements LightClientTransport {
   }
 
   onOptimisticUpdate(handler: (optimisticUpdate: LightClientOptimisticUpdate) => void): void {
-    this.network.on('ContentAdded', (contentKey: Uint8Array, content: Uint8Array) => {
+    this.network.eventBus.on(`${this.network.networkId}:ContentAdded`, (contentKey: Uint8Array, content: Uint8Array) => {
       const contentType = contentKey[0]
       if (contentType === BeaconNetworkContentType.LightClientOptimisticUpdate) {
         const forkhash = content.slice(0, 4)
@@ -240,11 +240,14 @@ export class UltralightTransport implements LightClientTransport {
           this.logger('something went wrong trying to process Optimistic Update')
           this.logger(err)
         }
-      }
-    })
+        }
+      },
+    )
   }
   onFinalityUpdate(handler: (finalityUpdate: LightClientFinalityUpdate) => void): void {
-    this.network.on('ContentAdded', (contentKey: Uint8Array, content: Uint8Array) => {
+    this.network.eventBus.on(
+      `${this.network.networkId}:ContentAdded`,
+      (contentKey: Uint8Array, content: Uint8Array) => {
       const contentType = contentKey[0]
       if (contentType === BeaconNetworkContentType.LightClientFinalityUpdate) {
         const forkhash = content.slice(0, 4)
