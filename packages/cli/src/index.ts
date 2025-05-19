@@ -63,6 +63,7 @@ const main = async () => {
   log(`multiaddr: ${portal.discv5.enr.getLocationMultiaddr('udp')?.toString()}`)
   log(`nodeId: ${portal.discv5.enr.nodeId}`)
   log(`enr: ${portal.discv5.enr.encodeTxt()}`)
+  log(`supportedVersions: ${portal.discv5.enr.kvs.get('pv')}`)
 
   // Proof of concept for a web3 bridge to import block headers from a locally running full node
   if (args.web3 !== undefined) {
