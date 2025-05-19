@@ -259,7 +259,7 @@ describe('constructor/initialization tests', async () => {
       },
     })
     const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
-    const listeners = beacon.portal.listeners('NodeAdded')
+    const listeners = beacon.eventBus.listeners(`${beacon.networkId}:NodeAdded`)
     assert.equal(listeners.length, 1, 'bootstrap vote listener is running')
     assert.equal(listeners[0], beacon['getBootStrapVote'])
   })
@@ -278,7 +278,7 @@ describe('constructor/initialization tests', async () => {
       trustedBlockRoot: bytesToHex(randomBytes(32)),
     })
     const beacon = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
-    const listeners = beacon.portal.listeners('NodeAdded')
+    const listeners = beacon.eventBus.listeners(`${beacon.networkId}:NodeAdded`)
     assert.equal(listeners.length, 1, 'bootstrap listener is running')
     assert.equal(listeners[0], beacon['getBootstrap'])
   })
@@ -316,7 +316,7 @@ describe('constructor/initialization tests', async () => {
     await beacon.initializeLightClient(trustedBlockRoot)
     assert.equal((beacon.lightClient as any).checkpointRoot, trustedBlockRoot)
     expect(beacon.lightClient!.start).toHaveBeenCalled()
-    const listeners = beacon.portal.listeners('NodeAdded')
+    const listeners = beacon.eventBus.listeners(`${beacon.networkId}:NodeAdded`)
 
     assert.equal(listeners.length, 0, 'bootstrap listener is not running')
     vi.resetAllMocks()
