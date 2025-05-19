@@ -4,12 +4,12 @@ import { bytesToHex, hexToBytes } from '@ethereumjs/util'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import { fromNodeAddress } from '@multiformats/multiaddr'
 import debug from 'debug'
-import { EventEmitter } from 'eventemitter3'
 import packageJson from '../../package.json' with { type: 'json' }
 
 import { HistoryNetwork } from '../networks/history/history.js'
 import { NetworkId, type SubNetwork } from '../networks/index.js'
 import { PortalNetworkUTP } from '../wire/utp/PortalNetworkUtp/index.js'
+import { EventBus } from '../util/eventBus.js'
 
 import { DBManager } from './dbManager.js'
 import { ETH } from './eth.js'
@@ -33,9 +33,10 @@ import {
 } from './types.js'
 import { createNetwork } from '../networks/constructor.js'
 
-export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
+export class PortalNetwork {
   clientInfo: IClientInfo
   eventLog: boolean
+  eventBus: EventBus
   discv5: Discv5
   chainId: ChainId
   networks: Map<NetworkId, BaseNetwork>
@@ -55,7 +56,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
    * @param opts a dictionary of `PortalNetworkOpts`
    */
   constructor(opts: PortalNetworkOpts) {
-    super()
+    this.eventBus = EventBus.getInstance()
     this.chainId = opts.chainId ?? ChainId.MAINNET
     this.clientInfo = {
       clientName: 'ultralight',
@@ -108,7 +109,6 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     // Set version info pair in ENR
     this.discv5.enr.set('c', new TextEncoder().encode('u 0.0.1'))
     // Event handling
-    // TODO: Decide whether to put everything on a centralized event bus
     this.discv5.on('talkReqReceived', this.onTalkReq)
     this.discv5.on('talkRespReceived', this.onTalkResp)
     this.discv5.on('enrAdded', (enr: ENR) => {
@@ -179,7 +179,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
   public stop = async () => {
     await this.discv5.stop()
     this.discv5.removeAllListeners()
-    this.removeAllListeners()
+    this.eventBus.removeAllListeners()
     await this.storeENRCache()
     await this.db.close()
     for (const network of this.networks.values()) {
@@ -314,7 +314,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     try {
       this.metrics?.totalBytesSent.inc(payload.length)
       const res = await this.discv5.sendTalkReq(remote, payload, hexToBytes(messageNetwork))
-      this.eventLog && this.emit('SendTalkReq', enr.nodeId, bytesToHex(res), bytesToHex(payload))
+      this.eventLog && this.eventBus.emit('SendTalkReq', enr.nodeId, bytesToHex(res), bytesToHex(payload))
       return res
     } catch (err: any) {
       if (networkId === NetworkId.UTPNetwork || utpMessage === true) {
@@ -336,7 +336,7 @@ export class PortalNetwork extends EventEmitter<PortalNetworkEvents> {
     payload: Uint8Array,
   ) => {
     this.eventLog &&
-      this.emit('SendTalkResp', src.nodeId, bytesToHex(requestId), bytesToHex(payload))
+      this.eventBus.emit('SendTalkResp', src.nodeId, bytesToHex(requestId), bytesToHex(payload))
     try {
       await this.discv5.sendTalkResp(src, requestId, payload)
     } catch (err: any) {
