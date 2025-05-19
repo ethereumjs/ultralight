@@ -111,14 +111,14 @@ export class BeaconNetwork extends BaseNetwork {
     switch (this.syncStrategy) {
       case SyncStrategy.PollNetwork:
         this.bootstrapFinder = new Map()
-        this.eventBus.on('NodeAdded', this.getBootStrapVote)
+        this.eventBus.on(`${this.networkId}:NodeAdded`, this.getBootStrapVote)
         break
       case SyncStrategy.TrustedBlockRoot:
         if (trustedBlockRoot === undefined)
           throw new Error('must provided trusted block root with SyncStrategy.TrustedBlockRoot')
         this.bootstrapFinder = new Map()
         this.trustedBlockRoot = trustedBlockRoot
-        this.eventBus.on('NodeAdded', this.getBootstrap)
+        this.eventBus.on(`${this.networkId}:NodeAdded`, this.getBootstrap)
         break
     }
   }
@@ -130,9 +130,7 @@ export class BeaconNetwork extends BaseNetwork {
    * @param nodeId NodeId for a peer that was just discovered by the Portal Network `client`
    * @param network the network ID for the node just discovered
    */
-  private getBootstrap = async (nodeId: string, network: NetworkId) => {
-    // We check the network ID because NodeAdded is emitted regardless of network
-    if (network !== this.networkId) return
+  private getBootstrap = async (nodeId: string) => {
     const enr = getENR(this.routingTable, nodeId)
     if (enr === undefined) return
     const decoded = await this.sendFindContent(
@@ -153,7 +151,7 @@ export class BeaconNetwork extends BaseNetwork {
       )
       if (headerHash === this.trustedBlockRoot) {
         void this.initializeLightClient(headerHash)
-        this.eventBus.removeListener('NodeAdded', this.getBootstrap)
+        this.eventBus.removeListener(`${this.networkId}:NodeAdded`, this.getBootstrap)
       }
     }
   }
@@ -168,9 +166,9 @@ export class BeaconNetwork extends BaseNetwork {
    * @param nodeId NodeId for a peer that was just discovered by the Portal Network `client`
    * @param network the network ID for the node just discovered
    */
-  private getBootStrapVote = async (nodeId: string, network: NetworkId) => {
+  private getBootStrapVote = async (nodeId: string) => {
     try {
-      if (network === this.networkId) {
+      
         // We check the network ID because NodeAdded is emitted regardless of network
         if (this.bootstrapFinder.has(nodeId)) {
           return
@@ -257,7 +255,7 @@ export class BeaconNetwork extends BaseNetwork {
                   ssz[fork].LightClientBootstrap.deserialize(res.content.slice(4))
                   this.logger.extend('BOOTSTRAP')(`found a valid bootstrap - ${results[x][0]}`)
                   await this.store(bootstrapKey, res.content)
-                  this.eventBus.removeListener('NodeAdded', this.getBootStrapVote)
+                  this.eventBus.removeListener(`${this.networkId}:NodeAdded`, this.getBootStrapVote)
                   this.logger.extend('BOOTSTRAP')('Terminating Light Client bootstrap process')
                   await this.initializeLightClient(results[x][0])
                   return
@@ -274,7 +272,7 @@ export class BeaconNetwork extends BaseNetwork {
             this.bootstrapFinder.set(peer, {})
           }
         }
-      }
+      
     } catch (err) {
       this.logger.extend('BOOTSTRAP')(err)
     }
@@ -287,8 +285,8 @@ export class BeaconNetwork extends BaseNetwork {
    */
   public initializeLightClient = async (blockRoot: string) => {
     // Ensure bootstrap finder mechanism is disabled if currently running
-    this.eventBus.removeListener('NodeAdded', this.getBootStrapVote)
-    this.eventBus.removeListener('NodeAdded', this.getBootstrap)
+    this.eventBus.removeListener(`${this.networkId}:NodeAdded`, this.getBootStrapVote)
+    this.eventBus.removeListener(`${this.networkId}:NodeAdded`, this.getBootstrap)
 
     // Setup the Lodestar light client logger using our debug logger
     const lcLogger = this.logger.extend('LightClient')

@@ -1047,14 +1047,14 @@ export abstract class BaseNetwork {
         this.logger.extend('RoutingTable')(`adding ${shortId(nodeId)}`)
       this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
 
-      this.eventBus.emit('NodeAdded', enr.nodeId, this.networkId)
+      this.eventBus.emit(`${this.networkId}:NodeAdded`, enr.nodeId)
     } catch (err) {
       this.logger(`Something went wrong: ${(err as any).message}`)
       try {
         this.routingTable.getWithPending(enr as any)?.value === undefined &&
           this.logger(`adding ${enr as any} to ${this.networkName} routing table`)
         this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
-        this.eventBus.emit('NodeAdded', enr.nodeId, this.networkId)
+        this.eventBus.emit(`${this.networkId}:NodeAdded`, enr.nodeId)
       } catch (e) {
         this.logger(`Something went wrong : ${(e as any).message}`)
       }

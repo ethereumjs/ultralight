@@ -27,7 +27,6 @@ import { ENRCache } from './enrCache.js'
 import {
   ChainId,
   type INodeAddress,
-  type PortalNetworkEvents,
   type PortalNetworkMetrics,
   type PortalNetworkOpts,
 } from './types.js'
