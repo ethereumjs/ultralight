@@ -343,7 +343,7 @@ describe('OFFER/ACCEPT tests', () => {
     )
 
     await new Promise((resolve) => {
-      network2.on('ContentAdded', (contentKey: Uint8Array) => {
+      network2.eventBus.on(`${network2.networkId}:ContentAdded`, (contentKey: Uint8Array) => {
         const contentType = contentKey[0]
         if (contentType === BeaconNetworkContentType.LightClientOptimisticUpdate)
           // Update the light client stub to report the new "optimistic head"
@@ -522,7 +522,7 @@ describe('OFFER/ACCEPT tests', () => {
     await network1.sendOffer(network2.enr.toENR(), [bootstrapKey])
 
     await new Promise((resolve) => {
-      network2.on('ContentAdded', (key: Uint8Array) => {
+      network2.eventBus.on(`${network2.networkId}:ContentAdded`, (key: Uint8Array) => {
         assert.deepEqual(key, bootstrapKey, 'successfully gossipped bootstrap')
         resolve(undefined)
       })
@@ -753,7 +753,7 @@ describe('beacon light client sync tests', () => {
     )
 
     await new Promise((resolve) => {
-      network2.portal.on('NodeAdded', (_nodeId) => {
+      network2.eventBus.on('NodeAdded', (_nodeId) => {
         if (network2['bootstrapFinder'].values.length > 0) {
           resolve('undefined)')
         }

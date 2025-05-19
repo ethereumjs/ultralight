@@ -263,7 +263,7 @@ describe('should offer headers to peers', () => {
     )
     await new Promise((resolve) => {
       let count = 0
-      history2?.on('ContentAdded', async (key, value) => {
+      history2?.eventBus.on(`${history2.networkId}:ContentAdded`, async (key, value) => {
         count++
         if (count === 3) {
           const header = await history2.get(getEphemeralHeaderDbKey(headers[2].hash()))
