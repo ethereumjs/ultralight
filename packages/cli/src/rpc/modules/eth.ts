@@ -133,7 +133,7 @@ export class eth {
   async chainId(_params = []) {
     switch (this._client.chainId) {
       case ChainId.MAINNET:
-        return '0x01'
+        return '0x1'
       case ChainId.SEPOLIA:
         return '0xaa36a7'
     }
