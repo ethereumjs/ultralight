@@ -1,6 +1,6 @@
 import type { PrefixedHexString } from '@ethereumjs/util'
 import { bigIntToHex, hexToBytes, intToHex, toBytes } from '@ethereumjs/util'
-import { GET_LOGS_BLOCK_RANGE_LIMIT, NetworkId, NetworkIdByChain, getLogs } from 'portalnetwork'
+import { ChainId, GET_LOGS_BLOCK_RANGE_LIMIT, NetworkId, NetworkIdByChain, getLogs } from 'portalnetwork'
 
 import { INTERNAL_ERROR, INVALID_PARAMS } from '../error-code.js'
 import { jsonRpcLog } from '../types.js'
@@ -86,6 +86,7 @@ export class eth {
       [validators.transaction(['to'])],
       [validators.blockOption],
     ])
+    this.chainId = middleware(callWithStackTrace(this.chainId.bind(this), false), 0, [])
   }
 
   async getBalance(params: [string, string]) {
@@ -130,7 +131,12 @@ export class eth {
    * @returns The chain ID.
    */
   async chainId(_params = []) {
-    return '0x01'
+    switch (this._client.chainId) {
+      case ChainId.MAINNET:
+        return '0x01'
+      case ChainId.SEPOLIA:
+        return '0xaa36a7'
+    }
   }
 
   /**
