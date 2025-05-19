@@ -17,10 +17,17 @@ export interface INodeAddress {
   nodeId: NodeId
 }
 
-export interface PortalNetworkEvents {
+type NetworkEventName = `${NetworkId}:ContentAdded`
+
+type ContentAddedEvent = (key: Uint8Array, content: Uint8Array) => Promise<void | { content: Uint8Array; utp: boolean }>
+
+type NetworkEvents = {
+  [K in NetworkEventName]: ContentAddedEvent
+}
+
+export interface PortalNetworkEvents extends NetworkEvents {
   NodeAdded: (nodeId: NodeId, networkId: NetworkId) => void
   NodeRemoved: (nodeId: NodeId, networkId: NetworkId) => void
-  ContentAdded: (key: Uint8Array, contentType: number, content: string) => void
   Verified: (key: Uint8Array, verified: boolean) => void
   SendTalkReq: (nodeId: string, requestId: string, payload: string) => void
   SendTalkResp: (nodeId: string, requestId: string, payload: string) => void
