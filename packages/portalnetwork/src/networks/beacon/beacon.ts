@@ -90,7 +90,7 @@ export class BeaconNetwork extends BaseNetwork {
     this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('BeaconNetwork')
     this.routingTable.setLogger(this.logger)
     this.forkDigest = Uint8Array.from([0, 0, 0, 0])
-    this.on('ContentAdded', async (contentKey: Uint8Array) => {
+    this.portal.on(`${this.networkId}:ContentAdded`, async (contentKey: Uint8Array) => {
       if (contentKey[0] === BeaconNetworkContentType.LightClientUpdate) {
         // don't gossip individual LightClientUpdates since they aren't officially supported
         return
@@ -111,14 +111,14 @@ export class BeaconNetwork extends BaseNetwork {
     switch (this.syncStrategy) {
       case SyncStrategy.PollNetwork:
         this.bootstrapFinder = new Map()
-        this.portal.on('NodeAdded', this.getBootStrapVote)
+        this.portal.on(`${this.networkId}:NodeAdded`, this.getBootStrapVote)
         break
       case SyncStrategy.TrustedBlockRoot:
         if (trustedBlockRoot === undefined)
           throw new Error('must provided trusted block root with SyncStrategy.TrustedBlockRoot')
         this.bootstrapFinder = new Map()
         this.trustedBlockRoot = trustedBlockRoot
-        this.portal.on('NodeAdded', this.getBootstrap)
+        this.portal.on(`${this.networkId}:NodeAdded`, this.getBootstrap)
         break
     }
   }
@@ -130,9 +130,7 @@ export class BeaconNetwork extends BaseNetwork {
    * @param nodeId NodeId for a peer that was just discovered by the Portal Network `client`
    * @param network the network ID for the node just discovered
    */
-  private getBootstrap = async (nodeId: string, network: NetworkId) => {
-    // We check the network ID because NodeAdded is emitted regardless of network
-    if (network !== this.networkId) return
+  private getBootstrap = async (nodeId: string) => {
     const enr = getENR(this.routingTable, nodeId)
     if (enr === undefined) return
     const decoded = await this.sendFindContent(
@@ -153,7 +151,7 @@ export class BeaconNetwork extends BaseNetwork {
       )
       if (headerHash === this.trustedBlockRoot) {
         void this.initializeLightClient(headerHash)
-        this.portal.removeListener('NodeAdded', this.getBootstrap)
+        this.portal.removeListener(`${this.networkId}:NodeAdded`, this.getBootstrap)
       }
     }
   }
@@ -168,9 +166,9 @@ export class BeaconNetwork extends BaseNetwork {
    * @param nodeId NodeId for a peer that was just discovered by the Portal Network `client`
    * @param network the network ID for the node just discovered
    */
-  private getBootStrapVote = async (nodeId: string, network: NetworkId) => {
+  private getBootStrapVote = async (nodeId: string) => {
     try {
-      if (network === this.networkId) {
+      
         // We check the network ID because NodeAdded is emitted regardless of network
         if (this.bootstrapFinder.has(nodeId)) {
           return
@@ -257,7 +255,7 @@ export class BeaconNetwork extends BaseNetwork {
                   ssz[fork].LightClientBootstrap.deserialize(res.content.slice(4))
                   this.logger.extend('BOOTSTRAP')(`found a valid bootstrap - ${results[x][0]}`)
                   await this.store(bootstrapKey, res.content)
-                  this.portal.removeListener('NodeAdded', this.getBootStrapVote)
+                  this.portal.removeListener(`${this.networkId}:NodeAdded`, this.getBootStrapVote)
                   this.logger.extend('BOOTSTRAP')('Terminating Light Client bootstrap process')
                   await this.initializeLightClient(results[x][0])
                   return
@@ -274,7 +272,7 @@ export class BeaconNetwork extends BaseNetwork {
             this.bootstrapFinder.set(peer, {})
           }
         }
-      }
+      
     } catch (err) {
       this.logger.extend('BOOTSTRAP')(err)
     }
@@ -287,8 +285,8 @@ export class BeaconNetwork extends BaseNetwork {
    */
   public initializeLightClient = async (blockRoot: string) => {
     // Ensure bootstrap finder mechanism is disabled if currently running
-    this.portal.removeListener('NodeAdded', this.getBootStrapVote)
-    this.portal.removeListener('NodeAdded', this.getBootstrap)
+    this.portal.removeListener(`${this.networkId}:NodeAdded`, this.getBootStrapVote)
+    this.portal.removeListener(`${this.networkId}:NodeAdded`, this.getBootstrap)
 
     // Setup the Lodestar light client logger using our debug logger
     const lcLogger = this.logger.extend('LightClient')
@@ -473,7 +471,7 @@ export class BeaconNetwork extends BaseNetwork {
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
             response = await new Promise((resolve, _reject) => {
               // TODO: Figure out how to clear this listener
-              this.on('ContentAdded', (contentKey: Uint8Array, value) => {
+              this.portal.on(`${this.networkId}:ContentAdded`, (contentKey: Uint8Array, value) => {
                 if (equalsBytes(contentKey, key) === true) {
                   this.logger.extend('FOUNDCONTENT')(`received content for uTP Connection ID ${id}`)
                   resolve({ content: value, utp: true })
@@ -739,7 +737,7 @@ export class BeaconNetwork extends BaseNetwork {
     this.logger(
       `storing ${BeaconNetworkContentType[contentType]} content corresponding to ${bytesToHex(contentKey)}`,
     )
-    this.emit('ContentAdded', contentKey, value)
+    this.portal.emit(`${this.networkId}:ContentAdded`, contentKey, value)
   }
 
   /**
