@@ -17,10 +17,27 @@ export interface INodeAddress {
   nodeId: NodeId
 }
 
-export interface PortalNetworkEvents {
-  NodeAdded: (nodeId: NodeId, networkId: NetworkId) => void
-  NodeRemoved: (nodeId: NodeId, networkId: NetworkId) => void
-  ContentAdded: (key: Uint8Array, contentType: number, content: string) => void
+type ContentAddedEventName = `${NetworkId}:ContentAdded`
+type ContentAddedEventType = (key: Uint8Array, content: Uint8Array) => Promise<void | { content: Uint8Array; utp: boolean }>
+type ContentAddedEvents = {
+  [K in ContentAddedEventName]: ContentAddedEventType
+}
+
+type NodeAddedEventName = `${NetworkId}:NodeAdded`
+type NodeAddedEventType = (nodeId: NodeId) => void
+type NodeAddedEvents = {
+  [K in NodeAddedEventName]: NodeAddedEventType
+}
+
+type NodeRemovedEventName = `${NetworkId}:NodeRemoved`
+type NodeRemovedEventType = (nodeId: NodeId) => void
+type NodeRemovedEvents = {
+  [K in NodeRemovedEventName]: NodeRemovedEventType
+}
+
+type NetworkEvents = ContentAddedEvents & NodeAddedEvents & NodeRemovedEvents
+
+export interface PortalNetworkEvents extends NetworkEvents {
   Verified: (key: Uint8Array, verified: boolean) => void
   SendTalkReq: (nodeId: string, requestId: string, payload: string) => void
   SendTalkResp: (nodeId: string, requestId: string, payload: string) => void

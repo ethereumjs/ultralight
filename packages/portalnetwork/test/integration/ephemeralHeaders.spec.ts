@@ -232,7 +232,7 @@ describe('should offer headers to peers', () => {
     await node1.start()
     await node2.start()
     const history1 = node1.network()['0x500b']
-    const history2 = node2.network()['0x500b']
+    const history2 = node2.network()['0x500b']!
     await history2?.sendPing(node1.discv5.enr.toENR())
     await node1
       .network()
@@ -263,7 +263,7 @@ describe('should offer headers to peers', () => {
     )
     await new Promise((resolve) => {
       let count = 0
-      history2?.on('ContentAdded', async (key, value) => {
+      node2.on(`${history2.networkId}:ContentAdded`, async (key, value) => {
         count++
         if (count === 3) {
           const header = await history2.get(getEphemeralHeaderDbKey(headers[2].hash()))

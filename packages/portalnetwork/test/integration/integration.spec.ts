@@ -94,11 +94,10 @@ describe('gossip test', async () => {
   // Fancy workaround to allow us to "await" an event firing as expected following this - https://github.com/ljharb/tape/pull/503#issuecomment-619358911
   const end = new EventEmitter()
   const addedHeaders: [string, string][] = []
-  network2.on('ContentAdded', async (key: Uint8Array, content: Uint8Array) => {
+  node2.on(`${network2.networkId}:ContentAdded`, async (key: Uint8Array, content: Uint8Array) => {
     network2.logger.extend('ContentAdded')(`Added Content for ${bytesToHex(key)}`)
     addedHeaders.push([bytesToHex(key), bytesToHex(content)])
     if (addedHeaders.length === headersWithProofs.length) {
-      node2.removeAllListeners()
       void node1.stop()
       void node2.stop()
       end.emit('end()')
@@ -218,7 +217,6 @@ describe('FindContent', async () => {
     setHardfork: true,
   })
 
-  node2.removeAllListeners()
   void node1.stop()
   void node2.stop()
   it('should find content', () => {

@@ -12,7 +12,6 @@ import {
   hexToBytes,
   randomBytes,
 } from '@ethereumjs/util'
-import { EventEmitter } from 'eventemitter3'
 
 import type { ITalkReqMessage } from '@chainsafe/discv5/message'
 import type { SignableENR } from '@chainsafe/enr'
@@ -61,7 +60,8 @@ import { PingPongPayloadExtensions } from '../wire/payloadExtensions.js'
 import { AcceptCode, FoundContent } from '../wire/types.js'
 import { GossipManager } from './gossip.js'
 import { NetworkDB } from './networkDB.js'
-export abstract class BaseNetwork extends EventEmitter {
+
+export abstract class BaseNetwork {
   public capabilities: number[] = [
     PingPongPayloadExtensions.CLIENT_INFO_RADIUS_AND_CAPABILITIES,
     PingPongPayloadExtensions.BASIC_RADIUS_PAYLOAD,
@@ -94,7 +94,6 @@ export abstract class BaseNetwork extends EventEmitter {
     gossipCount,
     dbSize,
   }: BaseNetworkConfig) {
-    super()
     this.bridge = bridge ?? false
     this.networkId = networkId
     this.logger = client.logger.extend(this.constructor.name)
@@ -118,7 +117,7 @@ export abstract class BaseNetwork extends EventEmitter {
       }
     }
     this.gossipManager = new GossipManager(this, gossipCount)
-    this.on('ContentAdded', () => {
+    this.portal.on(`${this.networkId}:ContentAdded`, () => {
       if (this.db.approximateSize / MEGABYTE > this.maxStorage) {
         this.logger(
           `Pruning due to size limit ${this.db.approximateSize / MEGABYTE} > ${this.maxStorage}`,
@@ -1045,14 +1044,14 @@ export abstract class BaseNetwork extends EventEmitter {
         this.logger.extend('RoutingTable')(`adding ${shortId(nodeId)}`)
       this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
 
-      this.portal.emit('NodeAdded', enr.nodeId, this.networkId)
+      this.portal.emit(`${this.networkId}:NodeAdded`, enr.nodeId)
     } catch (err) {
       this.logger(`Something went wrong: ${(err as any).message}`)
       try {
         this.routingTable.getWithPending(enr as any)?.value === undefined &&
           this.logger(`adding ${enr as any} to ${this.networkName} routing table`)
         this.routingTable.insertOrUpdate(enr, EntryStatus.Connected)
-        this.portal.emit('NodeAdded', enr.nodeId, this.networkId)
+        this.portal.emit(`${this.networkId}:NodeAdded`, enr.nodeId)
       } catch (e) {
         this.logger(`Something went wrong : ${(e as any).message}`)
       }

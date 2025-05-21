@@ -355,7 +355,7 @@ export class HistoryNetwork extends BaseNetwork {
             this.logger.extend('FOUNDCONTENT')(`received uTP Connection ID ${id}`)
             response = await new Promise((resolve, _reject) => {
               // TODO: Figure out how to clear this listener
-              this.on('ContentAdded', (contentKey: Uint8Array, value) => {
+              this.portal.on(`${this.networkId}:ContentAdded`, (contentKey: Uint8Array, value: Uint8Array) => {
                 if (equalsBytes(contentKey, key) === true) {
                   this.logger.extend('FOUNDCONTENT')(`received content for uTP Connection ID ${id}`)
                   resolve({ content: value, utp: true })
@@ -646,7 +646,7 @@ export class HistoryNetwork extends BaseNetwork {
       }
     }
 
-    this.emit('ContentAdded', contentKey, value)
+    this.portal.emit(`${this.networkId}:ContentAdded`, contentKey, value)
     if (this.routingTable.values().length > 0) {
       if (
         contentType !== HistoryNetworkContentType.EphemeralHeader &&
@@ -692,7 +692,7 @@ export class HistoryNetwork extends BaseNetwork {
     const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hashKey)
     if (block instanceof Block) {
       await this.put(bodyContentKey, bytesToHex(bodyBytes))
-      this.emit('ContentAdded', bodyContentKey, bodyBytes)
+      this.portal.emit(`${this.networkId}:ContentAdded`, bodyContentKey, bodyBytes)
 
       // TODO: Decide when and if to build and store receipts.
       //       Doing this here caused a bottleneck when same receipt is gossiped via uTP at the same time.
@@ -703,7 +703,7 @@ export class HistoryNetwork extends BaseNetwork {
       this.logger('Could not verify block content')
       this.logger('Adding anyway for testing...')
       await this.put(bodyContentKey, bytesToHex(bodyBytes))
-      this.emit('ContentAdded', bodyContentKey, bodyBytes)
+      this.portal.emit(`${this.networkId}:ContentAdded`, bodyContentKey, bodyBytes)
       // TODO: Decide what to do here.  We shouldn't be storing block bodies without a corresponding header
       // as it's against spec
       return
