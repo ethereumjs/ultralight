@@ -18,7 +18,7 @@ import {
   LightClientBootstrapKey,
   NetworkId,
   createPortalNetwork,
-  getBeaconContentKey,
+  encodeBeaconContentKey,
   getContentKey
 } from '../../src/index.js'
 
@@ -65,7 +65,7 @@ describe('Block Bridge Data Test', () => {
 
     // Store bootstrap
 
-    const bootstrapKey = getBeaconContentKey(
+    const bootstrapKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientBootstrap,
       LightClientBootstrapKey.serialize({ blockHash: bootstrapRoot }),
     )
@@ -90,7 +90,7 @@ describe('Block Bridge Data Test', () => {
       historical_summaries: historicalSummariesJson.data.historical_summaries,
       proof: historicalSummariesJson.data.proof,
     })
-    const summariesKey = getBeaconContentKey(
+    const summariesKey = encodeBeaconContentKey(
       BeaconNetworkContentType.HistoricalSummaries,
       HistoricalSummariesKey.serialize({ epoch: BigInt(historicalSummariesEpoch) }),
     )

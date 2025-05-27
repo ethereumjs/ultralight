@@ -12,7 +12,7 @@ import {
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
 } from './types.js'
-import { getBeaconContentKey } from './util.js'
+import { encodeBeaconContentKey } from './util.js'
 
 import type { LightClientTransport } from '@lodestar/light-client/transport'
 import type { ForkName } from '@lodestar/params'
@@ -42,7 +42,7 @@ export class UltralightTransport implements LightClientTransport {
       `requesting lightClientUpdatesByRange starting with period ${startPeriod} and count ${count}`,
     )
     while (range.length === 0) {
-      const rangeKey = getBeaconContentKey(
+      const rangeKey = encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientUpdatesByRange,
         LightClientUpdatesByRangeKey.serialize({
           startPeriod: BigInt(startPeriod),
@@ -88,7 +88,7 @@ export class UltralightTransport implements LightClientTransport {
 
     // Try to get optimistic update locally
     const localUpdate = await this.network.findContentLocally(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({
           signatureSlot: currentSlot,
@@ -156,7 +156,7 @@ export class UltralightTransport implements LightClientTransport {
 
     // Try retrieving finality update locally
     const localUpdate = await this.network.findContentLocally(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientFinalityUpdate,
         LightClientFinalityUpdateKey.serialize({
           finalitySlot: nextFinalitySlot,
@@ -204,7 +204,7 @@ export class UltralightTransport implements LightClientTransport {
     // Try to get bootstrap from Portal Network
     const lookup = new ContentLookup(
       this.network,
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientBootstrap,
         hexToBytes(blockRoot as PrefixedHexString),
       ),
@@ -240,27 +240,27 @@ export class UltralightTransport implements LightClientTransport {
           this.logger('something went wrong trying to process Optimistic Update')
           this.logger(err)
         }
-        }
-      },
+      }
+    },
     )
   }
   onFinalityUpdate(handler: (finalityUpdate: LightClientFinalityUpdate) => void): void {
     this.network.portal.on(
       `${this.network.networkId}:ContentAdded`,
       (contentKey: Uint8Array, content: Uint8Array) => {
-      const contentType = contentKey[0]
-      if (contentType === BeaconNetworkContentType.LightClientFinalityUpdate) {
-        const forkhash = content.slice(0, 4)
-        const forkname = this.network.beaconConfig.forkDigest2ForkName(
-          forkhash,
-        ) as LightClientForkName
-        try {
-          handler(ssz[forkname].LightClientFinalityUpdate.deserialize(content.slice(4)))
-        } catch (err) {
-          this.logger('something went wrong trying to process Finality Update')
-          this.logger(err)
+        const contentType = contentKey[0]
+        if (contentType === BeaconNetworkContentType.LightClientFinalityUpdate) {
+          const forkhash = content.slice(0, 4)
+          const forkname = this.network.beaconConfig.forkDigest2ForkName(
+            forkhash,
+          ) as LightClientForkName
+          try {
+            handler(ssz[forkname].LightClientFinalityUpdate.deserialize(content.slice(4)))
+          } catch (err) {
+            this.logger('something went wrong trying to process Finality Update')
+            this.logger(err)
+          }
         }
-      }
-    })
+      })
   }
 }

@@ -10,7 +10,7 @@ import {
   NetworkIdByChain,
   type PortalNetwork,
   computeLightClientKeyFromPeriod,
-  getBeaconContentKey,
+  encodeBeaconContentKey,
 } from 'portalnetwork'
 
 import { INTERNAL_ERROR } from '../error-code.js'
@@ -89,7 +89,7 @@ export class beacon {
 
   async getLightClientUpdate(params: [string]) {
     const period = Number(BigInt(params[0]))
-    const rangeKey = getBeaconContentKey(
+    const rangeKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientUpdate,
       hexToBytes(computeLightClientKeyFromPeriod(period) as PrefixedHexString),
     )
@@ -101,7 +101,7 @@ export class beacon {
     }
     const lookup = new ContentLookup(
       this._beacon,
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientUpdatesByRange,
         LightClientUpdatesByRangeKey.serialize({ startPeriod: BigInt(params[0]), count: 1n }),
       ),

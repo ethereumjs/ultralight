@@ -10,7 +10,7 @@ import {
   NetworkId,
   TransportLayer,
   createPortalNetwork,
-  getBeaconContentKey,
+  encodeBeaconContentKey,
 } from '../../../src/index.js'
 import {
   BeaconNetworkContentType,
@@ -217,7 +217,7 @@ describe('API tests', async () => {
       },
     }
     const epoch = BigInt(finalityUpdateJson.finalized_header.beacon.slot) / 8192n
-    const historicalSummariesKey = getBeaconContentKey(
+    const historicalSummariesKey = encodeBeaconContentKey(
       BeaconNetworkContentType.HistoricalSummaries,
       HistoricalSummariesKey.serialize({
         epoch,

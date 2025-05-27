@@ -22,7 +22,7 @@ import {
   TransportLayer,
   createPortalNetwork,
   decodeBeaconContentKey,
-  getBeaconContentKey,
+  encodeBeaconContentKey,
 } from '../../src/index.js'
 
 import { BitArray } from '@chainsafe/ssz'
@@ -259,7 +259,7 @@ describe('Find Content tests', () => {
     await network1.storeUpdateRange(hexToBytes(updatesByRange.content_value))
 
     const rangeKey = hexToBytes(updatesByRange.content_key)
-    const truncatedRangeKey = getBeaconContentKey(BeaconNetworkContentType.LightClientUpdatesByRange, LightClientUpdatesByRangeKey.serialize({
+    const truncatedRangeKey = encodeBeaconContentKey(BeaconNetworkContentType.LightClientUpdatesByRange, LightClientUpdatesByRangeKey.serialize({
       startPeriod: 816n,
       count: 2n,
     }),
@@ -366,7 +366,7 @@ describe('OFFER/ACCEPT tests', () => {
       'node1 added node2 to routing table',
     )
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
@@ -392,7 +392,7 @@ describe('OFFER/ACCEPT tests', () => {
       })
     })
     const content = await network2.findContentLocally(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
@@ -473,7 +473,7 @@ describe('OFFER/ACCEPT tests', () => {
       'node1 added node2 to routing table',
     )
 
-    const staleOptimisticUpdateContentKey = getBeaconContentKey(
+    const staleOptimisticUpdateContentKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientOptimisticUpdate,
       LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
     )
@@ -536,7 +536,7 @@ describe('OFFER/ACCEPT tests', () => {
 
     await network1.sendPing(network2?.enr.toENR())
 
-    const bootstrapKey = getBeaconContentKey(
+    const bootstrapKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientBootstrap,
       LightClientBootstrapKey.serialize({
         blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
@@ -636,7 +636,7 @@ describe('beacon light client sync tests', () => {
     const optimisticUpdate = ssz.capella.LightClientOptimisticUpdate.fromJson(optimisticUpdateJson)
 
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({
           blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
@@ -650,7 +650,7 @@ describe('beacon light client sync tests', () => {
     await network1.storeUpdateRange(updatesByRange)
 
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({
           signatureSlot: BigInt(optimisticUpdate.signatureSlot),
@@ -757,14 +757,14 @@ describe('beacon light client sync tests', () => {
       ),
     )
 
-    const rangeKey = getBeaconContentKey(
+    const rangeKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientUpdatesByRange,
       LightClientUpdatesByRangeKey.serialize({
         startPeriod: BigInt(computeSyncPeriodAtSlot(range[0].data.attested_header.beacon.slot)),
         count: 3n,
       }),
     )
-    const bootstrapKey = getBeaconContentKey(
+    const bootstrapKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientBootstrap,
       LightClientBootstrapKey.serialize({
         blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
@@ -842,7 +842,7 @@ describe('historicalSummaries verification', () => {
     const capellaForkDigest = network1.beaconConfig.forkName2ForkDigest(ForkName.electra)
     console.log(bytesToHex(ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon)))
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({
           blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
@@ -852,7 +852,7 @@ describe('historicalSummaries verification', () => {
     )
 
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({
           signatureSlot: BigInt(optimisticUpdate.signatureSlot),
@@ -881,7 +881,7 @@ describe('historicalSummaries verification', () => {
     )
 
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientFinalityUpdate,
         LightClientFinalityUpdateKey.serialize({
           finalitySlot: BigInt(finalityUpdate.signatureSlot),
@@ -907,7 +907,7 @@ describe('historicalSummaries verification', () => {
       proof: historicalSummariesJson.data.proof,
     })
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.HistoricalSummaries,
         HistoricalSummariesKey.serialize({ epoch }),
       ),

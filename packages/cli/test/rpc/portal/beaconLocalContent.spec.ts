@@ -2,7 +2,7 @@ import { bytesToHex } from '@ethereumjs/util'
 import {
   BeaconNetworkContentType,
   LightClientOptimisticUpdateKey,
-  getBeaconContentKey,
+  encodeBeaconContentKey,
 } from 'portalnetwork'
 import { assert, afterAll, beforeAll, describe, it } from 'vitest'
 
@@ -24,7 +24,7 @@ describe(`${method} tests`, () => {
     it('should not find any local content', async () => {
       const key = LightClientOptimisticUpdateKey.serialize({ signatureSlot: 7807053n })
       const res = await rp.request(method, [
-        bytesToHex(getBeaconContentKey(BeaconNetworkContentType.LightClientOptimisticUpdate, key)),
+        bytesToHex(encodeBeaconContentKey(BeaconNetworkContentType.LightClientOptimisticUpdate, key)),
       ])
       console.log(res)
       assert.equal(res.error.code, -32009)

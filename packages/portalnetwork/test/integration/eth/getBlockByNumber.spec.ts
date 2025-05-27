@@ -19,7 +19,7 @@ import {
   addRLPSerializedBlock,
   createPortalNetwork,
   generatePreMergeHeaderProof,
-  getBeaconContentKey,
+  encodeBeaconContentKey,
 } from '../../../src/index.js'
 
 import type { BeaconNetwork, HistoryNetwork } from '../../../src/index.js'
@@ -141,7 +141,7 @@ describe(
 //   const optimisticUpdate = ssz.capella.LightClientOptimisticUpdate.fromJson(optimisticUpdateJson)
 
 //   await beacon.store(
-//     getBeaconContentKey(
+//     encodeBeaconContentKey(
 //       BeaconNetworkContentType.LightClientBootstrap,
 //       LightClientBootstrapKey.serialize({
 //         blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
@@ -171,7 +171,7 @@ describe(
 //   await beacon.storeUpdateRange(updatesByRange)
 
 //   await beacon.store(
-//     getBeaconContentKey(
+//     encodeBeaconContentKey(
 //       BeaconNetworkContentType.LightClientOptimisticUpdate,
 //       LightClientOptimisticUpdateKey.serialize({
 //         signatureSlot: BigInt(optimisticUpdate.signatureSlot),

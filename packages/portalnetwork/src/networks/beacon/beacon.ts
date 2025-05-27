@@ -50,7 +50,7 @@ import {
   SyncStrategy,
 } from './types.js'
 import { UltralightTransport } from './ultralightTransport.js'
-import { getBeaconContentKey } from './util.js'
+import { encodeBeaconContentKey } from './util.js'
 
 import type { BeaconConfig } from '@lodestar/config'
 import type { LightClientUpdate } from '@lodestar/types'
@@ -181,7 +181,7 @@ export class BeaconNetwork extends BaseNetwork {
       )
 
       // Request the range of Light Client Updates extending back 4 sync periods
-      const rangeKey = getBeaconContentKey(
+      const rangeKey = encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientUpdatesByRange,
         LightClientUpdatesByRangeKey.serialize({ startPeriod: currentPeriod - 3n, count: 4n }),
       )
@@ -233,7 +233,7 @@ export class BeaconNetwork extends BaseNetwork {
           // If we go through all of the possible checkpoint roots that receive a simple majority
           // vote by the polled nodes, stop looking and clear out votes.
           if (results[x][1] < Math.floor(MIN_BOOTSTRAP_VOTES / 2 + 1)) break
-          const bootstrapKey = getBeaconContentKey(
+          const bootstrapKey = encodeBeaconContentKey(
             BeaconNetworkContentType.LightClientBootstrap,
             LightClientBootstrapKey.serialize({
               blockHash: hexToBytes(results[x][0] as PrefixedHexString),

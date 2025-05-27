@@ -14,7 +14,7 @@ import {
  * @param serializedKey the SSZ encoded key corresponding to the `BeaconNetworkContentType`
  * @returns the content key encoded as a hex string
  */
-export const getBeaconContentKey = (
+export const encodeBeaconContentKey = (
   contentType: BeaconNetworkContentType,
   serializedKey: Uint8Array,
 ) => {

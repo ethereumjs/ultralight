@@ -6,7 +6,7 @@ import jayson from 'jayson/promise/index.js'
 import {
   BeaconNetworkContentType,
   BlockHeaderWithProof,
-  getBeaconContentKey,
+  encodeBeaconContentKey,
   getContentKey,
   HistoricalSummariesBlockProof,
   HistoricalSummariesKey,
@@ -54,7 +54,7 @@ const main = async () => {
   console.log(
     `Retrieved latest optimistic update for slot ${BigInt(optimisticUpdate.signatureSlot)}`,
   )
-  const optimisticUpdateKey = getBeaconContentKey(
+  const optimisticUpdateKey = encodeBeaconContentKey(
     BeaconNetworkContentType.LightClientOptimisticUpdate,
     LightClientOptimisticUpdateKey.serialize({
       signatureSlot: BigInt(optimisticUpdate.signatureSlot),
@@ -85,7 +85,7 @@ const main = async () => {
   // Push the bootstrap into the Portal Network
   let res = await ultralight.request('portal_beaconStore', [
     bytesToHex(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) }),
       ),
@@ -110,7 +110,7 @@ const main = async () => {
   console.log('Retrieving latest historical summaries...')
   const res2 = await fetch(
     beaconNode +
-      `/eth/v1/lodestar/historical_summaries/${finalityUpdate.finalizedHeader.beacon.slot}`,
+    `/eth/v1/lodestar/historical_summaries/${finalityUpdate.finalizedHeader.beacon.slot}`,
   )
   const res2Json = await res2.json()
 
@@ -125,7 +125,7 @@ const main = async () => {
 
   res = await ultralight.request('portal_beaconStore', [
     bytesToHex(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.HistoricalSummaries,
         HistoricalSummariesKey.serialize({ epoch: BigInt(finalityEpoch) }),
       ),
