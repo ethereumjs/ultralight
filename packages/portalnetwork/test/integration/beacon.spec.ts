@@ -198,7 +198,7 @@ describe('Find Content tests', () => {
     await node2.stop()
   }, 15000)
 
-  it.only('should find LightClientUpdatesByRange update', async () => {
+  it('should find LightClientUpdatesByRange update', async () => {
     const updatesByRange = specTestVectors.updateByRange['6684738']
     const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3004')
     enr1.setLocationMultiaddr(initMa)
