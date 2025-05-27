@@ -5,7 +5,7 @@ import {
   LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
-  LightClientUpdatesByRange,
+  LightClientUpdatesByRangeKey,
 } from './types.js'
 
 /**
@@ -37,7 +37,7 @@ export const decodeBeaconContentKey = (serializedKey: Uint8Array) => {
     case BeaconNetworkContentType.LightClientFinalityUpdate:
       return LightClientFinalityUpdateKey.deserialize(contentKeyBytes)
     case BeaconNetworkContentType.LightClientUpdatesByRange:
-      return LightClientUpdatesByRange.deserialize(contentKeyBytes)
+      return LightClientUpdatesByRangeKey.deserialize(contentKeyBytes)
     default:
       throw new Error(`unknown content type ${selector}`)
   }
