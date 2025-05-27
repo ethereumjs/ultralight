@@ -346,7 +346,7 @@ export class BeaconNetwork extends BaseNetwork {
         )
         if (
           this.lightClient !== undefined &&
-          key.signatureSlot === BigInt(this.lightClient.getHead().beacon.slot + 1)
+          key.signatureSlot <= BigInt(this.lightClient.getHead().beacon.slot + 1)
         ) {
           // We have to check against the light client head + 1 since it will be one slot behind the current slot
           this.logger.extend('FINDLOCALLY')('found optimistic update matching light client head')
@@ -364,6 +364,17 @@ export class BeaconNetwork extends BaseNetwork {
             `light client is not running, retrieving whatever we have - ${value !== undefined ? short(value) : 'nothing found'
             }`,
           )
+          if (value !== undefined) {
+            const decoded = hexToBytes(value as PrefixedHexString)
+            const forkHash = decoded.slice(0, 4) as Uint8Array
+            const forkName = this.beaconConfig.forkDigest2ForkName(forkHash) as LightClientForkName
+            if (
+              ssz[ForkName[forkName]].LightClientOptimisticUpdate.deserialize(decoded.slice(4)).attestedHeader.beacon.slot < Number(key.signatureSlot)
+            ) {
+              // If what we have stored locally is older than the optimistic update requested, don't send it
+              value = undefined
+            }
+          }
         } else {
           this.logger.extend('FINDLOCALLY')('tried to retrieve an optimistic update we do not have')
         }

@@ -37,8 +37,8 @@ const privateKeys = [
 
 const specTestVectors = require('../networks/beacon/specTestVectors.json')
 
-const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).subarray(-36))
-const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).subarray(-36))
+const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0] as `0x${string}`).subarray(-36))
+const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1] as `0x${string}`).subarray(-36))
 const enr1 = SignableENR.createFromPrivateKey(pk1)
 const enr2 = SignableENR.createFromPrivateKey(pk2)
 describe('Find Content tests', () => {
@@ -101,7 +101,7 @@ describe('Find Content tests', () => {
     await node1.stop()
     await node2.stop()
   }, 10000)
-  it('should find optimistic update', async () => {
+  it('should handle optimistic updates correctly', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
     const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3002')
     enr1.setLocationMultiaddr(initMa)
@@ -188,12 +188,20 @@ describe('Find Content tests', () => {
       ),
     )
 
-    assert.notOk(content === undefined, 'should retrieve content for optimistic update key')
+    assert.notStrictEqual(content, undefined, 'should retrieve content for optimistic update key')
     assert.equal(
       bytesToHex(content!),
       optimisticUpdate.content_value,
       'retrieved correct content for optimistic update from local storage',
     )
+
+    const content2 = await network2.findContentLocally(
+      concatBytes(
+        new Uint8Array([0x13]),
+        LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718467n }),
+      ),
+    )
+    assert.equal(content2, undefined, 'should not retrieve content for optimistic update key that is newer than we have')
     await node1.stop()
     await node2.stop()
   }, 15000)
@@ -326,8 +334,8 @@ describe('OFFER/ACCEPT tests', () => {
       },
     })
 
-    node1.enableLog('*BeaconNetwork*')
-    node2.enableLog('*BeaconNetwork')
+    // node1.enableLog('*BeaconNetwork*')
+    // node2.enableLog('*BeaconNetwork')
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
@@ -723,7 +731,7 @@ describe('beacon light client sync tests', () => {
         privateKey: pk2,
       },
     })
-    node1.enableLog('*BeaconNetwork,-uTP')
+    //  node1.enableLog('*BeaconNetwork,-uTP')
     //   node2.enableLog('*')
     await node1.start()
     await node2.start()
@@ -840,7 +848,7 @@ describe('historicalSummaries verification', () => {
     const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
     const capellaForkDigest = network1.beaconConfig.forkName2ForkDigest(ForkName.electra)
-    console.log(bytesToHex(ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon)))
+
     await network1.store(
       encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientBootstrap,
