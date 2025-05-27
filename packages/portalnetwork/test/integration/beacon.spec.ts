@@ -21,6 +21,7 @@ import {
   NetworkId,
   TransportLayer,
   createPortalNetwork,
+  decodeBeaconContentKey,
   getBeaconContentKey,
 } from '../../src/index.js'
 
@@ -197,12 +198,13 @@ describe('Find Content tests', () => {
     await node2.stop()
   }, 15000)
 
-  it('should find LightClientUpdatesByRange update', async () => {
+  it.only('should find LightClientUpdatesByRange update', async () => {
     const updatesByRange = specTestVectors.updateByRange['6684738']
     const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3004')
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3005')
     enr2.setLocationMultiaddr(initMa2)
+    const initMa3: any = multiaddr('/ip4/127.0.0.1/udp/3006')
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
@@ -226,11 +228,26 @@ describe('Find Content tests', () => {
       },
     })
 
+    const node3 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
+      config: {
+        bindAddrs: {
+          ip4: initMa3,
+        },
+      },
+    })
+
     await node1.start()
     await node2.start()
+    await node3.start()
     const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    const network3 = node3.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    network3.enr.setLocationMultiaddr(initMa3)
     await network1.sendPing(network2?.enr.toENR())
+    await network1.sendPing(network3?.enr.toENR())
+
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -238,11 +255,18 @@ describe('Find Content tests', () => {
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
       'node1 added node2 to routing table',
     )
+    assert.equal(network1.routingTable.size, 2, 'node1 has 2 nodes in its routing table')
     await network1.storeUpdateRange(hexToBytes(updatesByRange.content_value))
 
+    const rangeKey = hexToBytes(updatesByRange.content_key)
+    const truncatedRangeKey = getBeaconContentKey(BeaconNetworkContentType.LightClientUpdatesByRange, LightClientUpdatesByRangeKey.serialize({
+      startPeriod: 816n,
+      count: 2n,
+    }),
+    )
     const res = await network2.sendFindContent(
       node1.discv5.enr.toENR(),
-      hexToBytes(updatesByRange.content_key),
+      rangeKey,
     )
 
     assert.equal(
@@ -260,8 +284,15 @@ describe('Find Content tests', () => {
       updatesByRange.content_value,
       'retrieved correct content for Light Client Update by Range from local storage',
     )
+
+    await network3.sendFindContent(network1.enr?.toENR(), truncatedRangeKey)
+    const res3 = await network2.sendFindContent(network3.enr?.toENR(), rangeKey)
+
+    // This check confirms that node3 sends the updates it has that are in the sequence - even if more were requested)
+    assert.equal((LightClientUpdatesByRange.deserialize(res3!['content'] as Uint8Array)).length, 2)
     await node1.stop()
     await node2.stop()
+    await node3.stop()
   }, 10000)
 })
 
