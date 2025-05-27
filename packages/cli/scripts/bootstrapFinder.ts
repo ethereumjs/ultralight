@@ -11,7 +11,7 @@ import {
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
-  getBeaconContentKey,
+  encodeBeaconContentKey,
 } from 'portalnetwork'
 
 import type { ForkLightClient } from '@lodestar/params'
@@ -36,7 +36,7 @@ const main = async () => {
 
   console.log('Retrieving bootstrap and updates from Beacon node...')
   const optimisticUpdate = (await api.lightclient.getOptimisticUpdate()).response!
-  const optimisticUpdateKey = getBeaconContentKey(
+  const optimisticUpdateKey = encodeBeaconContentKey(
     BeaconNetworkContentType.LightClientOptimisticUpdate,
     LightClientOptimisticUpdateKey.serialize({
       signatureSlot: BigInt(optimisticUpdate.data.attestedHeader.beacon.slot),
@@ -53,14 +53,14 @@ const main = async () => {
         beaconConfig.forkName2ForkDigest(update.version as ForkLightClient),
         (
           ssz.allForksLightClient[
-            update.version as LightClientForkName
+          update.version as LightClientForkName
           ] as allForks.AllForksLightClientSSZTypes
         ).LightClientUpdate.serialize(update.data),
       ),
     )
   }
   const serializedRange = LightClientUpdatesByRange.serialize(range)
-  const rangeKey = getBeaconContentKey(
+  const rangeKey = encodeBeaconContentKey(
     BeaconNetworkContentType.LightClientUpdatesByRange,
     LightClientUpdatesByRangeKey.serialize({ startPeriod: BigInt(oldPeriod), count: 4n }),
   )
@@ -72,7 +72,7 @@ const main = async () => {
     )
     const bootstrap = (await api.lightclient.getBootstrap(bootstrapRoot)).response!
     await ultralights[Math.floor(Math.random() * 10)].request('portal_beaconStore', [
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) }),
       ),
@@ -81,15 +81,14 @@ const main = async () => {
           beaconConfig.forkName2ForkDigest(bootstrap.version),
           (
             ssz.allForksLightClient[
-              bootstrap.version as LightClientForkName
+            bootstrap.version as LightClientForkName
             ] as allForks.AllForksLightClientSSZTypes
           ).LightClientBootstrap.serialize(bootstrap.data),
         ),
       ),
     ])
     console.log(
-      `Retrieved bootstrap for finalized checkpoint ${bootstrapRoot} from sync period ${
-        oldPeriod + x
+      `Retrieved bootstrap for finalized checkpoint ${bootstrapRoot} from sync period ${oldPeriod + x
       } and seeding to network...`,
     )
   }
@@ -119,7 +118,7 @@ const main = async () => {
         beaconConfig.forkName2ForkDigest(optimisticUpdate.version),
         (
           ssz.allForksLightClient[
-            optimisticUpdate.version as LightClientForkName
+          optimisticUpdate.version as LightClientForkName
           ] as allForks.AllForksLightClientSSZTypes
         ).LightClientOptimisticUpdate.serialize(optimisticUpdate.data),
       ),
@@ -134,12 +133,12 @@ const main = async () => {
     console.log('Caught interrupt signal.  Shuttind down...')
     process.exit(0)
   })
-   
+
   while (true) {
     await new Promise((resolve) => setTimeout(() => resolve(undefined), 13000))
     const optimisticUpdate = (await api.lightclient.getOptimisticUpdate()).response!
     console.log('new update')
-    const optimisticUpdateKey = getBeaconContentKey(
+    const optimisticUpdateKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientOptimisticUpdate,
       LightClientOptimisticUpdateKey.serialize({
         signatureSlot: BigInt(optimisticUpdate.data.attestedHeader.beacon.slot),
@@ -152,7 +151,7 @@ const main = async () => {
           beaconConfig.forkName2ForkDigest(optimisticUpdate.version),
           (
             ssz.allForksLightClient[
-              optimisticUpdate.version as LightClientForkName
+            optimisticUpdate.version as LightClientForkName
             ] as allForks.AllForksLightClientSSZTypes
           ).LightClientOptimisticUpdate.serialize(optimisticUpdate.data),
         ),

@@ -5,7 +5,7 @@ import {
   LightClientBootstrapKey,
   LightClientFinalityUpdateKey,
   LightClientOptimisticUpdateKey,
-  LightClientUpdatesByRange,
+  LightClientUpdatesByRangeKey,
 } from './types.js'
 
 /**
@@ -14,7 +14,7 @@ import {
  * @param serializedKey the SSZ encoded key corresponding to the `BeaconNetworkContentType`
  * @returns the content key encoded as a hex string
  */
-export const getBeaconContentKey = (
+export const encodeBeaconContentKey = (
   contentType: BeaconNetworkContentType,
   serializedKey: Uint8Array,
 ) => {
@@ -37,7 +37,7 @@ export const decodeBeaconContentKey = (serializedKey: Uint8Array) => {
     case BeaconNetworkContentType.LightClientFinalityUpdate:
       return LightClientFinalityUpdateKey.deserialize(contentKeyBytes)
     case BeaconNetworkContentType.LightClientUpdatesByRange:
-      return LightClientUpdatesByRange.deserialize(contentKeyBytes)
+      return LightClientUpdatesByRangeKey.deserialize(contentKeyBytes)
     default:
       throw new Error(`unknown content type ${selector}`)
   }

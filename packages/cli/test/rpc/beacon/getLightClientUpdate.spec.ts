@@ -4,7 +4,7 @@ import { ssz } from '@lodestar/types'
 import {
   BeaconNetworkContentType,
   computeLightClientKeyFromPeriod,
-  getBeaconContentKey,
+  encodeBeaconContentKey,
 } from 'portalnetwork'
 import { assert, afterAll, beforeAll, describe, it } from 'vitest'
 
@@ -14,7 +14,7 @@ describe(`${method} tests`, () => {
   let ultralight, rpc
 
   beforeAll(async () => {
-    ;({ ultralight, rpc } = await startRpc({ networks: ['beacon'], rpcPort: 8548, port: 9003 }))
+    ; ({ ultralight, rpc } = await startRpc({ networks: ['beacon'], rpcPort: 8548, port: 9003 }))
   })
 
   afterAll(() => {
@@ -23,7 +23,7 @@ describe(`${method} tests`, () => {
 
   it('should retrieve a light client update', async () => {
     const rangeJson = require('./range.json')[0]
-    const rangeKey = getBeaconContentKey(
+    const rangeKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientUpdate,
       hexToBytes(
         computeLightClientKeyFromPeriod(

@@ -21,7 +21,8 @@ import {
   NetworkId,
   TransportLayer,
   createPortalNetwork,
-  getBeaconContentKey,
+  decodeBeaconContentKey,
+  encodeBeaconContentKey,
 } from '../../src/index.js'
 
 import { BitArray } from '@chainsafe/ssz'
@@ -36,8 +37,8 @@ const privateKeys = [
 
 const specTestVectors = require('../networks/beacon/specTestVectors.json')
 
-const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0]).subarray(-36))
-const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1]).subarray(-36))
+const pk1 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[0] as `0x${string}`).subarray(-36))
+const pk2 = keys.privateKeyFromProtobuf(hexToBytes(privateKeys[1] as `0x${string}`).subarray(-36))
 const enr1 = SignableENR.createFromPrivateKey(pk1)
 const enr2 = SignableENR.createFromPrivateKey(pk2)
 describe('Find Content tests', () => {
@@ -100,7 +101,7 @@ describe('Find Content tests', () => {
     await node1.stop()
     await node2.stop()
   }, 10000)
-  it('should find optimistic update', async () => {
+  it('should handle optimistic updates correctly', async () => {
     const optimisticUpdate = specTestVectors.optimisticUpdate['6718463']
     const initMa: any = multiaddr('/ip4/127.0.0.1/udp/3002')
     enr1.setLocationMultiaddr(initMa)
@@ -187,12 +188,20 @@ describe('Find Content tests', () => {
       ),
     )
 
-    assert.notOk(content === undefined, 'should retrieve content for optimistic update key')
+    assert.notStrictEqual(content, undefined, 'should retrieve content for optimistic update key')
     assert.equal(
       bytesToHex(content!),
       optimisticUpdate.content_value,
       'retrieved correct content for optimistic update from local storage',
     )
+
+    const content2 = await network2.findContentLocally(
+      concatBytes(
+        new Uint8Array([0x13]),
+        LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718467n }),
+      ),
+    )
+    assert.equal(content2, undefined, 'should not retrieve content for optimistic update key that is newer than we have')
     await node1.stop()
     await node2.stop()
   }, 15000)
@@ -203,6 +212,7 @@ describe('Find Content tests', () => {
     enr1.setLocationMultiaddr(initMa)
     const initMa2: any = multiaddr('/ip4/127.0.0.1/udp/3005')
     enr2.setLocationMultiaddr(initMa2)
+    const initMa3: any = multiaddr('/ip4/127.0.0.1/udp/3006')
     const node1 = await createPortalNetwork({
       transport: TransportLayer.NODE,
       supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
@@ -226,11 +236,26 @@ describe('Find Content tests', () => {
       },
     })
 
+    const node3 = await createPortalNetwork({
+      transport: TransportLayer.NODE,
+      supportedNetworks: [{ networkId: NetworkId.BeaconChainNetwork }],
+      config: {
+        bindAddrs: {
+          ip4: initMa3,
+        },
+      },
+    })
+
     await node1.start()
     await node2.start()
+    await node3.start()
     const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
     const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    const network3 = node3.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
+    network3.enr.setLocationMultiaddr(initMa3)
     await network1.sendPing(network2?.enr.toENR())
+    await network1.sendPing(network3?.enr.toENR())
+
     assert.equal(
       network1?.routingTable.getWithPending(
         '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
@@ -238,11 +263,18 @@ describe('Find Content tests', () => {
       '8a47012e91f7e797f682afeeab374fa3b3186c82de848dc44195b4251154a2ed',
       'node1 added node2 to routing table',
     )
+    assert.equal(network1.routingTable.size, 2, 'node1 has 2 nodes in its routing table')
     await network1.storeUpdateRange(hexToBytes(updatesByRange.content_value))
 
+    const rangeKey = hexToBytes(updatesByRange.content_key)
+    const truncatedRangeKey = encodeBeaconContentKey(BeaconNetworkContentType.LightClientUpdatesByRange, LightClientUpdatesByRangeKey.serialize({
+      startPeriod: 816n,
+      count: 2n,
+    }),
+    )
     const res = await network2.sendFindContent(
       node1.discv5.enr.toENR(),
-      hexToBytes(updatesByRange.content_key),
+      rangeKey,
     )
 
     assert.equal(
@@ -260,8 +292,15 @@ describe('Find Content tests', () => {
       updatesByRange.content_value,
       'retrieved correct content for Light Client Update by Range from local storage',
     )
+
+    await network3.sendFindContent(network1.enr?.toENR(), truncatedRangeKey)
+    const res3 = await network2.sendFindContent(network3.enr?.toENR(), rangeKey)
+
+    // This check confirms that node3 sends the updates it has that are in the sequence - even if more were requested)
+    assert.equal((LightClientUpdatesByRange.deserialize(res3!['content'] as Uint8Array)).length, 2)
     await node1.stop()
     await node2.stop()
+    await node3.stop()
   }, 10000)
 })
 
@@ -295,8 +334,8 @@ describe('OFFER/ACCEPT tests', () => {
       },
     })
 
-    node1.enableLog('*BeaconNetwork*')
-    node2.enableLog('*BeaconNetwork')
+    // node1.enableLog('*BeaconNetwork*')
+    // node2.enableLog('*BeaconNetwork')
     await node1.start()
     await node2.start()
     const network1 = node1.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
@@ -335,7 +374,7 @@ describe('OFFER/ACCEPT tests', () => {
       'node1 added node2 to routing table',
     )
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
@@ -361,7 +400,7 @@ describe('OFFER/ACCEPT tests', () => {
       })
     })
     const content = await network2.findContentLocally(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
       ),
@@ -442,7 +481,7 @@ describe('OFFER/ACCEPT tests', () => {
       'node1 added node2 to routing table',
     )
 
-    const staleOptimisticUpdateContentKey = getBeaconContentKey(
+    const staleOptimisticUpdateContentKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientOptimisticUpdate,
       LightClientOptimisticUpdateKey.serialize({ signatureSlot: 6718463n }),
     )
@@ -505,7 +544,7 @@ describe('OFFER/ACCEPT tests', () => {
 
     await network1.sendPing(network2?.enr.toENR())
 
-    const bootstrapKey = getBeaconContentKey(
+    const bootstrapKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientBootstrap,
       LightClientBootstrapKey.serialize({
         blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
@@ -605,7 +644,7 @@ describe('beacon light client sync tests', () => {
     const optimisticUpdate = ssz.capella.LightClientOptimisticUpdate.fromJson(optimisticUpdateJson)
 
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({
           blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
@@ -619,7 +658,7 @@ describe('beacon light client sync tests', () => {
     await network1.storeUpdateRange(updatesByRange)
 
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({
           signatureSlot: BigInt(optimisticUpdate.signatureSlot),
@@ -692,7 +731,7 @@ describe('beacon light client sync tests', () => {
         privateKey: pk2,
       },
     })
-    node1.enableLog('*BeaconNetwork,-uTP')
+    //  node1.enableLog('*BeaconNetwork,-uTP')
     //   node2.enableLog('*')
     await node1.start()
     await node2.start()
@@ -726,14 +765,14 @@ describe('beacon light client sync tests', () => {
       ),
     )
 
-    const rangeKey = getBeaconContentKey(
+    const rangeKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientUpdatesByRange,
       LightClientUpdatesByRangeKey.serialize({
         startPeriod: BigInt(computeSyncPeriodAtSlot(range[0].data.attested_header.beacon.slot)),
         count: 3n,
       }),
     )
-    const bootstrapKey = getBeaconContentKey(
+    const bootstrapKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientBootstrap,
       LightClientBootstrapKey.serialize({
         blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
@@ -809,9 +848,9 @@ describe('historicalSummaries verification', () => {
     const network2 = node2.networks.get(NetworkId.BeaconChainNetwork) as BeaconNetwork
 
     const capellaForkDigest = network1.beaconConfig.forkName2ForkDigest(ForkName.electra)
-    console.log(bytesToHex(ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon)))
+
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientBootstrap,
         LightClientBootstrapKey.serialize({
           blockHash: ssz.phase0.BeaconBlockHeader.hashTreeRoot(bootstrap.header.beacon),
@@ -821,7 +860,7 @@ describe('historicalSummaries verification', () => {
     )
 
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientOptimisticUpdate,
         LightClientOptimisticUpdateKey.serialize({
           signatureSlot: BigInt(optimisticUpdate.signatureSlot),
@@ -850,7 +889,7 @@ describe('historicalSummaries verification', () => {
     )
 
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.LightClientFinalityUpdate,
         LightClientFinalityUpdateKey.serialize({
           finalitySlot: BigInt(finalityUpdate.signatureSlot),
@@ -876,7 +915,7 @@ describe('historicalSummaries verification', () => {
       proof: historicalSummariesJson.data.proof,
     })
     await network1.store(
-      getBeaconContentKey(
+      encodeBeaconContentKey(
         BeaconNetworkContentType.HistoricalSummaries,
         HistoricalSummariesKey.serialize({ epoch }),
       ),

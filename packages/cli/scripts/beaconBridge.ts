@@ -13,7 +13,7 @@ import {
   LightClientOptimisticUpdateKey,
   LightClientUpdatesByRange,
   LightClientUpdatesByRangeKey,
-  getBeaconContentKey,
+  encodeBeaconContentKey,
 } from 'portalnetwork'
 
 const { Client } = jayson
@@ -34,7 +34,7 @@ const main = async () => {
   console.log(
     `Retrieved latest optimistic update for slot ${BigInt(optimisticUpdate.signatureSlot)}`,
   )
-  const optimisticUpdateKey = getBeaconContentKey(
+  const optimisticUpdateKey = encodeBeaconContentKey(
     BeaconNetworkContentType.LightClientOptimisticUpdate,
     LightClientOptimisticUpdateKey.serialize({
       signatureSlot: BigInt(optimisticUpdate.signatureSlot),
@@ -58,7 +58,7 @@ const main = async () => {
     )
   }
   const serializedRange = LightClientUpdatesByRange.serialize(range)
-  const rangeKey = getBeaconContentKey(
+  const rangeKey = encodeBeaconContentKey(
     BeaconNetworkContentType.LightClientUpdatesByRange,
     LightClientUpdatesByRangeKey.serialize({ startPeriod: BigInt(oldPeriod), count: 3n }),
   )
@@ -77,7 +77,7 @@ const main = async () => {
     `Retrieved bootstrap for finalized checkpoint ${bootstrapRoot} from starting sync period ${oldPeriod}...`,
   )
   const res = await ultralight.request('portal_beaconStore', [
-    getBeaconContentKey(
+    encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientBootstrap,
       LightClientBootstrapKey.serialize({ blockHash: hexToBytes(bootstrapRoot) }),
     ),
@@ -114,14 +114,14 @@ const main = async () => {
     console.log('Caught interrupt signal.  Shutting down...')
     process.exit(0)
   })
-   
+
   while (true) {
     await new Promise((resolve) => setTimeout(() => resolve(undefined), 13000))
     const optimisticUpdate = ssz.capella.LightClientOptimisticUpdate.fromJson(
       (await (await fetch(beaconNode + 'eth/v1/beacon/light_client/optimistic_update')).json())
         .data,
     )
-    const optimisticUpdateKey = getBeaconContentKey(
+    const optimisticUpdateKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientOptimisticUpdate,
       LightClientOptimisticUpdateKey.serialize({
         signatureSlot: BigInt(optimisticUpdate.signatureSlot),
@@ -143,7 +143,7 @@ const main = async () => {
     const finalityUpdate = ssz.capella.LightClientFinalityUpdate.fromJson(
       (await (await fetch(beaconNode + 'eth/v1/beacon/light_client/finality_update')).json()).data,
     )
-    const finalityUpdateKey = getBeaconContentKey(
+    const finalityUpdateKey = encodeBeaconContentKey(
       BeaconNetworkContentType.LightClientFinalityUpdate,
       LightClientFinalityUpdateKey.serialize({
         finalitySlot: BigInt(finalityUpdate.finalizedHeader.beacon.slot),
