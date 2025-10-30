@@ -1,8 +1,8 @@
 import type { AbstractLevel } from 'abstract-level'
 import type { NetworkId } from './types.js'
-import { HistoryNetwork } from './history/index.js'
-import { StateNetwork } from './state/index.js'
-import { BeaconNetwork, SyncStrategy } from './beacon/index.js'
+import { LegacyHistoryNetwork } from './history/index.js'
+import { LegacyStateNetwork } from './state/index.js'
+import { LegacyBeaconNetwork, SyncStrategy } from './beacon/index.js'
 import type { PortalNetwork } from '../client/client.js'
 import { bytesToHex } from '@ethereumjs/util'
 
@@ -26,11 +26,11 @@ function parseNetworkId(networkId: NetworkId): { chain: string; type: string } {
   const chainCode = id.slice(0, 2)
   
   const typeMap: Record<string, string> = {
-    '0a': 'StateNetwork',
-    '0b': 'HistoryNetwork',
-    '0c': 'BeaconChainNetwork',
-    '0d': 'CanonicalTxIndexNetwork',
-    '0e': 'VerkleStateNetwork'
+    '0a': 'LegacyStateNetwork',
+    '0b': 'LegacyHistoryNetwork',
+    '0c': 'LegacyBeaconChainNetwork',
+    '0d': 'LegacyCanonicalTxIndexNetwork',
+    '0e': 'LegacyVerkleStateNetwork'
   }
   
   const chainMap: Record<string, string> = {
@@ -45,7 +45,7 @@ function parseNetworkId(networkId: NetworkId): { chain: string; type: string } {
   }
 }
 
-export function createNetwork(networkId: NetworkId, config: NetworkConfig): HistoryNetwork | StateNetwork | BeaconNetwork {
+export function createNetwork(networkId: NetworkId, config: NetworkConfig): LegacyHistoryNetwork | LegacyStateNetwork | LegacyBeaconNetwork {
   const { chain, type } = parseNetworkId(networkId)
   const baseConfig = {
     client: config.client,
@@ -57,12 +57,12 @@ export function createNetwork(networkId: NetworkId, config: NetworkConfig): Hist
   }
 
   switch (type) {
-    case 'HistoryNetwork':
-      return new HistoryNetwork(baseConfig)
-    case 'StateNetwork':
-      return new StateNetwork(baseConfig)
-    case 'BeaconChainNetwork':
-      return new BeaconNetwork({
+    case 'LegacyHistoryNetwork':
+      return new LegacyHistoryNetwork(baseConfig)
+    case 'LegacyStateNetwork':
+      return new LegacyStateNetwork(baseConfig)
+    case 'LegacyBeaconChainNetwork':
+      return new LegacyBeaconNetwork({
         ...baseConfig,
         trustedBlockRoot: config.trustedBlockRoot ? bytesToHex(config.trustedBlockRoot) : undefined,
         sync: config.trustedBlockRoot ? SyncStrategy.TrustedBlockRoot : SyncStrategy.PollNetwork

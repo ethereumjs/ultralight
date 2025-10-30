@@ -53,9 +53,9 @@ import {
   stateNetworkContentIdFromBytes,
 } from './util.js'
 
-export class StateNetwork extends BaseNetwork {
+export class LegacyStateNetwork extends BaseNetwork {
   networkId: NetworkId
-  networkName = 'StateNetwork'
+  networkName = 'LegacyStateNetwork'
   logger: Debugger
   stateroots: Map<bigint, Uint8Array> = new Map()
   manager: StateManager
@@ -63,7 +63,7 @@ export class StateNetwork extends BaseNetwork {
   constructor({ client, db, radius, maxStorage }: BaseNetworkConfig) {
     super({ client, db, radius, maxStorage, networkId: NetworkIdByChain[client.chainId].StateNetwork })
     this.networkId = NetworkIdByChain[client.chainId].StateNetwork
-    this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('StateNetwork')
+    this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('LegacyStateNetwork')
     this.routingTable.setLogger(this.logger)
     this.manager = new StateManager(this)
   }

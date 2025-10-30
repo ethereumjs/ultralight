@@ -5,9 +5,9 @@ import type { ENR, NodeId } from '@chainsafe/enr'
 import type { PrefixedHexString } from '@ethereumjs/util'
 import type { AbstractLevel } from 'abstract-level'
 import type { ChainId, PortalNetwork } from '../client'
-import type { BeaconNetwork } from './beacon'
-import type { HistoryNetwork } from './history'
-import type { StateNetwork } from './state'
+import type { LegacyBeaconNetwork } from './beacon'
+import type { LegacyHistoryNetwork } from './history'
+import type { LegacyStateNetwork } from './state'
 
 export interface BaseNetworkConfig {
   client: PortalNetwork
@@ -24,12 +24,12 @@ const BYTE_SIZE = 256
 
 // subnetwork IDs
 export enum NetworkId {
-  // Mainnet
-  StateNetwork = '0x500a',
-  HistoryNetwork = '0x500b',
-  BeaconChainNetwork = '0x500c',
-  CanonicalTxIndexNetwork = '0x500d',
-  VerkleStateNetwork = '0x500e',
+  // Mainnet (Legacy)
+  LegacyStateNetwork = '0x500a',
+  LegacyHistoryNetwork = '0x500b',
+  LegacyBeaconChainNetwork = '0x500c',
+  LegacyCanonicalTxIndexNetwork = '0x500d',
+  LegacyVerkleStateNetwork = '0x500e',
 
   // Angelfood
   AngelFoodStateNetwork = '0x504a',
@@ -51,11 +51,11 @@ export enum NetworkId {
 }
 
 const MainnetId: Record<string, NetworkId> = {
-  StateNetwork: NetworkId.StateNetwork,
-  HistoryNetwork: NetworkId.HistoryNetwork,
-  BeaconChainNetwork: NetworkId.BeaconChainNetwork,
-  CanonicalTxIndexNetwork: NetworkId.CanonicalTxIndexNetwork,
-  VerkleStateNetwork: NetworkId.VerkleStateNetwork,
+  StateNetwork: NetworkId.LegacyStateNetwork,
+  HistoryNetwork: NetworkId.LegacyHistoryNetwork,
+  BeaconChainNetwork: NetworkId.LegacyBeaconChainNetwork,
+  CanonicalTxIndexNetwork: NetworkId.LegacyCanonicalTxIndexNetwork,
+  VerkleStateNetwork: NetworkId.LegacyVerkleStateNetwork,
 }
 
 const SepoliaId: Record<string, NetworkId> = {
@@ -81,11 +81,11 @@ export const NetworkIdByChain: Record<ChainId, Record<string, NetworkId>> = {
 }
 
 export type SubNetwork<T extends NetworkId> = T extends `0x${string}a`
-  ? StateNetwork
+  ? LegacyStateNetwork
   : T extends `0x${string}b`
-    ? HistoryNetwork
+    ? LegacyHistoryNetwork
     : T extends `0x${string}c`
-      ? BeaconNetwork
+      ? LegacyBeaconNetwork
       : never
 
 export class Bloom {
