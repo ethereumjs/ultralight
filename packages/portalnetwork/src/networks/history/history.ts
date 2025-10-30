@@ -12,7 +12,7 @@ import debug from 'debug'
 
 import type {
   BaseNetworkConfig,
-  BeaconNetwork,
+  LegacyBeaconNetwork,
   ContentLookupResponse,
   EphemeralHeaderKeyValues,
   FindContentMessage,
@@ -54,7 +54,7 @@ import {
   EphemeralHeaderOfferPayload,
   EphemeralHeaderPayload,
   HistoricalRootsBlockProof,
-  HistoryNetworkContentType,
+  LegacyHistoryNetworkContentType,
   MERGE_BLOCK,
   SHANGHAI_BLOCK,
   sszReceiptsListType,
@@ -73,9 +73,9 @@ import { RunStatusCode } from '@lodestar/light-client'
 import type { LightClientHeader } from '@lodestar/types/lib/deneb/types.js'
 import type { Debugger } from 'debug'
 
-export class HistoryNetwork extends BaseNetwork {
+export class LegacyHistoryNetwork extends BaseNetwork {
   networkId: NetworkId
-  networkName = 'HistoryNetwork'
+  networkName = 'LegacyHistoryNetwork'
   logger: Debugger
   public ephemeralHeaderIndex: BiMap<bigint, string> // Map of block number to block hashes
   public blockHashIndex: Map<string, string>
@@ -86,7 +86,7 @@ export class HistoryNetwork extends BaseNetwork {
       PingPongPayloadExtensions.HISTORY_RADIUS_PAYLOAD,
     ]
     this.networkId = NetworkIdByChain[client.chainId].HistoryNetwork
-    this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('HistoryNetwork')
+    this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('LegacyHistoryNetwork')
     this.routingTable.setLogger(this.logger)
     this.blockHashIndex = new Map()
     this.ephemeralHeaderIndex = new BiMap()
@@ -111,13 +111,13 @@ export class HistoryNetwork extends BaseNetwork {
    */
   public findContentLocally = async (contentKey: Uint8Array): Promise<Uint8Array | undefined> => {
     const contentType = contentKey[0]
-    if (contentType === HistoryNetworkContentType.BlockHeaderByNumber) {
+    if (contentType === LegacyHistoryNetworkContentType.BlockHeaderByNumber) {
       const blockNumber = decodeHistoryNetworkContentKey(contentKey).keyOpt
       const blockHash = this.blockNumberToHash(<bigint>blockNumber)
       if (blockHash === undefined) {
         return undefined
       }
-      const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
+      const hashKey = getContentKey(LegacyHistoryNetworkContentType.BlockHeader, blockHash)
       const value = await this.retrieve(hashKey)
       return value !== undefined ? hexToBytes(value as PrefixedHexString) : undefined
     }
@@ -145,8 +145,8 @@ export class HistoryNetwork extends BaseNetwork {
   ): Promise<undefined | (Uint8Array | BlockHeader)> => {
     const contentKey =
       'blockHash' in opt
-        ? getContentKey(HistoryNetworkContentType.BlockHeader, opt.blockHash)
-        : getContentKey(HistoryNetworkContentType.BlockHeaderByNumber, opt.blockNumber)
+        ? getContentKey(LegacyHistoryNetworkContentType.BlockHeader, opt.blockHash)
+        : getContentKey(LegacyHistoryNetworkContentType.BlockHeaderByNumber, opt.blockNumber)
     const value = await this.findContentLocally(contentKey)
     if (value === undefined) return undefined
     const header = BlockHeaderWithProof.deserialize(value).header
@@ -155,7 +155,7 @@ export class HistoryNetwork extends BaseNetwork {
   }
 
   public getBlockBodyBytes = async (blockHash: Uint8Array): Promise<Uint8Array | undefined> => {
-    const contentKey = getContentKey(HistoryNetworkContentType.BlockBody, blockHash)
+    const contentKey = getContentKey(LegacyHistoryNetworkContentType.BlockBody, blockHash)
     const value = await this.retrieve(contentKey)
     return value !== undefined ? hexToBytes(value as PrefixedHexString) : undefined
   }
@@ -264,7 +264,7 @@ export class HistoryNetwork extends BaseNetwork {
         this.logger(`invalid proof for block ${bytesToHex(header.hash())}`)
         throw new Error(`invalid proof for block ${bytesToHex(header.hash())}`)
       }
-      const beacon = this.portal.network()['0x500c'] as BeaconNetwork | undefined
+      const beacon = this.portal.network()['0x500c'] as LegacyBeaconNetwork | undefined
       if (beacon !== undefined && beacon.lightClient?.status === RunStatusCode.started) {
         try {
           verifyHistoricalSummariesHeaderProof(
@@ -374,7 +374,7 @@ export class HistoryNetwork extends BaseNetwork {
           }
           case FoundContent.CONTENT:
             this.logger.extend('FOUNDCONTENT')(
-              `received ${HistoryNetworkContentType[contentType]} content corresponding to ${contentKey}`,
+              `received ${LegacyHistoryNetworkContentType[contentType]} content corresponding to ${contentKey}`,
             )
             try {
               await this.store(key, decoded.value as Uint8Array)
@@ -411,9 +411,9 @@ export class HistoryNetwork extends BaseNetwork {
 
     const contentKey = decodeHistoryNetworkContentKey(decodedContentMessage.contentKey)
     let value: Uint8Array | undefined
-    if (contentKey.contentType === HistoryNetworkContentType.EphemeralHeaderFindContent) {
+    if (contentKey.contentType === LegacyHistoryNetworkContentType.EphemeralHeaderFindContent) {
       const ck = contentKey as {
-        contentType: HistoryNetworkContentType.EphemeralHeaderFindContent
+        contentType: LegacyHistoryNetworkContentType.EphemeralHeaderFindContent
         keyOpt: EphemeralHeaderKeyValues
       }
       if (ck.keyOpt.ancestorCount < 0 || ck.keyOpt.ancestorCount > 255) {
@@ -542,7 +542,7 @@ export class HistoryNetwork extends BaseNetwork {
     let keyOpt: Uint8Array | bigint = contentKey.slice(1)
     this.logger.extend('STORE')(`Storing ${bytesToHex(contentKey)} (${value.length} bytes)`)
     switch (contentType) {
-      case HistoryNetworkContentType.BlockHeader: {
+      case LegacyHistoryNetworkContentType.BlockHeader: {
         try {
           await this.validateHeader(value, { blockHash: bytesToHex(keyOpt) })
           await this.put(contentKey, bytesToHex(value))
@@ -552,11 +552,11 @@ export class HistoryNetwork extends BaseNetwork {
         }
         break
       }
-      case HistoryNetworkContentType.BlockBody: {
+      case LegacyHistoryNetworkContentType.BlockBody: {
         await this.addBlockBody(value, keyOpt)
         break
       }
-      case HistoryNetworkContentType.Receipt: {
+      case LegacyHistoryNetworkContentType.Receipt: {
         try {
           sszReceiptsListType.deserialize(value)
           await this.put(contentKey, bytesToHex(value))
@@ -566,12 +566,12 @@ export class HistoryNetwork extends BaseNetwork {
         }
         break
       }
-      case HistoryNetworkContentType.BlockHeaderByNumber: {
+      case LegacyHistoryNetworkContentType.BlockHeaderByNumber: {
         const { blockNumber } = BlockNumberKey.deserialize(keyOpt)
         try {
           const blockHash = await this.validateHeader(value, { blockNumber })
           // Store block header using 0x00 key type
-          const hashKey = getContentKey(HistoryNetworkContentType.BlockHeader, blockHash)
+          const hashKey = getContentKey(LegacyHistoryNetworkContentType.BlockHeader, blockHash)
           await this.put(hashKey, bytesToHex(value))
           // Switch keyOpt to blockNumber for gossip purposes
           keyOpt = blockNumber
@@ -581,7 +581,7 @@ export class HistoryNetwork extends BaseNetwork {
         break
       }
 
-      case HistoryNetworkContentType.EphemeralHeaderFindContent: {
+      case LegacyHistoryNetworkContentType.EphemeralHeaderFindContent: {
         const payload = EphemeralHeaderPayload.deserialize(value)
         if (payload.length === 0) {
           this.logger.extend('STORE')('Received empty ephemeral header payload')
@@ -629,7 +629,7 @@ export class HistoryNetwork extends BaseNetwork {
           return
         }
       }
-      case HistoryNetworkContentType.EphemeralHeaderOffer: {
+      case LegacyHistoryNetworkContentType.EphemeralHeaderOffer: {
         const payload = EphemeralHeaderOfferPayload.deserialize(value)
         const header = createBlockHeaderFromRLP(payload.header, { setHardfork: true })
         // Check if we already have this header
@@ -649,16 +649,16 @@ export class HistoryNetwork extends BaseNetwork {
     this.portal.emit(`${this.networkId}:ContentAdded`, contentKey, value)
     if (this.routingTable.values().length > 0) {
       if (
-        contentType !== HistoryNetworkContentType.EphemeralHeader &&
-        contentType !== HistoryNetworkContentType.EphemeralHeaderOffer &&
-        contentType !== HistoryNetworkContentType.EphemeralHeaderFindContent
+        contentType !== LegacyHistoryNetworkContentType.EphemeralHeader &&
+        contentType !== LegacyHistoryNetworkContentType.EphemeralHeaderOffer &&
+        contentType !== LegacyHistoryNetworkContentType.EphemeralHeaderFindContent
       ) {
         // Gossip new content to network except for ephemeral headers
         this.gossipManager.add(contentKey)
       }
     }
     this.logger(
-      `${HistoryNetworkContentType[contentType]} added for ${keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
+      `${LegacyHistoryNetworkContentType[contentType]} added for ${keyOpt instanceof Uint8Array ? bytesToHex(keyOpt) : keyOpt
       }`,
     )
   }
@@ -666,7 +666,7 @@ export class HistoryNetwork extends BaseNetwork {
   public async saveReceipts(block: Block) {
     this.logger.extend('BLOCK_BODY')(`added for block #${block.header.number}`)
     const receipts = await saveReceipts(block)
-    const contentKey = getContentKey(HistoryNetworkContentType.Receipt, block.hash())
+    const contentKey = getContentKey(LegacyHistoryNetworkContentType.Receipt, block.hash())
     await this.store(contentKey, receipts)
     return decodeReceipts(receipts)
   }
@@ -689,7 +689,7 @@ export class HistoryNetwork extends BaseNetwork {
         `Error: ${err?.message} while validating block body for ${shortId(bytesToHex(hashKey))}`,
       )
     }
-    const bodyContentKey = getContentKey(HistoryNetworkContentType.BlockBody, hashKey)
+    const bodyContentKey = getContentKey(LegacyHistoryNetworkContentType.BlockBody, hashKey)
     if (block instanceof Block) {
       await this.put(bodyContentKey, bytesToHex(bodyBytes))
       this.portal.emit(`${this.networkId}:ContentAdded`, bodyContentKey, bodyBytes)
@@ -776,7 +776,7 @@ export class HistoryNetwork extends BaseNetwork {
     const decodedContentKeys = msg.contentKeys.map((key) => decodeHistoryNetworkContentKey(key))
     // Check to see if the first content key is for ephemeral headers.  If so, we expect all
     // content keys to be for ephemeral headers.
-    if (decodedContentKeys[0].contentType === HistoryNetworkContentType.EphemeralHeaderOffer) {
+    if (decodedContentKeys[0].contentType === LegacyHistoryNetworkContentType.EphemeralHeaderOffer) {
       this.logger.extend('OFFER').extend('EPHEMERALHEADERS')(
         'Received offer for ephemeral headers starting with block hash: ' +
         bytesToHex(decodedContentKeys[0].keyOpt),
@@ -787,7 +787,7 @@ export class HistoryNetwork extends BaseNetwork {
       let headHashIndex = -1
       do {
         for (const key of decodedContentKeys) {
-          if (key.contentType !== HistoryNetworkContentType.EphemeralHeaderOffer) {
+          if (key.contentType !== LegacyHistoryNetworkContentType.EphemeralHeaderOffer) {
             this.logger.extend('ACCEPT').extend('EPHEMERALHEADERS')(
               'Received non-ephemeral header in offer for ephemeral headers.  Declining offer.',
             )
@@ -796,7 +796,7 @@ export class HistoryNetwork extends BaseNetwork {
             break
           }
         }
-        const beacon = this.portal.networks.get(NetworkIdByChain[this.portal.chainId].BeaconChainNetwork) as BeaconNetwork
+        const beacon = this.portal.networks.get(NetworkIdByChain[this.portal.chainId].BeaconChainNetwork) as LegacyBeaconNetwork
         if (
           beacon === undefined ||
           (beacon.lightClient?.status !== RunStatusCode.started &&

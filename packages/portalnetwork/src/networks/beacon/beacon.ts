@@ -60,10 +60,10 @@ import type { AcceptMessage, FindContentMessage, OfferMessage, Version } from '.
 import type { ContentLookupResponse } from '../types.js'
 import type { BeaconChainNetworkConfig, HistoricalSummaries, LightClientForkName } from './types.js'
 
-export class BeaconNetwork extends BaseNetwork {
+export class LegacyBeaconNetwork extends BaseNetwork {
   networkId: NetworkId
   beaconConfig: BeaconConfig
-  networkName = 'BeaconNetwork'
+  networkName = 'LegacyBeaconNetwork'
   logger: Debugger
   lightClient: Lightclient | undefined
   bootstrapFinder: Map<NodeId, string[] | {}>
@@ -87,7 +87,7 @@ export class BeaconNetwork extends BaseNetwork {
     const genesisRoot = hexToBytes(genesisData.mainnet.genesisValidatorsRoot as PrefixedHexString)
     this.beaconConfig = createBeaconConfig(defaultChainConfig, genesisRoot)
     this.networkId = NetworkIdByChain[client.chainId].BeaconChainNetwork
-    this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('BeaconNetwork')
+    this.logger = debug(this.enr.nodeId.slice(0, 5)).extend('Portal').extend('LegacyBeaconNetwork')
     this.routingTable.setLogger(this.logger)
     this.forkDigest = Uint8Array.from([0, 0, 0, 0])
     this.portal.on(`${this.networkId}:ContentAdded`, async (contentKey: Uint8Array) => {
@@ -874,7 +874,7 @@ export class BeaconNetwork extends BaseNetwork {
               }
             } else {
               for (const key of requestedKeys) {
-                let value = Uint8Array.from([])
+                let value: Uint8Array = Uint8Array.from([])
                 try {
                   // We use `findContentLocally` instead of `get` so the content keys for
                   // optimistic and finality updates are handled correctly
