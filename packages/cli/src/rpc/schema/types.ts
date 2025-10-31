@@ -42,6 +42,11 @@ export type FindNodeResult = NodesMessage
 export type GetEnrResult = Enr
 export type LookupEnrResult = Enr | undefined
 export type OfferResult = number
+export type OfferTrace = {
+  success?: boolean[]
+  declined?: boolean
+  failed?: boolean
+}
 export type SendOfferResult = RequestId
 export type PingResult = PongMessage
 export type RecursiveFindNodeResult = Enr[]

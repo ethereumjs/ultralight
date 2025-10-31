@@ -20,7 +20,7 @@ import {
 
 import { BEACON_CLIENT_NOT_INITIALIZED, CONTENT_NOT_FOUND, INVALID_PARAMS } from '../error-code.js'
 import { content_params } from '../schema/index.js'
-import { callWithStackTrace, isValidId } from '../util.js'
+import { Uint8toBooleanArray, bitToBooleanArray, callWithStackTrace, isValidId } from '../util.js'
 import { middleware, validators } from '../validators.js'
 
 import { BitArray } from '@chainsafe/ssz'
@@ -28,6 +28,7 @@ import { RunStatusCode } from '@lodestar/light-client'
 import type { Debugger } from 'debug'
 import type { BeaconNetwork, HistoryNetwork, PortalNetwork, StateNetwork } from 'portalnetwork'
 import type { GetEnrResult } from '../schema/types.js'
+
 
 const methods = [
   // state
@@ -46,6 +47,7 @@ const methods = [
   'portal_stateGetContent',
   'portal_stateTraceGetContent',
   'portal_stateOffer',
+  'portal_stateTraceOffer',
   // history
   'portal_historyRoutingTableInfo',
   'portal_historyAddEnr',
@@ -56,6 +58,7 @@ const methods = [
   'portal_historyFindNodes',
   'portal_historyFindContent',
   'portal_historyOffer',
+  'portal_historyTraceOffer',
   'portal_historyRecursiveFindNodes',
   'portal_historyGetContent',
   'portal_historyTraceGetContent',
@@ -79,6 +82,7 @@ const methods = [
   'portal_beaconDeleteEnr',
   'portal_beaconLookupEnr',
   'portal_beaconOffer',
+  'portal_beaconTraceOffer',
   'portal_beaconOptimisticStateRoot',
   'portal_beaconFinalizedStateRoot',
 
@@ -271,6 +275,20 @@ export class portal {
       [content_params.ContentItems],
     ])
     this.beaconOffer = middleware(this.beaconOffer.bind(this), 2, [
+      [validators.enr],
+      [content_params.ContentItems],
+    ])
+
+    // portal_*TraceOffer
+    this.historyTraceOffer = middleware(this.historyTraceOffer.bind(this), 2, [
+      [validators.enr],
+      [content_params.ContentItems],
+    ])
+    this.stateTraceOffer = middleware(this.stateTraceOffer.bind(this), 2, [
+      [validators.enr],
+      [content_params.ContentItems],
+    ])
+    this.beaconTraceOffer = middleware(this.beaconTraceOffer.bind(this), 2, [
       [validators.enr],
       [content_params.ContentItems],
     ])
@@ -1221,6 +1239,106 @@ export class portal {
       return '0x'
     }
     return res instanceof BitArray ? bytesToHex(res.uint8Array) : bytesToHex(res)
+  }
+
+  // portal_*TraceOffer
+  async historyTraceOffer(
+    params: [string, [string, string][]],
+  ): Promise<{ success?: boolean[]; declined?: boolean; failed?: boolean }> {
+    const [enrHex, contentItems] = params
+    const contentKeys = contentItems.map((item) => hexToBytes(item[0] as PrefixedHexString))
+    const contentValues = contentItems.map((item) => hexToBytes(item[1] as PrefixedHexString))
+    const enr = ENR.decodeTxt(enrHex)
+
+    try {
+      if (this._history.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
+        const res = await this._history.sendPing(enr)
+        if (res === undefined) {
+          return { failed: true }
+        }
+      }
+
+      const res = await this._history.sendOffer(enr, contentKeys, contentValues)
+      if (res === undefined || res === null || Array.isArray(res) && res.length === 0) {
+        return { declined: true }
+      }
+      if (res instanceof BitArray) {
+        return bitToBooleanArray(res, contentKeys.length)
+      }
+      if (res instanceof Uint8Array) {
+        return Uint8toBooleanArray(res, contentKeys.length)
+      }
+      return { failed: true }
+    } catch (error) {
+      this.logger(`historyTraceOffer failed: ${error}`)
+      return { failed: true }
+    }
+  }
+
+  async stateTraceOffer(
+    params: [string, [string, string][]],
+  ): Promise<{ success?: boolean[]; declined?: boolean; failed?: boolean }> {
+    const [enrHex, contentItems] = params
+    const contentKeys = contentItems.map((item) => hexToBytes(item[0] as PrefixedHexString))
+    const contentValues = contentItems.map((item) => hexToBytes(item[1] as PrefixedHexString))
+    const enr = ENR.decodeTxt(enrHex)
+
+    try {
+      if (this._state.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
+        const res = await this._state.sendPing(enr)
+        if (res === undefined) {
+          return { failed: true }
+        }
+      }
+
+      const res = await this._state.sendOffer(enr, contentKeys, contentValues)
+      if (res === undefined || res === null || Array.isArray(res) && res.length === 0) {
+        return { declined: true }
+      }
+      if (res instanceof BitArray) {
+        return bitToBooleanArray(res, contentKeys.length)
+      }
+      if (res instanceof Uint8Array) {
+        return Uint8toBooleanArray(res, contentKeys.length)
+      }
+      return { failed: true }
+    } catch (error) {
+      this.logger(`stateTraceOffer failed: ${error}`)
+      return { failed: true }
+    }
+  }
+
+  async beaconTraceOffer(
+    params: [string, [string, string][]],
+  ): Promise<{ success?: boolean[]; declined?: boolean; failed?: boolean }> {
+    const [enrHex, contentItems] = params
+    const contentKeys = contentItems.map((item) => hexToBytes(item[0] as PrefixedHexString))
+    const contentValues = contentItems.map((item) => hexToBytes(item[1] as PrefixedHexString))
+    const enr = ENR.decodeTxt(enrHex)
+
+    try {
+      if (this._beacon.routingTable.getWithPending(enr.nodeId)?.value === undefined) {
+        const res = await this._beacon.sendPing(enr)
+        if (res === undefined) {
+          return { failed: true }
+        }
+      }
+
+      const res = await this._beacon.sendOffer(enr, contentKeys, contentValues)
+      if (res === undefined || res === null || Array.isArray(res) && res.length === 0) {
+        return { declined: true }
+      }
+      if (res instanceof BitArray) {
+        return bitToBooleanArray(res, contentKeys.length)
+      }
+      if (res instanceof Uint8Array) {
+        return Uint8toBooleanArray(res, contentKeys.length)
+      }
+      return { failed: true }
+    } catch (error) {
+      this.logger(`beaconTraceOffer failed: ${error}`)
+      return { failed: true }
+    }
   }
 
   // portal_*Gossip

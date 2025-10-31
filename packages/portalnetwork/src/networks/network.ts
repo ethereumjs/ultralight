@@ -603,7 +603,7 @@ export abstract class BaseNetwork {
    * @param contentKeys content keys being offered as specified by the subnetwork
    * @param content content being offered
    */
-  public sendOffer = async (enr: ENR, contentKeys: Uint8Array[], content?: Uint8Array[]) => {
+  public sendOffer = async (enr: ENR, contentKeys: Uint8Array[], content?: Uint8Array[]): Promise<BitArray | Uint8Array | undefined> => {
     let version
     try {
       version = await this.portal.highestCommonVersion(enr)
@@ -671,7 +671,7 @@ export abstract class BaseNetwork {
               }
             } else {
               for (const key of requestedKeys) {
-                let value = Uint8Array.from([])
+                let value: Uint8Array = Uint8Array.from([])
                 try {
                   value = hexToBytes((await this.get(key)) as PrefixedHexString)
                   requestedData.push(value)
